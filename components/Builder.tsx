@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { shopifyFetch } from "@/lib/shopify";
 
 type ProductNode = {
@@ -82,8 +82,6 @@ export default function Builder() {
     })();
   }, []);
 
-  // ================= FILTERS =================
-
   const cpus = products.filter(
     (p) => p.pcfType?.value === "cpu" && p.pcfBrand?.value === brand
   );
@@ -143,8 +141,6 @@ export default function Builder() {
     return fitsSocket && fitsHeight && fitsTdp;
   });
 
-  // ================= UTIL =================
-
   function totalPrice() {
     const all = [cpu, mb, ram, gpu, pcCase, psu, cooler];
     return all.reduce(
@@ -155,24 +151,47 @@ export default function Builder() {
     );
   }
 
+  async function checkout() {
+    if (!cpu || !mb || !ram || !gpu || !pcCase || !psu || !cooler) return;
+
+    const groupId = Date.now().toString();
+    const parts = [cpu, mb, ram, gpu, pcCase, psu, cooler];
+
+    const lines = parts.map((p) => ({
+      merchandiseId: p.variants.edges[0].node.id,
+      quantity: 1,
+      attributes: [
+        { key: "pc_builder_group", value: groupId },
+        { key: "component", value: p.title },
+      ],
+    }));
+
+    const data = await shopifyFetch<any>(
+      `
+      mutation CreateCart($lines: [CartLineInput!]!) {
+        cartCreate(input: { lines: $lines }) {
+          cart { checkoutUrl }
+          userErrors { message }
+        }
+      }
+      `,
+      { lines }
+    );
+
+    const errors = data.cartCreate.userErrors;
+    if (errors?.length) {
+      alert(errors.map((e: any) => e.message).join("\n"));
+      return;
+    }
+
+    window.location.href = data.cartCreate.cart.checkoutUrl;
+  }
+
   function renderList(
     list: ProductNode[],
     setter: (p: ProductNode) => void,
-    next: Step,
-    backStep?: Step
+    next: Step
   ) {
-    if (!list.length) {
-      return (
-        <div>
-          <h3>No compatible options found.</h3>
-          <p>Please go back and change previous selections.</p>
-          {backStep && (
-            <button onClick={() => setStep(backStep)}>Go Back</button>
-          )}
-        </div>
-      );
-    }
-
     return (
       <div>
         {list.map((p) => (
@@ -189,15 +208,12 @@ export default function Builder() {
               width: "100%",
             }}
           >
-            {p.title} — €
-            {p.variants.edges[0].node.price.amount}
+            {p.title} — €{p.variants.edges[0].node.price.amount}
           </button>
         ))}
       </div>
     );
   }
-
-  // ================= UI =================
 
   return (
     <div style={{ padding: 20 }}>
@@ -213,31 +229,30 @@ export default function Builder() {
         </>
       )}
 
-      {step === "cpu" &&
-        renderList(cpus, setCpu, "motherboard", "brand")}
-
-      {step === "motherboard" &&
-        renderList(motherboards, setMb, "ram", "cpu")}
-
-      {step === "ram" &&
-        renderList(rams, setRam, "gpu", "motherboard")}
-
-      {step === "gpu" &&
-        renderList(gpus, setGpu, "case", "ram")}
-
-      {step === "case" &&
-        renderList(cases, setPcCase, "psu", "gpu")}
-
-      {step === "psu" &&
-        renderList(psus, setPsu, "cooler", "case")}
-
-      {step === "cooler" &&
-        renderList(coolers, setCooler, "review", "psu")}
+      {step === "cpu" && renderList(cpus, setCpu, "motherboard")}
+      {step === "motherboard" && renderList(motherboards, setMb, "ram")}
+      {step === "ram" && renderList(rams, setRam, "gpu")}
+      {step === "gpu" && renderList(gpus, setGpu, "case")}
+      {step === "case" && renderList(cases, setPcCase, "psu")}
+      {step === "psu" && renderList(psus, setPsu, "cooler")}
+      {step === "cooler" && renderList(coolers, setCooler, "review")}
 
       {step === "review" && (
         <>
           <h2>Review</h2>
           <p>Total: €{totalPrice()}</p>
+          <button
+            onClick={checkout}
+            style={{
+              marginTop: 20,
+              padding: 12,
+              background: "black",
+              color: "white",
+              width: "100%",
+            }}
+          >
+            Checkout
+          </button>
         </>
       )}
     </div>
