@@ -49,8 +49,7 @@ export default function Builder() {
 
   useEffect(() => {
     (async () => {
-      const data = await shopifyFetch<any>(
-        `
+      const data = await shopifyFetch<any>(`
         query {
           products(first: 250) {
             edges {
@@ -77,17 +76,16 @@ export default function Builder() {
             }
           }
         }
-      `
-      );
+      `);
 
       setProducts(data.products.edges.map((e: any) => e.node));
     })();
   }, []);
 
+  // ================= FILTERS =================
+
   const cpus = products.filter(
-    (p) =>
-      p.pcfType?.value === "cpu" &&
-      p.pcfBrand?.value === brand
+    (p) => p.pcfType?.value === "cpu" && p.pcfBrand?.value === brand
   );
 
   const motherboards = products.filter(
@@ -106,8 +104,11 @@ export default function Builder() {
 
   const cases = products.filter((p) => {
     if (p.pcfType?.value !== "case" || !mb) return false;
-    const supported = p.pcfSupportedFormFactors?.value?.split(",") || [];
-    return supported.includes(mb.pcfFormFactor?.value || "");
+    const supported =
+      p.pcfSupportedFormFactors?.value
+        ?.split(",")
+        .map((s) => s.trim().toLowerCase()) || [];
+    return supported.includes((mb.pcfFormFactor?.value || "").toLowerCase());
   });
 
   const psus = products.filter((p) => {
@@ -122,8 +123,14 @@ export default function Builder() {
   const coolers = products.filter((p) => {
     if (p.pcfType?.value !== "cooler" || !cpu || !pcCase) return false;
 
-    const sockets = p.pcfSocket?.value?.split(",") || [];
-    const fitsSocket = sockets.includes(cpu.pcfSocket?.value || "");
+    const sockets =
+      p.pcfSocket?.value
+        ?.split(",")
+        .map((s) => s.trim().toLowerCase()) || [];
+
+    const fitsSocket = sockets.includes(
+      (cpu.pcfSocket?.value || "").toLowerCase()
+    );
 
     const fitsHeight =
       Number(p.pcfCoolerHeight?.value || 0) <=
@@ -136,6 +143,8 @@ export default function Builder() {
     return fitsSocket && fitsHeight && fitsTdp;
   });
 
+  // ================= UTIL =================
+
   function totalPrice() {
     const all = [cpu, mb, ram, gpu, pcCase, psu, cooler];
     return all.reduce(
@@ -146,7 +155,24 @@ export default function Builder() {
     );
   }
 
-  function renderList(list: ProductNode[], setter: any, next: Step) {
+  function renderList(
+    list: ProductNode[],
+    setter: (p: ProductNode) => void,
+    next: Step,
+    backStep?: Step
+  ) {
+    if (!list.length) {
+      return (
+        <div>
+          <h3>No compatible options found.</h3>
+          <p>Please go back and change previous selections.</p>
+          {backStep && (
+            <button onClick={() => setStep(backStep)}>Go Back</button>
+          )}
+        </div>
+      );
+    }
+
     return (
       <div>
         {list.map((p) => (
@@ -171,23 +197,42 @@ export default function Builder() {
     );
   }
 
+  // ================= UI =================
+
   return (
     <div style={{ padding: 20 }}>
       {step === "brand" && (
         <>
           <h2>Select CPU Brand</h2>
-          <button onClick={() => { setBrand("intel"); setStep("cpu"); }}>Intel</button>
-          <button onClick={() => { setBrand("amd"); setStep("cpu"); }}>AMD</button>
+          <button onClick={() => { setBrand("intel"); setStep("cpu"); }}>
+            Intel
+          </button>
+          <button onClick={() => { setBrand("amd"); setStep("cpu"); }}>
+            AMD
+          </button>
         </>
       )}
 
-      {step === "cpu" && renderList(cpus, setCpu, "motherboard")}
-      {step === "motherboard" && renderList(motherboards, setMb, "ram")}
-      {step === "ram" && renderList(rams, setRam, "gpu")}
-      {step === "gpu" && renderList(gpus, setGpu, "case")}
-      {step === "case" && renderList(cases, setPcCase, "psu")}
-      {step === "psu" && renderList(psus, setPsu, "cooler")}
-      {step === "cooler" && renderList(coolers, setCooler, "review")}
+      {step === "cpu" &&
+        renderList(cpus, setCpu, "motherboard", "brand")}
+
+      {step === "motherboard" &&
+        renderList(motherboards, setMb, "ram", "cpu")}
+
+      {step === "ram" &&
+        renderList(rams, setRam, "gpu", "motherboard")}
+
+      {step === "gpu" &&
+        renderList(gpus, setGpu, "case", "ram")}
+
+      {step === "case" &&
+        renderList(cases, setPcCase, "psu", "gpu")}
+
+      {step === "psu" &&
+        renderList(psus, setPsu, "cooler", "case")}
+
+      {step === "cooler" &&
+        renderList(coolers, setCooler, "review", "psu")}
 
       {step === "review" && (
         <>
