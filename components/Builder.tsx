@@ -196,9 +196,8 @@ function BuilderContent() {
                 const typeMap: any = { cpu: "cpu", motherboard: "mb", ram: "ram", gpu: "gpu", case: "pcCase", psu: "psu", cooler: "cooler" };
                 handleSelection(typeMap[STEPS[stepIndex]], p);
               }}>
-                <span>{p.title}</span>
-                {/* Price is still visible on individual buttons so they know what they are picking */}
-                <strong>{p.variants.edges[0].node.price.amount} €</strong>
+                <span style={{ fontWeight: "500" }}>{p.title}</span>
+                {/* Price removed from individual component cards */}
               </button>
             ))}
           </div>
@@ -207,7 +206,10 @@ function BuilderContent() {
         {STEPS[stepIndex] === "review" && (
           <div style={{ textAlign: "center", padding: "40px", background: "#f8f9fa", borderRadius: "15px" }}>
             <h1>Build je spreman!</h1>
-            <p style={{ fontSize: "24px", margin: "20px 0", fontWeight: "bold" }}>Ukupna cijena: {totalPrice().toFixed(2)} €</p>
+            <p style={{ fontSize: "28px", margin: "20px 0", fontWeight: "bold", color: "#28a745" }}>
+              Ukupna cijena: {totalPrice().toFixed(2)} €
+            </p>
+            <p style={{ color: "#666", fontSize: "14px" }}>(Uključeno slaganje i PDV)</p>
             <button disabled={isProcessing} onClick={handleCheckout} style={checkoutBtnStyle}>
               {isProcessing ? "Obrađujem..." : `Naruči i Plati`}
             </button>
@@ -234,8 +236,6 @@ function BuilderContent() {
           <span>{isReviewStep ? `${totalPrice().toFixed(2)} €` : "—"}</span>
         </div>
         
-        {!isReviewStep && <p style={{ fontSize: "12px", color: "#999", marginTop: "10px" }}>* Ukupna cijena bit će vidljiva na kraju.</p>}
-        
         <button onClick={shareBuild} style={{ width: "100%", marginTop: "20px", padding: "10px", borderRadius: "8px", border: "1px solid #007bff", color: "#007bff", background: "#fff", cursor: "pointer" }}>🔗 Podijeli build</button>
       </div>
     </div>
@@ -255,5 +255,5 @@ function SidebarRow({ label, val }: { label: string; val?: string }) {
 }
 
 const btnStyle = { flex: 1, padding: "20px", cursor: "pointer", border: "1px solid #ddd", background: "#fff", borderRadius: "8px", fontSize: "18px" };
-const checkoutBtnStyle = { width: "100%", padding: "20px", background: "#000", color: "#fff", fontWeight: "bold", cursor: "pointer", borderRadius: "8px", fontSize: "18px", border: "none" };
-const cardStyle = { display: "flex", justifyContent: "space-between", width: "100%", padding: "15px", marginBottom: "10px", cursor: "pointer", border: "1px solid #eee", background: "#fff", borderRadius: "8px", fontSize: "16px" };
+const checkoutBtnStyle = { width: "100%", padding: "20px", background: "#000", color: "#fff", fontWeight: "bold", cursor: "pointer", borderRadius: "8px", fontSize: "18px", border: "none", marginTop: "10px" };
+const cardStyle = { display: "flex", justifyContent: "center", width: "100%", padding: "20px", marginBottom: "10px", cursor: "pointer", border: "1px solid #eee", background: "#fff", borderRadius: "8px", fontSize: "16px", textAlign: "center" as const };
