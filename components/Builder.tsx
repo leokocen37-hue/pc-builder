@@ -26,7 +26,6 @@ type ProductNode = {
 type Step = "brand" | "cpu" | "motherboard" | "ram" | "gpu" | "case" | "psu" | "cooler" | "review";
 const STEPS: Step[] = ["brand", "cpu", "motherboard", "ram", "gpu", "case", "psu", "cooler", "review"];
 
-// This is the main component logic
 function BuilderContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -92,26 +91,29 @@ function BuilderContent() {
         const allProducts = data.products.edges.map((e: any) => e.node);
         setProducts(allProducts);
 
-        const urlBrand = searchParams.get("brand");
-        if (urlBrand) setBrand(urlBrand);
+        // SYNC FROM URL
+        const uBrand = searchParams.get("brand");
+        const uCpu = allProducts.find((p: any) => p.id === searchParams.get("cpu"));
+        const uMb = allProducts.find((p: any) => p.id === searchParams.get("mb"));
+        const uRam = allProducts.find((p: any) => p.id === searchParams.get("ram"));
+        const uGpu = allProducts.find((p: any) => p.id === searchParams.get("gpu"));
+        const uCase = allProducts.find((p: any) => p.id === searchParams.get("case"));
+        const uPsu = allProducts.find((p: any) => p.id === searchParams.get("psu"));
+        const uCooler = allProducts.find((p: any) => p.id === searchParams.get("cooler"));
 
-        const urlCpu = allProducts.find((p: any) => p.id === searchParams.get("cpu"));
-        const urlMb = allProducts.find((p: any) => p.id === searchParams.get("mb"));
-        const urlRam = allProducts.find((p: any) => p.id === searchParams.get("ram"));
-        const urlGpu = allProducts.find((p: any) => p.id === searchParams.get("gpu"));
-        const urlCase = allProducts.find((p: any) => p.id === searchParams.get("case"));
-        const urlPsu = allProducts.find((p: any) => p.id === searchParams.get("psu"));
-        const urlCooler = allProducts.find((p: any) => p.id === searchParams.get("cooler"));
+        if (uBrand) setBrand(uBrand);
+        if (uCpu) setCpu(uCpu);
+        if (uMb) setMb(uMb);
+        if (uRam) setRam(uRam);
+        if (uGpu) setGpu(uGpu);
+        if (uCase) setPcCase(uCase);
+        if (uPsu) setPsu(uPsu);
+        if (uCooler) setCooler(uCooler);
 
-        if (urlCpu) setCpu(urlCpu);
-        if (urlMb) setMb(urlMb);
-        if (urlRam) setRam(urlRam);
-        if (urlGpu) setGpu(urlGpu);
-        if (urlCase) setPcCase(urlCase);
-        if (urlPsu) setPsu(urlPsu);
-        if (urlCooler) setCooler(urlCooler);
-
-        if (urlCpu) setStepIndex(STEPS.indexOf("review"));
+        // ONLY jump to review if it's a COMPLETE build from a shared link
+        if (uCpu && uGpu && uCase && uCooler) {
+          setStepIndex(STEPS.indexOf("review"));
+        }
 
       } catch (err) {
         console.error(err);
@@ -120,21 +122,23 @@ function BuilderContent() {
       }
     }
     fetchAndSync();
-  }, [searchParams]);
+    // We only want this to run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); 
 
   const handleSelection = (type: string, p: ProductNode) => {
-    let nextCpu = cpu, nextMb = mb, nextRam = ram, nextGpu = gpu, nextCase = pcCase, nextPsu = psu, nextCooler = cooler;
+    let nextState = { brand, cpu, mb, ram, gpu, pcCase, psu, cooler };
 
-    if (type === "cpu") { setCpu(p); nextCpu = p; }
-    if (type === "mb") { setMb(p); nextMb = p; }
-    if (type === "ram") { setRam(p); nextRam = p; }
-    if (type === "gpu") { setGpu(p); nextGpu = p; }
-    if (type === "pcCase") { setPcCase(p); nextCase = p; }
-    if (type === "psu") { setPsu(p); nextPsu = p; }
-    if (type === "cooler") { setCooler(p); nextCooler = p; }
+    if (type === "cpu") { setCpu(p); nextState.cpu = p; }
+    else if (type === "mb") { setMb(p); nextState.mb = p; }
+    else if (type === "ram") { setRam(p); nextState.ram = p; }
+    else if (type === "gpu") { setGpu(p); nextState.gpu = p; }
+    else if (type === "pcCase") { setPcCase(p); nextState.pcCase = p; }
+    else if (type === "psu") { setPsu(p); nextState.psu = p; }
+    else if (type === "cooler") { setCooler(p); nextState.cooler = p; }
 
-    updateURL({ brand, cpu: nextCpu, mb: nextMb, ram: nextRam, gpu: nextGpu, pcCase: nextCase, psu: nextPsu, cooler: nextCooler });
-    setStepIndex(stepIndex + 1);
+    updateURL(nextState);
+    setStepIndex((prev) => prev + 1);
   };
 
   const shareBuild = () => {
@@ -235,7 +239,6 @@ function BuilderContent() {
   );
 }
 
-// THIS IS THE FIX FOR THE BUILD ERROR
 export default function Builder() {
   return (
     <Suspense fallback={<div>Učitavanje...</div>}>
@@ -248,6 +251,6 @@ function SidebarRow({ label, val }: { label: string; val?: string }) {
   return <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", marginBottom: "8px" }}><span>{label}:</span><span>{val || "—"}</span></div>;
 }
 
-const btnStyle = { flex: 1, padding: "20px", cursor: "pointer" };
-const checkoutBtnStyle = { width: "100%", padding: "20px", background: "#000", color: "#fff", fontWeight: "bold", cursor: "pointer" };
-const cardStyle = { display: "flex", justifyContent: "space-between", width: "100%", padding: "15px", marginBottom: "10px", cursor: "pointer" };
+const btnStyle = { flex: 1, padding: "20px", cursor: "pointer", border: "1px solid #ddd", background: "#fff", borderRadius: "8px" };
+const checkoutBtnStyle = { width: "100%", padding: "20px", background: "#000", color: "#fff", fontWeight: "bold", cursor: "pointer", borderRadius: "8px" };
+const cardStyle = { display: "flex", justifyContent: "space-between", width: "100%", padding: "15px", marginBottom: "10px", cursor: "pointer", border: "1px solid #eee", background: "#fff", borderRadius: "8px" };
