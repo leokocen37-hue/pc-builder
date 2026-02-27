@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { shopifyFetch } from "@/lib/shopify";
+import { useSearchParams, useRouter } from "next/navigation";
 
 type ProductNode = {
   id: string;
@@ -23,10 +24,12 @@ type ProductNode = {
 };
 
 type Step = "brand" | "cpu" | "motherboard" | "ram" | "gpu" | "case" | "psu" | "cooler" | "review";
-
 const STEPS: Step[] = ["brand", "cpu", "motherboard", "ram", "gpu", "case", "psu", "cooler", "review"];
 
 export default function Builder() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
   const [stepIndex, setStepIndex] = useState(0);
   const [products, setProducts] = useState<ProductNode[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,12 +45,25 @@ export default function Builder() {
   const [psu, setPsu] = useState<ProductNode | null>(null);
   const [cooler, setCooler] = useState<ProductNode | null>(null);
 
-  const ASSEMBLY_FEE = 200; // Fixed assembly fee in Euros
+  const ASSEMBLY_FEE = 200;
 
-  const currentStep = STEPS[stepIndex];
+  // --- SYNC URL WITH STATE ---
+  const updateURL = useCallback((newSelections: any) => {
+    const params = new URLSearchParams();
+    if (newSelections.brand) params.set("brand", newSelections.brand);
+    if (newSelections.cpu) params.set("cpu", newSelections.cpu.id);
+    if (newSelections.mb) params.set("mb", newSelections.mb.id);
+    if (newSelections.ram) params.set("ram", newSelections.ram.id);
+    if (newSelections.gpu) params.set("gpu", newSelections.gpu.id);
+    if (newSelections.pcCase) params.set("case", newSelections.pcCase.id);
+    if (newSelections.psu) params.set("psu", newSelections.psu.id);
+    if (newSelections.cooler) params.set("cooler", newSelections.cooler.id);
+    
+    router.replace(`?${params.toString()}`, { scroll: false });
+  }, [router]);
 
   useEffect(() => {
-    async function fetchInventory() {
+    async function fetchAndSync() {
       try {
         const data = await shopifyFetch<any>(`
           query {
@@ -56,9 +72,7 @@ export default function Builder() {
                 node {
                   id
                   title
-                  variants(first: 1) {
-                    edges { node { id price { amount } } }
-                  }
+                  variants(first: 1) { edges { node { id price { amount } } } }
                   pcfType: metafield(namespace: "pcf", key: "type") { value }
                   pcfBrand: metafield(namespace: "pcf", key: "brand") { value }
                   pcfSocket: metafield(namespace: "pcf", key: "socket") { value }
@@ -77,118 +91,101 @@ export default function Builder() {
             }
           }
         `);
-        setProducts(data.products.edges.map((e: any) => e.node));
-      } catch (err) {
-        console.error("Shopify Fetch Error:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchInventory();
-  }, []);
+        const allProducts = data.products.edges.map((e: any) => e.node);
+        setProducts(allProducts);
 
-  // --- FILTERS ---
-  const filteredProducts = products.filter((p) => {
-    const type = p.pcfType?.value;
-    if (currentStep === "cpu") return type === "cpu" && p.pcfBrand?.value === brand;
-    if (currentStep === "motherboard") return type === "motherboard" && p.pcfSocket?.value === cpu?.pcfSocket?.value;
-    if (currentStep === "ram") return type === "ram" && p.pcfRamType?.value === mb?.pcfRamType?.value;
-    if (currentStep === "gpu") return type === "gpu";
-    if (currentStep === "case") {
-      if (type !== "case" || !mb || !gpu) return false;
-      const supported = p.pcfSupportedFormFactors?.value?.split(",").map(s => s.trim().toLowerCase()) || [];
-      const mbFits = supported.includes((mb.pcfFormFactor?.value || "").toLowerCase());
-      const gpuFits = Number(gpu.pcfGpuLength?.value || 0) <= Number(p.pcfMaxGpuLength?.value || 0);
-      return mbFits && gpuFits;
+        // Auto-load from URL
+        const urlBrand = searchParams.get("brand");
+        const find = (key: string) => allProducts.find((p: any) => p.id === searchParams.get(key));
+
+        if (urlBrand) setBrand(urlBrand);
+        setCpu(find("cpu") || null);
+        setMb(find("mb") || null);
+        setRam(find("ram") || null);
+        setGpu(find("gpu") || null);
+        setPcCase(find("case") || null);
+        setPsu(find("psu") || null);
+        setCooler(find("cooler") || null);
+
+        // If we have a shared build, skip to review
+        if (searchParams.get("cpu")) setStepIndex(STEPS.indexOf("review"));
+
+      } catch (err) { console.error(err); } finally { setLoading(false); }
     }
-    if (currentStep === "psu") {
-      if (type !== "psu" || !cpu || !gpu) return false;
-      const draw = Number(cpu.pcfTdp?.value || 0) + Number(gpu.pcfTdp?.value || 0) + 150;
-      return Number(p.pcfWattage?.value || 0) >= draw;
-    }
-    if (currentStep === "cooler") {
-      if (type !== "cooler" || !cpu || !pcCase) return false;
-      const sockets = p.pcfSocket?.value?.split(",").map(s => s.trim().toLowerCase()) || [];
-      const fitsSocket = sockets.includes((cpu.pcfSocket?.value || "").toLowerCase());
-      const fitsHeight = Number(p.pcfCoolerHeight?.value || 0) <= Number(pcCase.pcfMaxCoolerHeight?.value || 0);
-      return fitsSocket && fitsHeight;
-    }
-    return false;
-  });
+    fetchAndSync();
+  }, [searchParams]);
+
+  const handleSelection = (type: string, p: ProductNode) => {
+    if (type === "cpu") setCpu(p);
+    if (type === "mb") setMb(p);
+    if (type === "ram") setRam(p);
+    if (type === "gpu") setGpu(p);
+    if (type === "case") setPcCase(p);
+    if (type === "psu") setPsu(p);
+    if (type === "cooler") setCooler(p);
+
+    // Update URL immediately
+    updateURL({ brand, cpu, mb, ram, gpu, pcCase, psu, cooler, [type]: p });
+    setStepIndex(stepIndex + 1);
+  };
+
+  const shareBuild = () => {
+    navigator.clipboard.writeText(window.location.href);
+    alert("Link kopiran! Pošalji ga prijatelju.");
+  };
 
   const totalPrice = () => {
-    const componentsPrice = [cpu, mb, ram, gpu, pcCase, psu, cooler].reduce(
-      (sum, p) => sum + Number(p?.variants.edges[0]?.node.price.amount || 0), 0
-    );
-    // Add Assembly Fee only if we are at the review stage or parts are selected
-    return componentsPrice + ASSEMBLY_FEE;
+    const compPrice = [cpu, mb, ram, gpu, pcCase, psu, cooler].reduce((sum, p) => sum + Number(p?.variants.edges[0]?.node.price.amount || 0), 0);
+    return compPrice + ASSEMBLY_FEE;
   };
 
   const handleCheckout = async () => {
     setIsProcessing(true);
-    const components = [cpu, mb, ram, gpu, pcCase, psu, cooler].filter(Boolean);
-    // Add assembly fee to the description
-    const summary = components.map(p => p?.title).join(", ") + " | + Usluga slaganja (200€)";
-    const price = totalPrice();
-
-    try {
-      const res = await fetch('/api/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          totalPrice: price,
-          summary: summary
-        }),
-      });
-
-      const data = await res.json();
-
-      if (data.draftOrder?.invoiceUrl) {
-        window.location.href = data.draftOrder.invoiceUrl;
-      } else {
-        alert("Greška: " + (data.error || "Došlo je do greške."));
-        setIsProcessing(false);
-      }
-    } catch (error) {
-      alert("Serverska greška.");
-      setIsProcessing(false);
-    }
+    const summary = [cpu, mb, ram, gpu, pcCase, psu, cooler].filter(Boolean).map(p => p?.title).join(", ") + " | + Slaganje (200€)";
+    const res = await fetch('/api/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ totalPrice: totalPrice(), summary }),
+    });
+    const data = await res.json();
+    if (data.draftOrder?.invoiceUrl) window.location.href = data.draftOrder.invoiceUrl;
+    else { alert("Greška"); setIsProcessing(false); }
   };
 
   if (loading) return <div style={{ padding: "100px", textAlign: "center" }}>Učitavanje...</div>;
 
   return (
     <div style={{ display: "flex", maxWidth: "1200px", margin: "40px auto", gap: "40px", padding: "0 20px", fontFamily: "sans-serif" }}>
-      
-      {/* Configuration Area */}
       <div style={{ flex: 2 }}>
-        <div style={{ marginBottom: "15px", fontWeight: "bold", color: "#007bff" }}>
-          KORAK {stepIndex + 1} / {STEPS.length}
-        </div>
+        <div style={{ marginBottom: "15px", fontWeight: "bold", color: "#007bff" }}>KORAK {stepIndex + 1} / {STEPS.length}</div>
 
-        {currentStep === "brand" && (
+        {STEPS[stepIndex] === "brand" && (
           <div>
-            <h1>Započnite konfiguraciju</h1>
+            <h1>Započni Build</h1>
             <div style={{ display: "flex", gap: "20px" }}>
-              <button style={brandBtnStyle} onClick={() => { setBrand("intel"); setStepIndex(1); }}>Intel Build</button>
-              <button style={brandBtnStyle} onClick={() => { setBrand("amd"); setStepIndex(1); }}>AMD Build</button>
+              <button style={brandBtnStyle} onClick={() => { setBrand("intel"); updateURL({ brand: "intel" }); setStepIndex(1); }}>Intel</button>
+              <button style={brandBtnStyle} onClick={() => { setBrand("amd"); updateURL({ brand: "amd" }); setStepIndex(1); }}>AMD</button>
             </div>
           </div>
         )}
 
         {stepIndex > 0 && stepIndex < STEPS.length - 1 && (
           <div>
-            <h1 style={{ textTransform: "capitalize" }}>Odaberite {currentStep}</h1>
-            {filteredProducts.map((p) => (
+            <h1 style={{ textTransform: "capitalize" }}>Odaberi {STEPS[stepIndex]}</h1>
+            {products.filter(p => {
+              const type = p.pcfType?.value;
+              if (STEPS[stepIndex] === "cpu") return type === "cpu" && p.pcfBrand?.value === brand;
+              if (STEPS[stepIndex] === "motherboard") return type === "motherboard" && p.pcfSocket?.value === cpu?.pcfSocket?.value;
+              if (STEPS[stepIndex] === "ram") return type === "ram" && p.pcfRamType?.value === mb?.pcfRamType?.value;
+              if (STEPS[stepIndex] === "gpu") return type === "gpu";
+              if (STEPS[stepIndex] === "case") return type === "case" && p.pcfSupportedFormFactors?.value?.split(",").map(s => s.trim().toLowerCase()).includes(mb?.pcfFormFactor?.value?.toLowerCase() || "");
+              if (STEPS[stepIndex] === "psu") return type === "psu" && Number(p.pcfWattage?.value || 0) >= (Number(cpu?.pcfTdp?.value || 0) + Number(gpu?.pcfTdp?.value || 0) + 150);
+              if (STEPS[stepIndex] === "cooler") return type === "cooler" && p.pcfSocket?.value?.split(",").map(s => s.trim().toLowerCase()).includes(cpu?.pcfSocket?.value?.toLowerCase() || "");
+              return false;
+            }).map((p) => (
               <button key={p.id} style={itemCardStyle} onClick={() => {
-                if (currentStep === "cpu") setCpu(p);
-                if (currentStep === "motherboard") setMb(p);
-                if (currentStep === "ram") setRam(p);
-                if (currentStep === "gpu") setGpu(p);
-                if (currentStep === "case") setPcCase(p);
-                if (currentStep === "psu") setPsu(p);
-                if (currentStep === "cooler") setCooler(p);
-                setStepIndex(stepIndex + 1);
+                const map: Record<Step, string> = { cpu: "cpu", motherboard: "mb", ram: "ram", gpu: "gpu", case: "pcCase", psu: "psu", cooler: "cooler", brand: "", review: "" };
+                handleSelection(map[STEPS[stepIndex]], p);
               }}>
                 <span>{p.title}</span>
                 <strong>{p.variants.edges[0].node.price.amount} €</strong>
@@ -197,62 +194,41 @@ export default function Builder() {
           </div>
         )}
 
-        {currentStep === "review" && (
+        {STEPS[stepIndex] === "review" && (
           <div style={{ textAlign: "center", padding: "40px", background: "#f8f9fa", borderRadius: "15px" }}>
-            <h1>PC je spreman!</h1>
-            <p>U cijenu je uključena usluga profesionalnog slaganja i testiranja (200 €).</p>
-            <button 
-              disabled={isProcessing}
-              onClick={handleCheckout} 
-              style={{ ...checkoutBtnStyle, opacity: isProcessing ? 0.7 : 1 }}
-            >
-              {isProcessing ? "Obrađujem..." : `Završi i plati — ${totalPrice().toFixed(2)} €`}
+            <h1>Build je spreman!</h1>
+            <button disabled={isProcessing} onClick={handleCheckout} style={checkoutBtnStyle}>
+              {isProcessing ? "Obrađujem..." : `Plati — ${totalPrice().toFixed(2)} €`}
             </button>
           </div>
         )}
 
-        {stepIndex > 0 && (
-          <button onClick={() => setStepIndex(stepIndex - 1)} style={{ marginTop: "30px", background: "none", border: "none", color: "#888", cursor: "pointer" }}>
-            ← Natrag
-          </button>
-        )}
+        {stepIndex > 0 && <button onClick={() => setStepIndex(stepIndex - 1)} style={{ marginTop: "30px", background: "none", border: "none", color: "#888", cursor: "pointer" }}>← Natrag</button>}
       </div>
 
-      {/* Sidebar Summary */}
       <div style={{ flex: 1, border: "1px solid #e0e0e0", borderRadius: "16px", padding: "25px", backgroundColor: "#fff" }}>
-        <h3>Pregled konfiguracije</h3>
-        <div style={{ fontSize: "14px", display: "flex", flexDirection: "column", gap: "12px" }}>
-          <SidebarRow label="Procesor" val={cpu?.title} />
-          <SidebarRow label="Matična" val={mb?.title} />
-          <SidebarRow label="Memorija" val={ram?.title} />
-          <SidebarRow label="Grafička" val={gpu?.title} />
-          <SidebarRow label="Kućište" val={pcCase?.title} />
-          <SidebarRow label="Napajanje" val={psu?.title} />
-          <SidebarRow label="Hladnjak" val={cooler?.title} />
-          <div style={{ display: "flex", justifyContent: "space-between", color: "#28a745", fontWeight: "bold" }}>
-            <span>Usluga slaganja:</span>
-            <span>{ASSEMBLY_FEE} €</span>
-          </div>
-        </div>
-        <hr style={{ margin: "20px 0" }} />
-        <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold", fontSize: "20px" }}>
-          <span>Ukupno:</span>
-          <span>{totalPrice().toFixed(2)} €</span>
-        </div>
+        <h3>Pregled</h3>
+        <SidebarRow label="Procesor" val={cpu?.title} />
+        <SidebarRow label="Matična" val={mb?.title} />
+        <SidebarRow label="Memorija" val={ram?.title} />
+        <SidebarRow label="Grafička" val={gpu?.title} />
+        <SidebarRow label="Kućište" val={pcCase?.title} />
+        <SidebarRow label="Napajanje" val={psu?.title} />
+        <SidebarRow label="Hladnjak" val={cooler?.title} />
+        <div style={{ marginTop: "20px", display: "flex", justifyContent: "space-between", fontWeight: "bold" }}><span>Ukupno:</span><span>{totalPrice().toFixed(2)} €</span></div>
+        
+        <button onClick={shareBuild} style={{ width: "100%", marginTop: "20px", padding: "10px", borderRadius: "8px", border: "1px solid #007bff", color: "#007bff", background: "white", cursor: "pointer" }}>
+          🔗 Podijeli s prijateljem
+        </button>
       </div>
     </div>
   );
 }
 
 function SidebarRow({ label, val }: { label: string; val?: string }) {
-  return (
-    <div style={{ display: "flex", justifyContent: "space-between" }}>
-      <span style={{ color: "#888" }}>{label}:</span>
-      <span style={{ textAlign: "right", maxWidth: "150px" }}>{val || "—"}</span>
-    </div>
-  );
+  return <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", marginBottom: "8px" }}><span style={{ color: "#888" }}>{label}:</span><span>{val || "—"}</span></div>;
 }
 
-const brandBtnStyle = { flex: 1, padding: "20px", cursor: "pointer", border: "1px solid #ddd", borderRadius: "10px", background: "white", fontSize: "18px" };
-const checkoutBtnStyle = { width: "100%", padding: "20px", cursor: "pointer", border: "none", background: "#000", color: "white", fontWeight: "bold", borderRadius: "10px", fontSize: "18px" };
+const brandBtnStyle = { flex: 1, padding: "20px", cursor: "pointer", border: "1px solid #ddd", borderRadius: "10px", background: "white" };
+const checkoutBtnStyle = { width: "100%", padding: "20px", cursor: "pointer", border: "none", background: "#000", color: "white", fontWeight: "bold", borderRadius: "10px" };
 const itemCardStyle = { display: "flex", justifyContent: "space-between", width: "100%", padding: "15px", marginBottom: "10px", cursor: "pointer", border: "1px solid #eee", background: "#fff", borderRadius: "8px" };
