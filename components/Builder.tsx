@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, Suspense } from "react";
+import { CSSProperties, useEffect, useState, useCallback, Suspense } from "react";
 import { shopifyFetch } from "@/lib/shopify";
 import { useSearchParams, useRouter } from "next/navigation";
 
@@ -47,22 +47,17 @@ function BuilderContent() {
   const ASSEMBLY_FEE = 200;
   const isReviewStep = STEPS[stepIndex] === "review";
 
-  // --- DYNAMIC FULL-SYSTEM POWER METER LOGIC ---
-  // Calculates the sum of pcf.tdp for ALL currently selected components
   const calculateSystemTDP = () => {
-    const parts = [cpu, mb, ram, gpu, pcCase, cooler]; // PSU provides power, doesn't consume it here
+    const parts = [cpu, mb, ram, gpu, pcCase, cooler];
     const componentsDraw = parts.reduce((sum, part) => {
       return sum + Number(part?.pcfTdp?.value || 0);
     }, 0);
-    
-    // Add 50W base buffer for Storage (SSDs) and USB peripherals
     return componentsDraw > 0 ? componentsDraw + 50 : 0; 
   };
 
   const estimatedDraw = calculateSystemTDP();
   const psuCapacity = Number(psu?.pcfWattage?.value || 0);
 
-  // Calculate percentage for the visual bar
   const powerPercentage = psuCapacity > 0 
     ? Math.min((estimatedDraw / psuCapacity) * 100, 100) 
     : Math.min((estimatedDraw / 1000) * 100, 100);
@@ -201,30 +196,68 @@ function BuilderContent() {
         {stepIndex > 0 && stepIndex < STEPS.length - 1 && (
           <div>
             <h1 style={{ textTransform: "capitalize" }}>Odaberi {STEPS[stepIndex]}</h1>
-            {products.filter(p => {
-              const type = p.pcfType?.value;
-              if (STEPS[stepIndex] === "cpu") return type === "cpu" && p.pcfBrand?.value === brand;
-              if (STEPS[stepIndex] === "motherboard") return type === "motherboard" && p.pcfSocket?.value === cpu?.pcfSocket?.value;
-              if (STEPS[stepIndex] === "ram") return type === "ram" && p.pcfRamType?.value === mb?.pcfRamType?.value;
-              if (STEPS[stepIndex] === "gpu") return type === "gpu";
-              if (STEPS[stepIndex] === "case") return type === "case" && p.pcfSupportedFormFactors?.value?.split(",").map(s => s.trim().toLowerCase()).includes(mb?.pcfFormFactor?.value?.toLowerCase() || "");
-              
-              // NEW PSU FILTER: Demands PSU wattage to be greater than the EXACT current draw + 100W Headroom for safety
-              if (STEPS[stepIndex] === "psu") {
-                const requiredWattage = calculateSystemTDP() + 100;
-                return type === "psu" && Number(p.pcfWattage?.value || 0) >= requiredWattage;
-              }
-              
-              if (STEPS[stepIndex] === "cooler") return type === "cooler" && p.pcfSocket?.value?.split(",").map(s => s.trim().toLowerCase()).includes(cpu?.pcfSocket?.value?.toLowerCase() || "");
-              return false;
-            }).map((p) => (
-              <button key={p.id} style={cardStyle} onClick={() => {
-                const typeMap: any = { cpu: "cpu", motherboard: "mb", ram: "ram", gpu: "gpu", case: "pcCase", psu: "psu", cooler: "cooler" };
-                handleSelection(typeMap[STEPS[stepIndex]], p);
-              }}>
-                <span style={{ fontWeight: "500" }}>{p.title}</span>
-              </button>
-            ))}
+            {products
+              .filter(p => p.pcfType?.value === STEPS[stepIndex] || (STEPS[stepIndex] === "case" && p.pcfType?.value === "case"))
+              .map((p) => {
+                let isCompatible = true;
+                let reason = "";
+
+                if (STEPS[stepIndex] === "cpu") {
+                  isCompatible = p.pcfBrand?.value === brand;
+                  if (!isCompatible) reason = `Pogrešna platforma (Odabrali ste ${brand})`;
+                } 
+                else if (STEPS[stepIndex] === "motherboard") {
+                  isCompatible = p.pcfSocket?.value === cpu?.pcfSocket?.value;
+                  if (!isCompatible) reason = `Ne odgovara procesoru (Zahtijeva ${cpu?.pcfSocket?.value})`;
+                } 
+                else if (STEPS[stepIndex] === "ram") {
+                  isCompatible = p.pcfRamType?.value === mb?.pcfRamType?.value;
+                  if (!isCompatible) reason = `Matična ploča podržava ${mb?.pcfRamType?.value}`;
+                } 
+                else if (STEPS[stepIndex] === "gpu") {
+                  isCompatible = true;
+                } 
+                else if (STEPS[stepIndex] === "case") {
+                  const supported = p.pcfSupportedFormFactors?.value?.split(",").map(s => s.trim().toLowerCase()) || [];
+                  const mbFits = supported.includes((mb?.pcfFormFactor?.value || "").toLowerCase());
+                  const gpuFits = Number(gpu?.pcfGpuLength?.value || 0) <= Number(p.pcfMaxGpuLength?.value || 0);
+                  isCompatible = mbFits && gpuFits;
+                  
+                  if (!mbFits) reason = `Ne podržava ${mb?.pcfFormFactor?.value} format matične ploče`;
+                  else if (!gpuFits) reason = `Grafička kartica je predugačka za ovo kućište`;
+                } 
+                else if (STEPS[stepIndex] === "psu") {
+                  const requiredWattage = calculateSystemTDP() + 100;
+                  isCompatible = Number(p.pcfWattage?.value || 0) >= requiredWattage;
+                  if (!isCompatible) reason = `Sustav zahtijeva minimalno ${requiredWattage}W`;
+                } 
+                else if (STEPS[stepIndex] === "cooler") {
+                  const sockets = p.pcfSocket?.value?.split(",").map(s => s.trim().toLowerCase()) || [];
+                  isCompatible = sockets.includes((cpu?.pcfSocket?.value || "").toLowerCase());
+                  if (!isCompatible) reason = `Ne podržava ${cpu?.pcfSocket?.value} socket`;
+                }
+
+                return (
+                  <button 
+                    key={p.id} 
+                    style={isCompatible ? cardStyle : { ...cardStyle, ...incompatibleCardStyle }} 
+                    disabled={!isCompatible}
+                    onClick={() => {
+                      if (isCompatible) {
+                        const typeMap: any = { cpu: "cpu", motherboard: "mb", ram: "ram", gpu: "gpu", case: "pcCase", psu: "psu", cooler: "cooler" };
+                        handleSelection(typeMap[STEPS[stepIndex]], p);
+                      }
+                    }}
+                  >
+                    <span style={{ fontWeight: "500", color: isCompatible ? "#000" : "#666" }}>{p.title}</span>
+                    {!isCompatible && (
+                      <span style={{ display: "block", fontSize: "12px", color: "#dc3545", marginTop: "4px" }}>
+                        Nekompatibilno: {reason}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
           </div>
         )}
 
@@ -256,7 +289,6 @@ function BuilderContent() {
         
         <hr style={{ margin: "20px 0", border: "0", borderTop: "1px solid #eee" }} />
         
-        {/* --- LIVE POWER METER UI --- */}
         {(estimatedDraw > 0) && (
           <div style={{ marginBottom: "20px", padding: "15px", background: "#f8f9fa", borderRadius: "8px", border: "1px solid #eee" }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", fontSize: "13px", fontWeight: "bold", color: "#333" }}>
@@ -306,6 +338,7 @@ function SidebarRow({ label, val }: { label: string; val?: string }) {
   return <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", marginBottom: "10px" }}><span style={{ color: "#888" }}>{label}:</span><span style={{ textAlign: "right", marginLeft: "10px", fontWeight: val ? "500" : "normal", color: val ? "#000" : "#ccc" }}>{val || "—"}</span></div>;
 }
 
-const btnStyle = { flex: 1, padding: "20px", cursor: "pointer", border: "1px solid #ddd", background: "#fff", borderRadius: "8px", fontSize: "18px" };
-const checkoutBtnStyle = { width: "100%", padding: "20px", background: "#000", color: "#fff", fontWeight: "bold", cursor: "pointer", borderRadius: "8px", fontSize: "18px", border: "none", marginTop: "10px" };
-const cardStyle = { display: "flex", justifyContent: "center", width: "100%", padding: "20px", marginBottom: "10px", cursor: "pointer", border: "1px solid #eee", background: "#fff", borderRadius: "8px", fontSize: "16px", textAlign: "center" as const };
+const btnStyle: CSSProperties = { flex: 1, padding: "20px", cursor: "pointer", border: "1px solid #ddd", background: "#fff", borderRadius: "8px", fontSize: "18px" };
+const checkoutBtnStyle: CSSProperties = { width: "100%", padding: "20px", background: "#000", color: "#fff", fontWeight: "bold", cursor: "pointer", borderRadius: "8px", fontSize: "18px", border: "none", marginTop: "10px" };
+const cardStyle: CSSProperties = { display: "flex", flexDirection: "column", justifyContent: "center", width: "100%", padding: "20px", marginBottom: "10px", cursor: "pointer", border: "1px solid #eee", background: "#fff", borderRadius: "8px", fontSize: "16px", textAlign: "center", transition: "0.2s" };
+const incompatibleCardStyle: CSSProperties = { background: "#f8f9fa", opacity: 0.6, cursor: "not-allowed", border: "1px dashed #ccc" };
