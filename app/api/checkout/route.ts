@@ -2,19 +2,32 @@ import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { totalPrice, summary } = body;
+    const { totalPrice, summary } = await request.json();
 
+    // 1. GET A TEMPORARY ACCESS TOKEN
+    const authResponse = await fetch(`https://${process.env.NEXT_PUBLIC_SHOPIFY_DOMAIN}/admin/oauth/access_token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        client_id: process.env.SHOPIFY_CLIENT_ID,
+        client_secret: process.env.SHOPIFY_CLIENT_SECRET,
+        grant_type: 'client_credentials',
+      }),
+    });
+
+    const authData = await authResponse.json();
+    const accessToken = authData.access_token;
+
+    if (!accessToken) {
+      return NextResponse.json({ error: "Auth failed: Check Client ID/Secret" }, { status: 401 });
+    }
+
+    // 2. CREATE THE DRAFT ORDER
     const query = `
       mutation draftOrderCreate($input: DraftOrderInput!) {
         draftOrderCreate(input: $input) {
-          draftOrder {
-            invoiceUrl
-          }
-          userErrors {
-            field
-            message
-          }
+          draftOrder { invoiceUrl }
+          userErrors { message }
         }
       }
     `;
@@ -23,37 +36,28 @@ export async function POST(request: Request) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Shopify-Access-Token': process.env.SHOPIFY_ADMIN_API_ACCESS_TOKEN!,
+        'X-Shopify-Access-Token': accessToken,
       },
       body: JSON.stringify({
         query,
         variables: {
           input: {
-            note: "Custom PC Build from Configurator",
-            lineItems: [
-              {
-                title: "Custom PC Konfiguracija",
-                originalUnitPrice: totalPrice.toString(),
-                quantity: 1,
-                customAttributes: [
-                  { key: "Komponente", value: summary }
-                ]
-              }
-            ]
+            note: "Custom PC Build",
+            lineItems: [{
+              title: "Custom PC Konfiguracija",
+              originalUnitPrice: totalPrice.toString(),
+              quantity: 1,
+              customAttributes: [{ key: "Komponente", value: summary }]
+            }]
           }
         }
       }),
     });
 
     const result = await response.json();
+    return NextResponse.json(result.data?.draftOrderCreate || { error: "Draft order failed" });
 
-    if (result.errors) {
-      return NextResponse.json({ error: result.errors[0].message }, { status: 500 });
-    }
-
-    return NextResponse.json(result.data.draftOrderCreate);
-  } catch (error) {
-    console.error("Checkout API Error:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
