@@ -47,6 +47,18 @@ function BuilderContent() {
   const ASSEMBLY_FEE = 200;
   const isReviewStep = STEPS[stepIndex] === "review";
 
+  // --- POWER METER LOGIC ---
+  const tdpCpu = Number(cpu?.pcfTdp?.value || 0);
+  const tdpGpu = Number(gpu?.pcfTdp?.value || 0);
+  const systemBuffer = (tdpCpu > 0 || tdpGpu > 0) ? 100 : 0; // 100W buffer for MB, RAM, Fans
+  const estimatedDraw = tdpCpu + tdpGpu + systemBuffer;
+  const psuCapacity = Number(psu?.pcfWattage?.value || 0);
+
+  // Calculate percentage for the visual bar (cap at 100%)
+  const powerPercentage = psuCapacity > 0 
+    ? Math.min((estimatedDraw / psuCapacity) * 100, 100) 
+    : Math.min((estimatedDraw / 1000) * 100, 100); // Default scale to 1000W if no PSU selected
+
   const updateURL = useCallback((selections: any) => {
     const params = new URLSearchParams();
     if (selections.brand) params.set("brand", selections.brand);
@@ -197,7 +209,6 @@ function BuilderContent() {
                 handleSelection(typeMap[STEPS[stepIndex]], p);
               }}>
                 <span style={{ fontWeight: "500" }}>{p.title}</span>
-                {/* Price removed from individual component cards */}
               </button>
             ))}
           </div>
@@ -231,10 +242,39 @@ function BuilderContent() {
         
         <hr style={{ margin: "20px 0", border: "0", borderTop: "1px solid #eee" }} />
         
+        {/* --- LIVE POWER METER UI --- */}
+        {(estimatedDraw > 0) && (
+          <div style={{ marginBottom: "20px", padding: "15px", background: "#f8f9fa", borderRadius: "8px", border: "1px solid #eee" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", fontSize: "13px", fontWeight: "bold", color: "#333" }}>
+              <span>Potrošnja (TDP):</span>
+              <span>{estimatedDraw}W {psuCapacity > 0 ? `/ ${psuCapacity}W` : ""}</span>
+            </div>
+            
+            {/* The Bar */}
+            <div style={{ width: "100%", height: "8px", background: "#e0e0e0", borderRadius: "4px", overflow: "hidden" }}>
+              <div style={{ 
+                height: "100%", 
+                width: `${powerPercentage}%`, 
+                background: psuCapacity > 0 && estimatedDraw >= psuCapacity ? "#dc3545" : (psuCapacity > 0 ? "#28a745" : "#007bff"),
+                transition: "width 0.4s ease, background 0.4s ease" 
+              }} />
+            </div>
+            
+            {/* Status Text */}
+            <p style={{ fontSize: "11px", color: "#777", marginTop: "8px", textAlign: "right" }}>
+              {psuCapacity === 0 
+                ? "*Uključuje 100W rezerve za sustav." 
+                : (estimatedDraw >= psuCapacity ? "Upozorenje: Napajanje je preslabo!" : "Napajanje je optimalno.")}
+            </p>
+          </div>
+        )}
+
         <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold", fontSize: "18px" }}>
           <span>Ukupno:</span>
           <span>{isReviewStep ? `${totalPrice().toFixed(2)} €` : "—"}</span>
         </div>
+        
+        {!isReviewStep && <p style={{ fontSize: "12px", color: "#999", marginTop: "10px" }}>* Cijena će biti vidljiva na kraju.</p>}
         
         <button onClick={shareBuild} style={{ width: "100%", marginTop: "20px", padding: "10px", borderRadius: "8px", border: "1px solid #007bff", color: "#007bff", background: "#fff", cursor: "pointer" }}>🔗 Podijeli build</button>
       </div>
@@ -251,7 +291,7 @@ export default function Builder() {
 }
 
 function SidebarRow({ label, val }: { label: string; val?: string }) {
-  return <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", marginBottom: "10px" }}><span style={{ color: "#888" }}>{label}:</span><span style={{ textAlign: "right", marginLeft: "10px" }}>{val || "—"}</span></div>;
+  return <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", marginBottom: "10px" }}><span style={{ color: "#888" }}>{label}:</span><span style={{ textAlign: "right", marginLeft: "10px", fontWeight: val ? "500" : "normal", color: val ? "#000" : "#ccc" }}>{val || "—"}</span></div>;
 }
 
 const btnStyle = { flex: 1, padding: "20px", cursor: "pointer", border: "1px solid #ddd", background: "#fff", borderRadius: "8px", fontSize: "18px" };
