@@ -21,7 +21,7 @@ type ProductNode = {
   pcfWattage?: { value: string };
   pcfCoolerHeight?: { value: string };
   pcfMaxTdp?: { value: string };
-  pcfQuality?: { value: string }; // NEW QUALITY FIELD
+  pcfQuality?: { value: string };
 };
 
 type Step = "brand" | "cpu" | "motherboard" | "ram" | "gpu" | "case" | "psu" | "cooler" | "review";
@@ -178,14 +178,13 @@ function BuilderContent() {
     }
   };
 
-  // Helper to color-code the quality badge
   const getQualityColor = (quality: string) => {
     const q = quality.toLowerCase();
-    if (q === "excellent") return "#28a745"; // Green
-    if (q === "very good") return "#007bff"; // Blue
-    if (q === "good") return "#17a2b8"; // Teal
-    if (q === "average") return "#6c757d"; // Gray
-    return "#888"; // Fallback
+    if (q === "excellent") return "#28a745"; 
+    if (q === "very good") return "#007bff"; 
+    if (q === "good") return "#17a2b8"; 
+    if (q === "average") return "#6c757d"; 
+    return "#888"; 
   };
 
   if (loading) return <div style={{ padding: "100px", textAlign: "center" }}>Učitavanje...</div>;
@@ -236,7 +235,20 @@ function BuilderContent() {
               }
               
               return false;
-            }).map((p) => (
+            })
+            // --- NEW: SORTING LOGIC ---
+            .sort((a, b) => {
+              const weights: Record<string, number> = { 
+                "excellent": 4, 
+                "very good": 3, 
+                "good": 2, 
+                "average": 1 
+              };
+              const wA = weights[a.pcfQuality?.value?.toLowerCase() || ""] || 0;
+              const wB = weights[b.pcfQuality?.value?.toLowerCase() || ""] || 0;
+              return wB - wA; // Sorts highest numbers (Excellent) to the top
+            })
+            .map((p) => (
               <button 
                 key={p.id} 
                 style={cardStyle} 
@@ -247,7 +259,6 @@ function BuilderContent() {
               >
                 <span style={{ fontWeight: "500", color: "#000" }}>{p.title}</span>
                 
-                {/* --- QUALITY BADGE UI --- */}
                 {p.pcfQuality?.value && (
                   <span style={{ 
                     marginTop: "8px", 
