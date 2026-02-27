@@ -21,6 +21,7 @@ type ProductNode = {
   pcfWattage?: { value: string };
   pcfCoolerHeight?: { value: string };
   pcfMaxTdp?: { value: string };
+  pcfQuality?: { value: string }; // NEW QUALITY FIELD
 };
 
 type Step = "brand" | "cpu" | "motherboard" | "ram" | "gpu" | "case" | "psu" | "cooler" | "review";
@@ -52,7 +53,6 @@ function BuilderContent() {
     const componentsDraw = parts.reduce((sum, part) => {
       return sum + Number(part?.pcfTdp?.value || 0);
     }, 0);
-    // BUMPED FROM 50 TO 100
     return componentsDraw > 0 ? componentsDraw + 100 : 0; 
   };
 
@@ -100,6 +100,7 @@ function BuilderContent() {
                   pcfWattage: metafield(namespace: "pcf", key: "wattage") { value }
                   pcfCoolerHeight: metafield(namespace: "pcf", key: "cooler_height") { value }
                   pcfMaxTdp: metafield(namespace: "pcf", key: "max_tdp") { value }
+                  pcfQuality: metafield(namespace: "pcf", key: "quality") { value }
                 }
               }
             }
@@ -177,6 +178,16 @@ function BuilderContent() {
     }
   };
 
+  // Helper to color-code the quality badge
+  const getQualityColor = (quality: string) => {
+    const q = quality.toLowerCase();
+    if (q === "excellent") return "#28a745"; // Green
+    if (q === "very good") return "#007bff"; // Blue
+    if (q === "good") return "#17a2b8"; // Teal
+    if (q === "average") return "#6c757d"; // Gray
+    return "#888"; // Fallback
+  };
+
   if (loading) return <div style={{ padding: "100px", textAlign: "center" }}>Učitavanje...</div>;
 
   return (
@@ -214,7 +225,6 @@ function BuilderContent() {
               }
               
               if (STEPS[stepIndex] === "psu") {
-                // Notice this ensures PSU covers the base draw + peripheral buffer + an EXTRA 100W safety net
                 const requiredWattage = calculateSystemTDP() + 100;
                 return type === "psu" && Number(p.pcfWattage?.value || 0) >= requiredWattage;
               }
@@ -236,6 +246,20 @@ function BuilderContent() {
                 }}
               >
                 <span style={{ fontWeight: "500", color: "#000" }}>{p.title}</span>
+                
+                {/* --- QUALITY BADGE UI --- */}
+                {p.pcfQuality?.value && (
+                  <span style={{ 
+                    marginTop: "8px", 
+                    fontSize: "12px", 
+                    fontWeight: "bold",
+                    color: getQualityColor(p.pcfQuality.value),
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px"
+                  }}>
+                    {p.pcfQuality.value}
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -320,4 +344,4 @@ function SidebarRow({ label, val }: { label: string; val?: string }) {
 
 const btnStyle: CSSProperties = { flex: 1, padding: "20px", cursor: "pointer", border: "1px solid #ddd", background: "#fff", borderRadius: "8px", fontSize: "18px" };
 const checkoutBtnStyle: CSSProperties = { width: "100%", padding: "20px", background: "#000", color: "#fff", fontWeight: "bold", cursor: "pointer", borderRadius: "8px", fontSize: "18px", border: "none", marginTop: "10px" };
-const cardStyle: CSSProperties = { display: "flex", flexDirection: "column", justifyContent: "center", width: "100%", padding: "20px", marginBottom: "10px", cursor: "pointer", border: "1px solid #eee", background: "#fff", borderRadius: "8px", fontSize: "16px", textAlign: "center", transition: "0.2s" };
+const cardStyle: CSSProperties = { display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", width: "100%", padding: "20px", marginBottom: "10px", cursor: "pointer", border: "1px solid #eee", background: "#fff", borderRadius: "8px", fontSize: "16px", textAlign: "center", transition: "0.2s" };
