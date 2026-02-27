@@ -24,8 +24,9 @@ type ProductNode = {
   pcfQuality?: { value: string };
 };
 
-type Step = "brand" | "cpu" | "motherboard" | "ram" | "gpu" | "case" | "psu" | "cooler" | "review";
-const STEPS: Step[] = ["brand", "cpu", "motherboard", "ram", "gpu", "case", "psu", "cooler", "review"];
+// ADDED: ssd, hdd, os to the steps
+type Step = "brand" | "cpu" | "motherboard" | "ram" | "gpu" | "ssd" | "hdd" | "case" | "psu" | "cooler" | "os" | "review";
+const STEPS: Step[] = ["brand", "cpu", "motherboard", "ram", "gpu", "ssd", "hdd", "case", "psu", "cooler", "os", "review"];
 
 function BuilderContent() {
   const searchParams = useSearchParams();
@@ -41,14 +42,18 @@ function BuilderContent() {
   const [mb, setMb] = useState<ProductNode | null>(null);
   const [ram, setRam] = useState<ProductNode | null>(null);
   const [gpu, setGpu] = useState<ProductNode | null>(null);
+  const [ssd, setSsd] = useState<ProductNode | null>(null);
+  const [hdd, setHdd] = useState<ProductNode | null>(null);
   const [pcCase, setPcCase] = useState<ProductNode | null>(null);
   const [psu, setPsu] = useState<ProductNode | null>(null);
   const [cooler, setCooler] = useState<ProductNode | null>(null);
+  const [os, setOs] = useState<ProductNode | null>(null);
 
   const ASSEMBLY_FEE = 200;
   const isReviewStep = STEPS[stepIndex] === "review";
 
   const calculateSystemTDP = () => {
+    // We do not need to add SSD/HDD to this array because the +100W buffer perfectly covers them!
     const parts = [cpu, mb, ram, gpu, pcCase, cooler];
     const componentsDraw = parts.reduce((sum, part) => {
       return sum + Number(part?.pcfTdp?.value || 0);
@@ -70,9 +75,12 @@ function BuilderContent() {
     if (selections.mb?.id) params.set("mb", selections.mb.id);
     if (selections.ram?.id) params.set("ram", selections.ram.id);
     if (selections.gpu?.id) params.set("gpu", selections.gpu.id);
+    if (selections.ssd?.id) params.set("ssd", selections.ssd.id);
+    if (selections.hdd?.id) params.set("hdd", selections.hdd.id);
     if (selections.pcCase?.id) params.set("case", selections.pcCase.id);
     if (selections.psu?.id) params.set("psu", selections.psu.id);
     if (selections.cooler?.id) params.set("cooler", selections.cooler.id);
+    if (selections.os?.id) params.set("os", selections.os.id);
     
     router.replace(`?${params.toString()}`, { scroll: false });
   }, [router]);
@@ -114,20 +122,27 @@ function BuilderContent() {
         const uMb = allProducts.find((p: any) => p.id === searchParams.get("mb"));
         const uRam = allProducts.find((p: any) => p.id === searchParams.get("ram"));
         const uGpu = allProducts.find((p: any) => p.id === searchParams.get("gpu"));
+        const uSsd = allProducts.find((p: any) => p.id === searchParams.get("ssd"));
+        const uHdd = allProducts.find((p: any) => p.id === searchParams.get("hdd"));
         const uCase = allProducts.find((p: any) => p.id === searchParams.get("case"));
         const uPsu = allProducts.find((p: any) => p.id === searchParams.get("psu"));
         const uCooler = allProducts.find((p: any) => p.id === searchParams.get("cooler"));
+        const uOs = allProducts.find((p: any) => p.id === searchParams.get("os"));
 
         if (uBrand) setBrand(uBrand);
         if (uCpu) setCpu(uCpu);
         if (uMb) setMb(uMb);
         if (uRam) setRam(uRam);
         if (uGpu) setGpu(uGpu);
+        if (uSsd) setSsd(uSsd);
+        if (uHdd) setHdd(uHdd);
         if (uCase) setPcCase(uCase);
         if (uPsu) setPsu(uPsu);
         if (uCooler) setCooler(uCooler);
+        if (uOs) setOs(uOs);
 
-        if (uCpu && uGpu && uCase && uCooler) {
+        // Advance to review if core components are selected
+        if (uCpu && uGpu && uCase && uCooler && uSsd) {
           setStepIndex(STEPS.indexOf("review"));
         }
       } catch (err) { console.error(err); } finally { setLoading(false); }
@@ -137,15 +152,27 @@ function BuilderContent() {
   }, []); 
 
   const handleSelection = (type: string, p: ProductNode) => {
-    let nextState = { brand, cpu, mb, ram, gpu, pcCase, psu, cooler };
+    let nextState = { brand, cpu, mb, ram, gpu, ssd, hdd, pcCase, psu, cooler, os };
     if (type === "cpu") { setCpu(p); nextState.cpu = p; }
     else if (type === "mb") { setMb(p); nextState.mb = p; }
     else if (type === "ram") { setRam(p); nextState.ram = p; }
     else if (type === "gpu") { setGpu(p); nextState.gpu = p; }
+    else if (type === "ssd") { setSsd(p); nextState.ssd = p; }
+    else if (type === "hdd") { setHdd(p); nextState.hdd = p; }
     else if (type === "pcCase") { setPcCase(p); nextState.pcCase = p; }
     else if (type === "psu") { setPsu(p); nextState.psu = p; }
     else if (type === "cooler") { setCooler(p); nextState.cooler = p; }
+    else if (type === "os") { setOs(p); nextState.os = p; }
 
+    updateURL(nextState);
+    setStepIndex((prev) => prev + 1);
+  };
+
+  const handleSkip = () => {
+    let nextState = { brand, cpu, mb, ram, gpu, ssd, hdd, pcCase, psu, cooler, os };
+    if (STEPS[stepIndex] === "hdd") { setHdd(null); nextState.hdd = null; }
+    if (STEPS[stepIndex] === "os") { setOs(null); nextState.os = null; }
+    
     updateURL(nextState);
     setStepIndex((prev) => prev + 1);
   };
@@ -156,13 +183,13 @@ function BuilderContent() {
   };
 
   const totalPrice = () => {
-    const compPrice = [cpu, mb, ram, gpu, pcCase, psu, cooler].reduce((sum, p) => sum + Number(p?.variants.edges[0]?.node.price.amount || 0), 0);
+    const compPrice = [cpu, mb, ram, gpu, ssd, hdd, pcCase, psu, cooler, os].reduce((sum, p) => sum + Number(p?.variants.edges[0]?.node.price.amount || 0), 0);
     return compPrice + ASSEMBLY_FEE;
   };
 
   const handleCheckout = async () => {
     setIsProcessing(true);
-    const summary = [cpu, mb, ram, gpu, pcCase, psu, cooler].filter(Boolean).map(p => p?.title).join(", ") + " | + Slaganje (200€)";
+    const summary = [cpu, mb, ram, gpu, ssd, hdd, pcCase, psu, cooler, os].filter(Boolean).map(p => p?.title).join(", ") + " | + Slaganje (200€)";
     try {
       const res = await fetch('/api/checkout', {
         method: 'POST',
@@ -207,6 +234,17 @@ function BuilderContent() {
         {stepIndex > 0 && stepIndex < STEPS.length - 1 && (
           <div>
             <h1 style={{ textTransform: "capitalize" }}>Odaberi {STEPS[stepIndex]}</h1>
+            
+            {/* OPTIONAL STEPS SKIP BUTTON */}
+            {["hdd", "os"].includes(STEPS[stepIndex]) && (
+              <button 
+                style={{ ...btnStyle, marginBottom: "20px", width: "100%", background: "#f8f9fa", border: "1px dashed #ccc", color: "#666" }} 
+                onClick={handleSkip}
+              >
+                Preskoči ovaj korak (Nije obavezno) ⏭️
+              </button>
+            )}
+
             {products.filter(p => {
               const type = p.pcfType?.value;
               
@@ -214,6 +252,9 @@ function BuilderContent() {
               if (STEPS[stepIndex] === "motherboard") return type === "motherboard" && p.pcfSocket?.value === cpu?.pcfSocket?.value;
               if (STEPS[stepIndex] === "ram") return type === "ram" && p.pcfRamType?.value === mb?.pcfRamType?.value;
               if (STEPS[stepIndex] === "gpu") return type === "gpu";
+              if (STEPS[stepIndex] === "ssd") return type === "ssd";
+              if (STEPS[stepIndex] === "hdd") return type === "hdd";
+              if (STEPS[stepIndex] === "os") return type === "os";
               
               if (STEPS[stepIndex] === "case") {
                 if (type !== "case") return false;
@@ -236,24 +277,18 @@ function BuilderContent() {
               
               return false;
             })
-            // --- NEW: SORTING LOGIC ---
             .sort((a, b) => {
-              const weights: Record<string, number> = { 
-                "excellent": 4, 
-                "very good": 3, 
-                "good": 2, 
-                "average": 1 
-              };
+              const weights: Record<string, number> = { "excellent": 4, "very good": 3, "good": 2, "average": 1 };
               const wA = weights[a.pcfQuality?.value?.toLowerCase() || ""] || 0;
               const wB = weights[b.pcfQuality?.value?.toLowerCase() || ""] || 0;
-              return wB - wA; // Sorts highest numbers (Excellent) to the top
+              return wB - wA; 
             })
             .map((p) => (
               <button 
                 key={p.id} 
                 style={cardStyle} 
                 onClick={() => {
-                  const typeMap: any = { cpu: "cpu", motherboard: "mb", ram: "ram", gpu: "gpu", case: "pcCase", psu: "psu", cooler: "cooler" };
+                  const typeMap: any = { cpu: "cpu", motherboard: "mb", ram: "ram", gpu: "gpu", ssd: "ssd", hdd: "hdd", case: "pcCase", psu: "psu", cooler: "cooler", os: "os" };
                   handleSelection(typeMap[STEPS[stepIndex]], p);
                 }}
               >
@@ -298,9 +333,12 @@ function BuilderContent() {
         <SidebarRow label="Matična" val={mb?.title} />
         <SidebarRow label="Memorija" val={ram?.title} />
         <SidebarRow label="Grafička" val={gpu?.title} />
+        <SidebarRow label="SSD" val={ssd?.title} />
+        <SidebarRow label="HDD" val={hdd?.title} />
         <SidebarRow label="Kućište" val={pcCase?.title} />
         <SidebarRow label="Napajanje" val={psu?.title} />
         <SidebarRow label="Hladnjak" val={cooler?.title} />
+        <SidebarRow label="Sustav" val={os?.title} />
         
         <hr style={{ margin: "20px 0", border: "0", borderTop: "1px solid #eee" }} />
         
