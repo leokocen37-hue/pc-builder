@@ -45,6 +45,7 @@ function BuilderContent() {
   const [cooler, setCooler] = useState<ProductNode | null>(null);
 
   const ASSEMBLY_FEE = 200;
+  const isReviewStep = STEPS[stepIndex] === "review";
 
   const updateURL = useCallback((selections: any) => {
     const params = new URLSearchParams();
@@ -91,7 +92,6 @@ function BuilderContent() {
         const allProducts = data.products.edges.map((e: any) => e.node);
         setProducts(allProducts);
 
-        // SYNC FROM URL
         const uBrand = searchParams.get("brand");
         const uCpu = allProducts.find((p: any) => p.id === searchParams.get("cpu"));
         const uMb = allProducts.find((p: any) => p.id === searchParams.get("mb"));
@@ -110,25 +110,17 @@ function BuilderContent() {
         if (uPsu) setPsu(uPsu);
         if (uCooler) setCooler(uCooler);
 
-        // ONLY jump to review if it's a COMPLETE build from a shared link
         if (uCpu && uGpu && uCase && uCooler) {
           setStepIndex(STEPS.indexOf("review"));
         }
-
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
+      } catch (err) { console.error(err); } finally { setLoading(false); }
     }
     fetchAndSync();
-    // We only want this to run once on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); 
 
   const handleSelection = (type: string, p: ProductNode) => {
     let nextState = { brand, cpu, mb, ram, gpu, pcCase, psu, cooler };
-
     if (type === "cpu") { setCpu(p); nextState.cpu = p; }
     else if (type === "mb") { setMb(p); nextState.mb = p; }
     else if (type === "ram") { setRam(p); nextState.ram = p; }
@@ -205,6 +197,7 @@ function BuilderContent() {
                 handleSelection(typeMap[STEPS[stepIndex]], p);
               }}>
                 <span>{p.title}</span>
+                {/* Price is still visible on individual buttons so they know what they are picking */}
                 <strong>{p.variants.edges[0].node.price.amount} €</strong>
               </button>
             ))}
@@ -214,17 +207,18 @@ function BuilderContent() {
         {STEPS[stepIndex] === "review" && (
           <div style={{ textAlign: "center", padding: "40px", background: "#f8f9fa", borderRadius: "15px" }}>
             <h1>Build je spreman!</h1>
+            <p style={{ fontSize: "24px", margin: "20px 0", fontWeight: "bold" }}>Ukupna cijena: {totalPrice().toFixed(2)} €</p>
             <button disabled={isProcessing} onClick={handleCheckout} style={checkoutBtnStyle}>
-              {isProcessing ? "Obrađujem..." : `Plati — ${totalPrice().toFixed(2)} €`}
+              {isProcessing ? "Obrađujem..." : `Naruči i Plati`}
             </button>
           </div>
         )}
 
-        {stepIndex > 0 && <button onClick={() => setStepIndex(stepIndex - 1)} style={{ marginTop: "30px", cursor: "pointer" }}>← Natrag</button>}
+        {stepIndex > 0 && <button onClick={() => setStepIndex(stepIndex - 1)} style={{ marginTop: "30px", cursor: "pointer", background: "none", border: "1px solid #ccc", padding: "8px 15px", borderRadius: "5px" }}>← Natrag</button>}
       </div>
 
-      <div style={{ flex: 1, border: "1px solid #e0e0e0", borderRadius: "16px", padding: "25px" }}>
-        <h3>Pregled</h3>
+      <div style={{ flex: 1, border: "1px solid #e0e0e0", borderRadius: "16px", padding: "25px", background: "#fff", height: "fit-content" }}>
+        <h3 style={{ marginTop: 0 }}>Vaša Konfiguracija</h3>
         <SidebarRow label="Procesor" val={cpu?.title} />
         <SidebarRow label="Matična" val={mb?.title} />
         <SidebarRow label="Memorija" val={ram?.title} />
@@ -232,8 +226,17 @@ function BuilderContent() {
         <SidebarRow label="Kućište" val={pcCase?.title} />
         <SidebarRow label="Napajanje" val={psu?.title} />
         <SidebarRow label="Hladnjak" val={cooler?.title} />
-        <div style={{ marginTop: "20px", fontWeight: "bold" }}>Ukupno: {totalPrice().toFixed(2)} €</div>
-        <button onClick={shareBuild} style={{ width: "100%", marginTop: "20px", cursor: "pointer" }}>🔗 Podijeli</button>
+        
+        <hr style={{ margin: "20px 0", border: "0", borderTop: "1px solid #eee" }} />
+        
+        <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold", fontSize: "18px" }}>
+          <span>Ukupno:</span>
+          <span>{isReviewStep ? `${totalPrice().toFixed(2)} €` : "—"}</span>
+        </div>
+        
+        {!isReviewStep && <p style={{ fontSize: "12px", color: "#999", marginTop: "10px" }}>* Ukupna cijena bit će vidljiva na kraju.</p>}
+        
+        <button onClick={shareBuild} style={{ width: "100%", marginTop: "20px", padding: "10px", borderRadius: "8px", border: "1px solid #007bff", color: "#007bff", background: "#fff", cursor: "pointer" }}>🔗 Podijeli build</button>
       </div>
     </div>
   );
@@ -248,9 +251,9 @@ export default function Builder() {
 }
 
 function SidebarRow({ label, val }: { label: string; val?: string }) {
-  return <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", marginBottom: "8px" }}><span>{label}:</span><span>{val || "—"}</span></div>;
+  return <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", marginBottom: "10px" }}><span style={{ color: "#888" }}>{label}:</span><span style={{ textAlign: "right", marginLeft: "10px" }}>{val || "—"}</span></div>;
 }
 
-const btnStyle = { flex: 1, padding: "20px", cursor: "pointer", border: "1px solid #ddd", background: "#fff", borderRadius: "8px" };
-const checkoutBtnStyle = { width: "100%", padding: "20px", background: "#000", color: "#fff", fontWeight: "bold", cursor: "pointer", borderRadius: "8px" };
-const cardStyle = { display: "flex", justifyContent: "space-between", width: "100%", padding: "15px", marginBottom: "10px", cursor: "pointer", border: "1px solid #eee", background: "#fff", borderRadius: "8px" };
+const btnStyle = { flex: 1, padding: "20px", cursor: "pointer", border: "1px solid #ddd", background: "#fff", borderRadius: "8px", fontSize: "18px" };
+const checkoutBtnStyle = { width: "100%", padding: "20px", background: "#000", color: "#fff", fontWeight: "bold", cursor: "pointer", borderRadius: "8px", fontSize: "18px", border: "none" };
+const cardStyle = { display: "flex", justifyContent: "space-between", width: "100%", padding: "15px", marginBottom: "10px", cursor: "pointer", border: "1px solid #eee", background: "#fff", borderRadius: "8px", fontSize: "16px" };
