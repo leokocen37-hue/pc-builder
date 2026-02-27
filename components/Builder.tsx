@@ -24,7 +24,6 @@ type ProductNode = {
   pcfQuality?: { value: string };
 };
 
-// ADDED: ssd, hdd, os to the steps
 type Step = "brand" | "cpu" | "motherboard" | "ram" | "gpu" | "ssd" | "hdd" | "case" | "psu" | "cooler" | "os" | "review";
 const STEPS: Step[] = ["brand", "cpu", "motherboard", "ram", "gpu", "ssd", "hdd", "case", "psu", "cooler", "os", "review"];
 
@@ -49,11 +48,11 @@ function BuilderContent() {
   const [cooler, setCooler] = useState<ProductNode | null>(null);
   const [os, setOs] = useState<ProductNode | null>(null);
 
+  // Hidden internal fee added to the final math
   const ASSEMBLY_FEE = 200;
   const isReviewStep = STEPS[stepIndex] === "review";
 
   const calculateSystemTDP = () => {
-    // We do not need to add SSD/HDD to this array because the +100W buffer perfectly covers them!
     const parts = [cpu, mb, ram, gpu, pcCase, cooler];
     const componentsDraw = parts.reduce((sum, part) => {
       return sum + Number(part?.pcfTdp?.value || 0);
@@ -141,7 +140,6 @@ function BuilderContent() {
         if (uCooler) setCooler(uCooler);
         if (uOs) setOs(uOs);
 
-        // Advance to review if core components are selected
         if (uCpu && uGpu && uCase && uCooler && uSsd) {
           setStepIndex(STEPS.indexOf("review"));
         }
@@ -189,7 +187,8 @@ function BuilderContent() {
 
   const handleCheckout = async () => {
     setIsProcessing(true);
-    const summary = [cpu, mb, ram, gpu, ssd, hdd, pcCase, psu, cooler, os].filter(Boolean).map(p => p?.title).join(", ") + " | + Slaganje (200€)";
+    // Silent summary without fee disclosure
+    const summary = [cpu, mb, ram, gpu, ssd, hdd, pcCase, psu, cooler, os].filter(Boolean).map(p => p?.title).join(", ");
     try {
       const res = await fetch('/api/checkout', {
         method: 'POST',
@@ -235,7 +234,6 @@ function BuilderContent() {
           <div>
             <h1 style={{ textTransform: "capitalize" }}>Odaberi {STEPS[stepIndex]}</h1>
             
-            {/* OPTIONAL STEPS SKIP BUTTON */}
             {["hdd", "os"].includes(STEPS[stepIndex]) && (
               <button 
                 style={{ ...btnStyle, marginBottom: "20px", width: "100%", background: "#f8f9fa", border: "1px dashed #ccc", color: "#666" }} 
@@ -317,7 +315,7 @@ function BuilderContent() {
             <p style={{ fontSize: "28px", margin: "20px 0", fontWeight: "bold", color: "#28a745" }}>
               Ukupna cijena: {totalPrice().toFixed(2)} €
             </p>
-            <p style={{ color: "#666", fontSize: "14px" }}>(Uključeno slaganje i PDV)</p>
+            <p style={{ color: "#666", fontSize: "14px" }}>(Uključen PDV)</p>
             <button disabled={isProcessing} onClick={handleCheckout} style={checkoutBtnStyle}>
               {isProcessing ? "Obrađujem..." : `Naruči i Plati`}
             </button>
