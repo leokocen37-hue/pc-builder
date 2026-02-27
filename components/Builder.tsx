@@ -47,17 +47,25 @@ function BuilderContent() {
   const ASSEMBLY_FEE = 200;
   const isReviewStep = STEPS[stepIndex] === "review";
 
-  // --- POWER METER LOGIC ---
-  const tdpCpu = Number(cpu?.pcfTdp?.value || 0);
-  const tdpGpu = Number(gpu?.pcfTdp?.value || 0);
-  const systemBuffer = (tdpCpu > 0 || tdpGpu > 0) ? 100 : 0; // 100W buffer for MB, RAM, Fans
-  const estimatedDraw = tdpCpu + tdpGpu + systemBuffer;
+  // --- DYNAMIC FULL-SYSTEM POWER METER LOGIC ---
+  // Calculates the sum of pcf.tdp for ALL currently selected components
+  const calculateSystemTDP = () => {
+    const parts = [cpu, mb, ram, gpu, pcCase, cooler]; // PSU provides power, doesn't consume it here
+    const componentsDraw = parts.reduce((sum, part) => {
+      return sum + Number(part?.pcfTdp?.value || 0);
+    }, 0);
+    
+    // Add 50W base buffer for Storage (SSDs) and USB peripherals
+    return componentsDraw > 0 ? componentsDraw + 50 : 0; 
+  };
+
+  const estimatedDraw = calculateSystemTDP();
   const psuCapacity = Number(psu?.pcfWattage?.value || 0);
 
-  // Calculate percentage for the visual bar (cap at 100%)
+  // Calculate percentage for the visual bar
   const powerPercentage = psuCapacity > 0 
     ? Math.min((estimatedDraw / psuCapacity) * 100, 100) 
-    : Math.min((estimatedDraw / 1000) * 100, 100); // Default scale to 1000W if no PSU selected
+    : Math.min((estimatedDraw / 1000) * 100, 100);
 
   const updateURL = useCallback((selections: any) => {
     const params = new URLSearchParams();
@@ -200,7 +208,13 @@ function BuilderContent() {
               if (STEPS[stepIndex] === "ram") return type === "ram" && p.pcfRamType?.value === mb?.pcfRamType?.value;
               if (STEPS[stepIndex] === "gpu") return type === "gpu";
               if (STEPS[stepIndex] === "case") return type === "case" && p.pcfSupportedFormFactors?.value?.split(",").map(s => s.trim().toLowerCase()).includes(mb?.pcfFormFactor?.value?.toLowerCase() || "");
-              if (STEPS[stepIndex] === "psu") return type === "psu" && Number(p.pcfWattage?.value || 0) >= (Number(cpu?.pcfTdp?.value || 0) + Number(gpu?.pcfTdp?.value || 0) + 150);
+              
+              // NEW PSU FILTER: Demands PSU wattage to be greater than the EXACT current draw + 100W Headroom for safety
+              if (STEPS[stepIndex] === "psu") {
+                const requiredWattage = calculateSystemTDP() + 100;
+                return type === "psu" && Number(p.pcfWattage?.value || 0) >= requiredWattage;
+              }
+              
               if (STEPS[stepIndex] === "cooler") return type === "cooler" && p.pcfSocket?.value?.split(",").map(s => s.trim().toLowerCase()).includes(cpu?.pcfSocket?.value?.toLowerCase() || "");
               return false;
             }).map((p) => (
@@ -246,11 +260,10 @@ function BuilderContent() {
         {(estimatedDraw > 0) && (
           <div style={{ marginBottom: "20px", padding: "15px", background: "#f8f9fa", borderRadius: "8px", border: "1px solid #eee" }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", fontSize: "13px", fontWeight: "bold", color: "#333" }}>
-              <span>Potrošnja (TDP):</span>
+              <span>Potrošnja sustava:</span>
               <span>{estimatedDraw}W {psuCapacity > 0 ? `/ ${psuCapacity}W` : ""}</span>
             </div>
             
-            {/* The Bar */}
             <div style={{ width: "100%", height: "8px", background: "#e0e0e0", borderRadius: "4px", overflow: "hidden" }}>
               <div style={{ 
                 height: "100%", 
@@ -260,10 +273,9 @@ function BuilderContent() {
               }} />
             </div>
             
-            {/* Status Text */}
             <p style={{ fontSize: "11px", color: "#777", marginTop: "8px", textAlign: "right" }}>
               {psuCapacity === 0 
-                ? "*Uključuje 100W rezerve za sustav." 
+                ? "*Uključeno ~50W za diskove i periferiju." 
                 : (estimatedDraw >= psuCapacity ? "Upozorenje: Napajanje je preslabo!" : "Napajanje je optimalno.")}
             </p>
           </div>
