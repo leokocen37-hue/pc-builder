@@ -116,7 +116,6 @@ function BuilderContent() {
 
   const bottleneckWarning = checkBottleneck();
 
-  // ONLY updates URL when reaching the Review Step
   useEffect(() => {
     if (STEPS[stepIndex] === "review") {
       const params = new URLSearchParams();
@@ -197,7 +196,7 @@ function BuilderContent() {
 
   const handleSelection = (type: string, p: ProductNode) => {
     if (type === "cpu") setCpu(p);
-    else if (type === "mb") setMb(p);
+    else if (type === "motherboard") setMb(p); // MATCHES STEPS ARRAY EXACTLY
     else if (type === "ram") setRam(p);
     else if (type === "gpu") setGpu(p);
     else if (type === "gpu2") setGpu2(p);
@@ -205,7 +204,7 @@ function BuilderContent() {
     else if (type === "ssd2") setSsd2(p);
     else if (type === "hdd") setHdd(p);
     else if (type === "hdd2") setHdd2(p);
-    else if (type === "pcCase") setPcCase(p);
+    else if (type === "case") setPcCase(p); // MATCHES STEPS ARRAY EXACTLY
     else if (type === "psu") setPsu(p);
     else if (type === "cooler") setCooler(p);
     else if (type === "os") setOs(p);
@@ -230,7 +229,7 @@ function BuilderContent() {
     setGpu(null); setGpu2(null); setSsd(null); setSsd2(null); 
     setHdd(null); setHdd2(null); setPcCase(null); setPsu(null); 
     setCooler(null); setOs(null);
-    router.replace(window.location.pathname, { scroll: false }); // Wipes URL clean
+    router.replace(window.location.pathname, { scroll: false }); 
   };
 
   const shareBuild = () => {
@@ -261,20 +260,19 @@ function BuilderContent() {
     }
   };
 
-  // NEW: Dynamic Badge Colors based on text
   const getBadgeStyle = (badgeText: string) => {
     const t = badgeText.toLowerCase();
     if (t.includes("ultimativni") || t.includes("kompromisa") || t.includes("apsolutni") || t.includes("profesionalce") || t.includes("trezor")) 
-      return { bg: "#6f42c1", color: "#fff" }; // Premium Purple
+      return { bg: "#6f42c1", color: "#fff" }; 
     if (t.includes("best buy") || t.includes("kralj")) 
-      return { bg: "#fd7e14", color: "#fff" }; // Bright Orange
+      return { bg: "#fd7e14", color: "#fff" }; 
     if (t.includes("zlatna") || t.includes("standard")) 
-      return { bg: "#ffc107", color: "#000" }; // Gold/Yellow
+      return { bg: "#ffc107", color: "#000" }; 
     if (t.includes("budžet") || t.includes("osnovni") || t.includes("start")) 
-      return { bg: "#20c997", color: "#fff" }; // Teal/Green
+      return { bg: "#20c997", color: "#fff" }; 
     if (t.includes("premium") || t.includes("masivna") || t.includes("maksimalna") || t.includes("zvijer")) 
-      return { bg: "#343a40", color: "#fff" }; // Dark Graphite
-    return { bg: "#007bff", color: "#fff" }; // Default Blue
+      return { bg: "#343a40", color: "#fff" }; 
+    return { bg: "#007bff", color: "#fff" }; 
   };
 
   if (loading) return <div style={{ padding: "100px", textAlign: "center" }}>Učitavanje...</div>;
@@ -346,9 +344,8 @@ function BuilderContent() {
             .sort((a, b) => {
               const wA = getQualityScore(a.pcfQuality?.value);
               const wB = getQualityScore(b.pcfQuality?.value);
-              if (wB !== wA) return wB - wA; // Sort by quality tier first
+              if (wB !== wA) return wB - wA; 
               
-              // Secondary Sort: Price High to Low (Puts 5090 next to 7900 XTX!)
               const priceA = Number(a.variants.edges[0]?.node.price.amount || 0);
               const priceB = Number(b.variants.edges[0]?.node.price.amount || 0);
               return priceB - priceA; 
@@ -473,7 +470,6 @@ function BuilderContent() {
           Uključuje uslugu slaganja ({ASSEMBLY_FEE} €)
         </p>
 
-        {/* NEW BACK TO START BUTTON */}
         <button 
           onClick={resetBuild} 
           style={{ width: "100%", marginTop: "25px", padding: "12px", borderRadius: "8px", border: "none", color: "#fff", background: "#dc3545", cursor: "pointer", fontWeight: "bold", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px" }}
@@ -494,7 +490,7 @@ export default function Builder() {
 }
 
 function SidebarRow({ label, val }: { label: string; val?: string }) {
-  if (!val) return null; // Only show rows that are selected!
+  if (!val) return null; 
   return (
     <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", marginBottom: "12px", borderBottom: "1px dashed #eee", paddingBottom: "4px" }}>
       <span style={{ color: "#666", minWidth: "80px" }}>{label}:</span>
