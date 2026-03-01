@@ -67,6 +67,34 @@ function BuilderContent() {
     ? Math.min((estimatedDraw / psuCapacity) * 100, 100) 
     : Math.min((estimatedDraw / 1000) * 100, 100);
 
+  // BOTTLENECK CHECKER LOGIC
+  const getQualityScore = (quality?: string) => {
+    const q = (quality || "").toLowerCase();
+    if (q === "excellent") return 4;
+    if (q === "very good") return 3;
+    if (q === "good") return 2;
+    if (q === "average") return 1;
+    return 0;
+  };
+
+  const checkBottleneck = () => {
+    if (!cpu || !gpu) return null;
+    const cpuScore = getQualityScore(cpu.pcfQuality?.value);
+    const gpuScore = getQualityScore(gpu.pcfQuality?.value);
+
+    // If GPU is high-end (3+) but CPU is budget (2 or lower)
+    if (gpuScore >= 3 && cpuScore <= 2 && (gpuScore - cpuScore >= 2)) {
+      return "⚠️ Upozorenje (Bottleneck): Vaš procesor je znatno slabiji od odabrane grafičke kartice. Grafička kartica neće moći raditi punim kapacitetom. Preporučujemo jači procesor.";
+    }
+    // If CPU is high-end (4) but GPU is budget (2 or lower)
+    if (cpuScore >= 4 && gpuScore <= 2) {
+      return "ℹ️ Napomena: Odabrali ste vrhunski procesor i budžet grafičku karticu. Ovo je odlično za radne stanice, ali za gaming razmislite o jačoj grafičkoj kartici.";
+    }
+    return null;
+  };
+
+  const bottleneckWarning = checkBottleneck();
+
   const updateURL = useCallback((selections: any) => {
     const params = new URLSearchParams();
     if (selections.brand) params.set("brand", selections.brand);
@@ -340,6 +368,13 @@ function BuilderContent() {
         
         <hr style={{ margin: "20px 0", border: "0", borderTop: "1px solid #eee" }} />
         
+        {/* NEW BOTTLENECK WARNING BOX */}
+        {bottleneckWarning && (
+          <div style={{ marginBottom: "20px", padding: "12px", background: "#fff3cd", borderRadius: "8px", border: "1px solid #ffeeba", color: "#856404", fontSize: "13px", lineHeight: "1.4" }}>
+            {bottleneckWarning}
+          </div>
+        )}
+
         {(estimatedDraw > 0) && (
           <div style={{ marginBottom: "20px", padding: "15px", background: "#f8f9fa", borderRadius: "8px", border: "1px solid #eee" }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", fontSize: "13px", fontWeight: "bold", color: "#333" }}>
