@@ -78,6 +78,7 @@ function BuilderContent() {
   const [os, setOs] = useState<ProductNode | null>(null);
 
   const ASSEMBLY_FEE = 200;
+  const isReviewStep = STEPS[stepIndex] === "review";
 
   const calculateSystemTDP = () => {
     const parts = [cpu, mb, ram, gpu, gpu2, pcCase, cooler];
@@ -117,7 +118,7 @@ function BuilderContent() {
   const bottleneckWarning = checkBottleneck();
 
   useEffect(() => {
-    if (STEPS[stepIndex] === "review") {
+    if (isReviewStep) {
       const params = new URLSearchParams();
       if (brand) params.set("brand", brand);
       if (cpu?.id) params.set("cpu", cpu.id);
@@ -196,7 +197,7 @@ function BuilderContent() {
 
   const handleSelection = (type: string, p: ProductNode) => {
     if (type === "cpu") setCpu(p);
-    else if (type === "motherboard") setMb(p); // MATCHES STEPS ARRAY EXACTLY
+    else if (type === "motherboard") setMb(p); 
     else if (type === "ram") setRam(p);
     else if (type === "gpu") setGpu(p);
     else if (type === "gpu2") setGpu2(p);
@@ -204,7 +205,7 @@ function BuilderContent() {
     else if (type === "ssd2") setSsd2(p);
     else if (type === "hdd") setHdd(p);
     else if (type === "hdd2") setHdd2(p);
-    else if (type === "case") setPcCase(p); // MATCHES STEPS ARRAY EXACTLY
+    else if (type === "case") setPcCase(p); 
     else if (type === "psu") setPsu(p);
     else if (type === "cooler") setCooler(p);
     else if (type === "os") setOs(p);
@@ -237,9 +238,13 @@ function BuilderContent() {
     alert("Link za vašu konfiguraciju je kopiran!");
   };
 
-  const totalPrice = () => {
-    const compPrice = [cpu, mb, ram, gpu, gpu2, ssd, ssd2, hdd, hdd2, pcCase, psu, cooler, os].reduce((sum, p) => sum + Number(p?.variants.edges[0]?.node.price.amount || 0), 0);
-    return compPrice + ASSEMBLY_FEE;
+  // NEW PRICING LOGIC
+  const currentTotal = () => {
+    const compPrice = [cpu, mb, ram, gpu, gpu2, ssd, ssd2, hdd, hdd2, pcCase, psu, cooler, os]
+      .reduce((sum, p) => sum + Number(p?.variants.edges[0]?.node.price.amount || 0), 0);
+    
+    // ONLY add the 200 fee if they are on the final Review step
+    return isReviewStep ? compPrice + ASSEMBLY_FEE : compPrice;
   };
 
   const handleCheckout = async () => {
@@ -249,7 +254,7 @@ function BuilderContent() {
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ totalPrice: totalPrice(), summary }),
+        body: JSON.stringify({ totalPrice: currentTotal(), summary }),
       });
       const data = await res.json();
       if (data.draftOrder?.invoiceUrl) window.location.href = data.draftOrder.invoiceUrl;
@@ -266,7 +271,7 @@ function BuilderContent() {
       return { bg: "#6f42c1", color: "#fff" }; 
     if (t.includes("best buy") || t.includes("kralj")) 
       return { bg: "#fd7e14", color: "#fff" }; 
-    if (t.includes("zlatna") || t.includes("standard")) 
+    if (t.includes("zlatna") || t.includes("standard") || t.includes("radna stanica")) 
       return { bg: "#ffc107", color: "#000" }; 
     if (t.includes("budžet") || t.includes("osnovni") || t.includes("start")) 
       return { bg: "#20c997", color: "#fff" }; 
@@ -342,13 +347,24 @@ function BuilderContent() {
               return false;
             })
             .sort((a, b) => {
+              // 1. Sort by Quality Tier (Excellent > Very Good > etc)
               const wA = getQualityScore(a.pcfQuality?.value);
               const wB = getQualityScore(b.pcfQuality?.value);
               if (wB !== wA) return wB - wA; 
               
+              // 2. Sort by Price (Highest to Lowest)
               const priceA = Number(a.variants.edges[0]?.node.price.amount || 0);
               const priceB = Number(b.variants.edges[0]?.node.price.amount || 0);
-              return priceB - priceA; 
+              if (priceB !== priceA) return priceB - priceA; 
+
+              // 3. FALLBACK: If prices are 0, sort by TDP! 
+              // (Forces 5090 [575W] and 7900 XTX [355W] to the absolute top of the Excellent tier)
+              const tdpA = Number(a.pcfTdp?.value || 0);
+              const tdpB = Number(b.pcfTdp?.value || 0);
+              if (tdpB !== tdpA) return tdpB - tdpA;
+
+              // 4. Final Fallback: Alphabetical
+              return a.title.localeCompare(b.title);
             })
             .map((p) => {
               const price = Number(p.variants.edges[0]?.node.price.amount || 0);
@@ -391,9 +407,9 @@ function BuilderContent() {
           <div style={{ textAlign: "center", padding: "40px", background: "#f8f9fa", borderRadius: "15px", border: "1px solid #ddd" }}>
             <h1>🎉 Build je spreman!</h1>
             <p style={{ fontSize: "28px", margin: "20px 0", fontWeight: "bold", color: "#28a745" }}>
-              Ukupna cijena: {totalPrice().toFixed(2)} €
+              Ukupna cijena: {currentTotal().toFixed(2)} €
             </p>
-            <p style={{ color: "#666", fontSize: "14px" }}>(Uključen PDV i usluga slaganja)</p>
+            <p style={{ color: "#666", fontSize: "14px" }}>(Uključen PDV i usluga slaganja od {ASSEMBLY_FEE} €)</p>
             <button disabled={isProcessing} onClick={handleCheckout} style={checkoutBtnStyle}>
               {isProcessing ? "Obrađujem..." : `Naruči i Plati`}
             </button>
@@ -463,12 +479,18 @@ function BuilderContent() {
 
         <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold", fontSize: "20px", color: "#000" }}>
           <span>Ukupno:</span>
-          <span>{totalPrice().toFixed(2)} €</span>
+          <span>{currentTotal().toFixed(2)} €</span>
         </div>
         
-        <p style={{ fontSize: "12px", color: "#999", marginTop: "5px", textAlign: "right" }}>
-          Uključuje uslugu slaganja ({ASSEMBLY_FEE} €)
-        </p>
+        {isReviewStep ? (
+          <p style={{ fontSize: "12px", color: "#999", marginTop: "5px", textAlign: "right", fontWeight: "bold" }}>
+            Uključuje uslugu slaganja ({ASSEMBLY_FEE} €)
+          </p>
+        ) : (
+          <p style={{ fontSize: "12px", color: "#999", marginTop: "5px", textAlign: "right" }}>
+            * Usluga slaganja ({ASSEMBLY_FEE} €) bit će dodana na kraju.
+          </p>
+        )}
 
         <button 
           onClick={resetBuild} 
