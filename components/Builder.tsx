@@ -8,7 +8,7 @@ type ProductNode = {
   id: string;
   title: string;
   variants: { edges: { node: { id: string; title: string; price: { amount: string } } }[] };
-  selectedVariant?: any; // NEW: Stores the specific variant they chose from the dropdown
+  selectedVariant?: any; 
   pcfType?: { value: string };
   pcfBrand?: { value: string };
   pcfSocket?: { value: string };
@@ -26,6 +26,7 @@ type ProductNode = {
   pcfBadge?: { value: string };
 };
 
+// CLEAN 12-STEP FLOW (Extra parts moved to Review page)
 type Step = "brand" | "cpu" | "motherboard" | "ram" | "gpu" | "ssd" | "hdd" | "case" | "psu" | "cooler" | "os" | "review";
 
 const STEPS: Step[] = [
@@ -58,6 +59,7 @@ function BuilderContent() {
   const [loading, setLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
 
+  // States for Upsells on Review Page
   const [addingExtra, setAddingExtra] = useState<"gpu2" | "ssd2" | "hdd2" | null>(null);
 
   const [brand, setBrand] = useState<string | null>(null);
@@ -83,7 +85,8 @@ function BuilderContent() {
     const componentsDraw = parts.reduce((sum, part) => {
       return sum + Number(part?.pcfTdp?.value || 0);
     }, 0);
-    return componentsDraw > 0 ? componentsDraw + 100 : 0; 
+    // Base 100W is ALWAYS added so the bar is always active
+    return componentsDraw + 100; 
   };
 
   const estimatedDraw = calculateSystemTDP();
@@ -105,10 +108,10 @@ function BuilderContent() {
     const gpuScore = getQualityScore(gpu.pcfQuality?.value);
 
     if (gpuScore >= 3 && cpuScore <= 2 && (gpuScore - cpuScore >= 2)) {
-      return "⚠️ Upozorenje (Bottleneck): Vaš procesor je znatno slabiji od odabrane grafičke kartice.";
+      return "⚠️ Upozorenje (Bottleneck): Vaš procesor je znatno slabiji od odabrane grafičke kartice. Grafička kartica neće moći raditi punim kapacitetom.";
     }
     if (cpuScore >= 4 && gpuScore <= 2) {
-      return "ℹ️ Napomena: Odabrali ste vrhunski procesor i budžet grafičku karticu.";
+      return "ℹ️ Napomena: Odabrali ste vrhunski procesor i budžet grafičku karticu. Odlično za radne stanice, ali za gaming razmislite o jačoj grafičkoj.";
     }
     return null;
   };
@@ -269,7 +272,11 @@ function BuilderContent() {
   const getSortedExtras = (type: string) => {
     return products
       .filter(p => p.pcfType?.value === type)
-      .sort((a, b) => Number(b.variants.edges[0]?.node.price.amount || 0) - Number(a.variants.edges[0]?.node.price.amount || 0));
+      .sort((a, b) => {
+         const priceA = Number(a.variants.edges[0]?.node.price.amount || 0);
+         const priceB = Number(b.variants.edges[0]?.node.price.amount || 0);
+         return priceB - priceA;
+      });
   };
 
   if (loading) return <div style={{ padding: "100px", textAlign: "center" }}>Učitavanje...</div>;
@@ -291,14 +298,14 @@ function BuilderContent() {
 
         {stepIndex > 0 && stepIndex < STEPS.length - 1 && (
           <div>
-            <h1 style={{ textTransform: "capitalize" }}>Odaberi: {STEP_LABELS[STEPS[stepIndex]]}</h1>
+            <h1 style={{ textTransform: "capitalize", marginBottom: "10px" }}>Odaberi: {STEP_LABELS[STEPS[stepIndex]]}</h1>
             
             {["hdd", "os"].includes(STEPS[stepIndex]) && (
               <button 
-                style={{ ...btnStyle, marginBottom: "20px", width: "100%", background: "#f8f9fa", border: "1px dashed #ccc", color: "#666" }} 
+                style={{ ...btnStyle, marginBottom: "20px", width: "100%", background: "#f8f9fa", border: "2px dashed #ccc", color: "#444", fontWeight: "bold" }} 
                 onClick={handleSkip}
               >
-                Preskoči ovaj korak (Nije obavezno) ⏭️
+                ⏭️ Preskoči ovaj korak (Nije obavezno)
               </button>
             )}
 
@@ -376,10 +383,11 @@ function BuilderContent() {
               </button>
             </div>
 
-            {/* UPSELL SECTION */}
+            {/* UPSELL SECTION (GPU, SSD, HDD) */}
             <div style={{ textAlign: "left", marginTop: "30px", padding: "25px", background: "#fff", borderRadius: "15px", border: "1px solid #ddd" }}>
               <h3 style={{ marginTop: 0, borderBottom: "2px solid #f0f0f0", paddingBottom: "10px", color: "#333" }}>Opcionalne Nadogradnje</h3>
               
+              {/* 2. GPU UPSELL */}
               <div style={{ marginTop: "15px" }}>
                 {!gpu2 ? (
                   <button onClick={() => setAddingExtra(addingExtra === "gpu2" ? null : "gpu2")} style={upsellBtnStyle}>
@@ -404,6 +412,59 @@ function BuilderContent() {
                   </div>
                 )}
               </div>
+
+              {/* 2. SSD UPSELL */}
+              <div style={{ marginTop: "15px" }}>
+                {!ssd2 ? (
+                  <button onClick={() => setAddingExtra(addingExtra === "ssd2" ? null : "ssd2")} style={upsellBtnStyle}>
+                    {addingExtra === "ssd2" ? "Odustani" : "➕ Dodaj 2. SSD (Dodatna brza pohrana)"}
+                  </button>
+                ) : (
+                  <div style={addedUpsellStyle}>
+                    <span><strong>2. SSD:</strong> {ssd2.title} {ssd2.selectedVariant && ssd2.selectedVariant.title !== "Default Title" ? `(${ssd2.selectedVariant.title})` : ""}</span>
+                    <button onClick={() => setSsd2(null)} style={removeBtnStyle}>✖ Ukloni</button>
+                  </div>
+                )}
+                
+                {addingExtra === "ssd2" && !ssd2 && (
+                  <div style={dropdownListStyle}>
+                    {getSortedExtras("ssd").flatMap(p => 
+                      p.variants.edges.map(v => (
+                        <button key={v.node.id} style={dropdownItemStyle} onClick={() => { setSsd2({ ...p, selectedVariant: v.node }); setAddingExtra(null); }}>
+                          {p.title} {v.node.title !== "Default Title" ? `- ${v.node.title}` : ""} <span style={{color: "#28a745", fontWeight: "bold"}}>{Number(v.node.price.amount).toFixed(2)} €</span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* 2. HDD UPSELL */}
+              <div style={{ marginTop: "15px" }}>
+                {!hdd2 ? (
+                  <button onClick={() => setAddingExtra(addingExtra === "hdd2" ? null : "hdd2")} style={upsellBtnStyle}>
+                    {addingExtra === "hdd2" ? "Odustani" : "➕ Dodaj 2. HDD (Masivna pohrana)"}
+                  </button>
+                ) : (
+                  <div style={addedUpsellStyle}>
+                    <span><strong>2. HDD:</strong> {hdd2.title} {hdd2.selectedVariant && hdd2.selectedVariant.title !== "Default Title" ? `(${hdd2.selectedVariant.title})` : ""}</span>
+                    <button onClick={() => setHdd2(null)} style={removeBtnStyle}>✖ Ukloni</button>
+                  </div>
+                )}
+                
+                {addingExtra === "hdd2" && !hdd2 && (
+                  <div style={dropdownListStyle}>
+                    {getSortedExtras("hdd").flatMap(p => 
+                      p.variants.edges.map(v => (
+                        <button key={v.node.id} style={dropdownItemStyle} onClick={() => { setHdd2({ ...p, selectedVariant: v.node }); setAddingExtra(null); }}>
+                          {p.title} {v.node.title !== "Default Title" ? `- ${v.node.title}` : ""} <span style={{color: "#28a745", fontWeight: "bold"}}>{Number(v.node.price.amount).toFixed(2)} €</span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+
             </div>
           </div>
         )}
@@ -429,6 +490,7 @@ function BuilderContent() {
         <SidebarRow label="SSD" item={ssd} />
         {ssd2 && <SidebarRow label="SSD 2" item={ssd2} />}
         {hdd && <SidebarRow label="HDD" item={hdd} /> }
+        {hdd2 && <SidebarRow label="HDD 2" item={hdd2} />}
         <SidebarRow label="Kućište" item={pcCase} />
         <SidebarRow label="Napajanje" item={psu} />
         <SidebarRow label="Hladnjak" item={cooler} />
@@ -441,6 +503,29 @@ function BuilderContent() {
             {bottleneckWarning}
           </div>
         )}
+
+        {/* ALWAY VISIBLE WATTAGE BAR */}
+        <div style={{ marginBottom: "20px", padding: "15px", background: "#f8f9fa", borderRadius: "8px", border: "1px solid #eee" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", fontSize: "13px", fontWeight: "bold", color: "#333" }}>
+            <span>Potrošnja sustava:</span>
+            <span>{estimatedDraw}W {psuCapacity > 0 ? `/ ${psuCapacity}W` : ""}</span>
+          </div>
+          
+          <div style={{ width: "100%", height: "8px", background: "#e0e0e0", borderRadius: "4px", overflow: "hidden" }}>
+            <div style={{ 
+              height: "100%", 
+              width: `${powerPercentage}%`, 
+              background: psuCapacity > 0 && estimatedDraw >= psuCapacity ? "#dc3545" : (psuCapacity > 0 ? "#28a745" : "#007bff"),
+              transition: "width 0.4s ease, background 0.4s ease" 
+            }} />
+          </div>
+          
+          <p style={{ fontSize: "11px", color: "#777", marginTop: "8px", textAlign: "right" }}>
+            {psuCapacity === 0 
+              ? "*Uključeno ~100W za matičnu i periferiju." 
+              : (estimatedDraw >= psuCapacity ? "Upozorenje: Napajanje je preslabo!" : "Napajanje je optimalno.")}
+          </p>
+        </div>
 
         <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold", fontSize: "20px", color: "#000" }}>
           <span>Ukupno:</span>
@@ -476,7 +561,7 @@ export default function Builder() {
   );
 }
 
-// Custom Component to render the dropdown if a product has variants
+// CLICK ANYWHERE ON CARD TO SELECT
 function VariantProductCard({ p, onSelect, getBadgeStyle }: any) {
   const variants = p.variants.edges;
   const hasVariants = variants.length > 1;
@@ -487,44 +572,43 @@ function VariantProductCard({ p, onSelect, getBadgeStyle }: any) {
   const badgeStyle = p.pcfBadge?.value ? getBadgeStyle(p.pcfBadge.value) : null;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", width: "100%", padding: "20px", marginBottom: "12px", border: "1px solid #e0e0e0", background: "#fff", borderRadius: "10px", transition: "all 0.2s ease-in-out" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", width: "100%" }}>
-        <div style={{ textAlign: "left", flex: 1, paddingRight: "15px" }}>
-          <span style={{ fontWeight: "600", color: "#000", fontSize: "18px" }}>{p.title}</span>
-          {p.pcfBadge?.value && badgeStyle && (
-            <div style={{ marginTop: "8px" }}>
-              <span style={{ fontSize: "11px", fontWeight: "bold", backgroundColor: badgeStyle.bg, color: badgeStyle.color, padding: "5px 12px", borderRadius: "12px", textTransform: "uppercase", letterSpacing: "0.5px", display: "inline-block" }}>
-                {p.pcfBadge.value}
-              </span>
-            </div>
-          )}
-        </div>
-        
-        <div style={{ textAlign: "right", minWidth: "150px" }}>
-          {hasVariants && (
-            <select 
-              value={selectedVarId} 
-              onChange={(e) => setSelectedVarId(e.target.value)}
-              style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #ccc", marginBottom: "12px", fontSize: "14px", outline: "none", cursor: "pointer", background: "#f8f9fa", fontWeight: "500" }}
-            >
-              {variants.map((v: any) => (
-                <option key={v.node.id} value={v.node.id}>
-                  {v.node.title !== "Default Title" ? v.node.title : "Standard"}
-                </option>
-              ))}
-            </select>
-          )}
-          <div style={{ fontWeight: "bold", color: "#28a745", fontSize: "20px" }}>
-            {price > 0 ? `${price.toFixed(2)} €` : "—"}
+    <div 
+      onClick={() => onSelect({ ...p, selectedVariant: activeVariant })}
+      style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", padding: "20px", marginBottom: "12px", cursor: "pointer", border: "1px solid #e0e0e0", background: "#fff", borderRadius: "10px", transition: "all 0.2s ease-in-out" }}
+    >
+      <div style={{ textAlign: "left", flex: 1, paddingRight: "15px" }}>
+        <span style={{ fontWeight: "600", color: "#000", fontSize: "18px" }}>{p.title}</span>
+        {p.pcfBadge?.value && badgeStyle && (
+          <div style={{ marginTop: "8px" }}>
+            <span style={{ fontSize: "11px", fontWeight: "bold", backgroundColor: badgeStyle.bg, color: badgeStyle.color, padding: "5px 12px", borderRadius: "12px", textTransform: "uppercase", letterSpacing: "0.5px", display: "inline-block" }}>
+              {p.pcfBadge.value}
+            </span>
           </div>
+        )}
+      </div>
+      
+      <div style={{ textAlign: "right", minWidth: "150px" }}>
+        {hasVariants && (
+          <select 
+            value={selectedVarId} 
+            onChange={(e) => {
+              e.stopPropagation(); // Prevents click from advancing the page
+              setSelectedVarId(e.target.value);
+            }}
+            onClick={(e) => e.stopPropagation()} // Prevents click from advancing the page
+            style={{ width: "100%", padding: "8px", borderRadius: "8px", border: "1px solid #ccc", marginBottom: "8px", fontSize: "14px", outline: "none", cursor: "pointer", background: "#f8f9fa", fontWeight: "500" }}
+          >
+            {variants.map((v: any) => (
+              <option key={v.node.id} value={v.node.id}>
+                {v.node.title !== "Default Title" ? v.node.title : "Standard"}
+              </option>
+            ))}
+          </select>
+        )}
+        <div style={{ fontWeight: "bold", color: "#28a745", fontSize: "20px" }}>
+          {price > 0 ? `${price.toFixed(2)} €` : "—"}
         </div>
       </div>
-      <button 
-        onClick={() => onSelect({ ...p, selectedVariant: activeVariant })}
-        style={{ width: "100%", marginTop: "15px", padding: "12px", background: "#000", color: "#fff", border: "none", borderRadius: "8px", fontSize: "16px", fontWeight: "bold", cursor: "pointer", transition: "0.2s" }}
-      >
-        Odaberi
-      </button>
     </div>
   );
 }
