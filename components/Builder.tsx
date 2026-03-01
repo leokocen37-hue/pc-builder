@@ -22,6 +22,7 @@ type ProductNode = {
   pcfCoolerHeight?: { value: string };
   pcfMaxTdp?: { value: string };
   pcfQuality?: { value: string };
+  pcfBadge?: { value: string }; // NEW METAFIELD FOR CUSTOM TEXT
 };
 
 type Step = "brand" | "cpu" | "motherboard" | "ram" | "gpu" | "ssd" | "hdd" | "case" | "psu" | "cooler" | "os" | "review";
@@ -67,7 +68,7 @@ function BuilderContent() {
     ? Math.min((estimatedDraw / psuCapacity) * 100, 100) 
     : Math.min((estimatedDraw / 1000) * 100, 100);
 
-  // BOTTLENECK CHECKER LOGIC
+  // BOTTLENECK CHECKER LOGIC (Still uses the hidden pcfQuality)
   const getQualityScore = (quality?: string) => {
     const q = (quality || "").toLowerCase();
     if (q === "excellent") return 4;
@@ -136,6 +137,7 @@ function BuilderContent() {
                   pcfCoolerHeight: metafield(namespace: "pcf", key: "cooler_height") { value }
                   pcfMaxTdp: metafield(namespace: "pcf", key: "max_tdp") { value }
                   pcfQuality: metafield(namespace: "pcf", key: "quality") { value }
+                  pcfBadge: metafield(namespace: "pcf", key: "badge") { value }
                 }
               }
             }
@@ -234,10 +236,10 @@ function BuilderContent() {
 
   const getQualityColor = (quality: string) => {
     const q = quality.toLowerCase();
-    if (q === "excellent") return "#28a745"; 
-    if (q === "very good") return "#007bff"; 
-    if (q === "good") return "#17a2b8"; 
-    if (q === "average") return "#6c757d"; 
+    if (q === "excellent") return "#28a745"; // Green
+    if (q === "very good") return "#007bff"; // Blue
+    if (q === "good") return "#17a2b8";      // Light Blue
+    if (q === "average") return "#6c757d";   // Gray
     return "#888"; 
   };
 
@@ -304,6 +306,7 @@ function BuilderContent() {
               return false;
             })
             .sort((a, b) => {
+              // STILL SORTS BY THE HIDDEN QUALITY TIER!
               const weights: Record<string, number> = { "excellent": 4, "very good": 3, "good": 2, "average": 1 };
               const wA = weights[a.pcfQuality?.value?.toLowerCase() || ""] || 0;
               const wB = weights[b.pcfQuality?.value?.toLowerCase() || ""] || 0;
@@ -320,16 +323,21 @@ function BuilderContent() {
               >
                 <span style={{ fontWeight: "500", color: "#000" }}>{p.title}</span>
                 
-                {p.pcfQuality?.value && (
+                {/* NEW CUSTOM BADGE RENDERER */}
+                {p.pcfBadge?.value && (
                   <span style={{ 
                     marginTop: "8px", 
-                    fontSize: "12px", 
+                    fontSize: "11px", 
                     fontWeight: "bold",
-                    color: getQualityColor(p.pcfQuality.value),
+                    backgroundColor: p.pcfQuality?.value ? getQualityColor(p.pcfQuality.value) : "#007bff",
+                    color: "#fff",
+                    padding: "4px 10px",
+                    borderRadius: "12px",
                     textTransform: "uppercase",
-                    letterSpacing: "0.5px"
+                    letterSpacing: "0.5px",
+                    display: "inline-block"
                   }}>
-                    {p.pcfQuality.value}
+                    {p.pcfBadge.value}
                   </span>
                 )}
               </button>
@@ -368,7 +376,6 @@ function BuilderContent() {
         
         <hr style={{ margin: "20px 0", border: "0", borderTop: "1px solid #eee" }} />
         
-        {/* NEW BOTTLENECK WARNING BOX */}
         {bottleneckWarning && (
           <div style={{ marginBottom: "20px", padding: "12px", background: "#fff3cd", borderRadius: "8px", border: "1px solid #ffeeba", color: "#856404", fontSize: "13px", lineHeight: "1.4" }}>
             {bottleneckWarning}
