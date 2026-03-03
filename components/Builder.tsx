@@ -108,6 +108,22 @@ function BuilderContent() {
     return 0;
   };
 
+  // RESTORED BADGE COLOR LOGIC
+  const getBadgeStyle = (badgeText: string) => {
+    const t = badgeText.toLowerCase();
+    if (t.includes("ultimativni") || t.includes("kompromisa") || t.includes("apsolutni") || t.includes("profesionalce") || t.includes("trezor") || t.includes("vrh")) 
+      return { bg: "linear-gradient(135deg, #6f42c1, #8a2be2)", color: "#fff" }; 
+    if (t.includes("best buy") || t.includes("kralj")) 
+      return { bg: "linear-gradient(135deg, #fd7e14, #ff851b)", color: "#fff" }; 
+    if (t.includes("zlatna") || t.includes("standard") || t.includes("radna stanica")) 
+      return { bg: "linear-gradient(135deg, #ffc107, #ffb300)", color: "#000" }; 
+    if (t.includes("budžet") || t.includes("osnovni") || t.includes("start")) 
+      return { bg: "linear-gradient(135deg, #20c997, #12b886)", color: "#fff" }; 
+    if (t.includes("premium") || t.includes("masivna") || t.includes("maksimalna") || t.includes("zvijer") || t.includes("čudovište")) 
+      return { bg: "linear-gradient(135deg, #6c757d, #495057)", color: "#fff" }; 
+    return { bg: "linear-gradient(135deg, #007bff, #0056b3)", color: "#fff" }; 
+  };
+
   const checkBottleneck = () => {
     if (!cpu || !gpu) return null;
     const cpuScore = getQualityScore(cpu.pcfQuality?.value);
@@ -384,14 +400,12 @@ function BuilderContent() {
     setStartX(e.clientX);
     setDragOffset(0);
     setIsDragging(false);
-    // REMOVED: setPointerCapture to ensure PC clicks work normally
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (startX === null) return;
     const diff = e.clientX - startX;
     setDragOffset(diff);
-    // Increased threshold slightly so clicking on a PC isn't mistakenly read as dragging
     if (Math.abs(diff) > 15) { 
       setIsDragging(true); 
     }
@@ -481,7 +495,7 @@ function BuilderContent() {
                   onPointerDown={handlePointerDown}
                   onPointerMove={handlePointerMove}
                   onPointerUp={handlePointerUp}
-                  onPointerLeave={handlePointerUp} // Added safeguard for PC dragging
+                  onPointerLeave={handlePointerUp} 
                   onPointerCancel={handlePointerUp}
                   style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", position: "relative", touchAction: "pan-y" }}
                 >
@@ -496,6 +510,8 @@ function BuilderContent() {
                     const isActive = baseOffset === 0 && !isDragging; 
 
                     if (!isVisible && !isDragging) return <div key={p.id} style={{ display: "none" }} />;
+                    
+                    const badgeStyle = p.pcfBadge?.value ? getBadgeStyle(p.pcfBadge.value) : null;
 
                     return (
                       <div 
@@ -537,17 +553,35 @@ function BuilderContent() {
                              draggable="false" 
                              src={p.featuredImage.url} 
                              alt={p.title} 
-                             style={{ width: "100%", height: "65%", objectFit: "contain", marginBottom: isMobile ? "5px" : "10px", pointerEvents: "none" }} 
+                             style={{ width: "100%", height: "55%", objectFit: "contain", marginBottom: "5px", pointerEvents: "none" }} 
                            />
                          ) : (
-                           <div style={{ width: "100%", height: "65%", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,0.05)", borderRadius: "8px", marginBottom: isMobile ? "5px" : "10px", pointerEvents: "none" }}>
+                           <div style={{ width: "100%", height: "55%", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,0.05)", borderRadius: "8px", marginBottom: "5px", pointerEvents: "none" }}>
                              <span style={{ fontSize: isMobile ? "30px" : "50px" }}>📦</span>
                            </div>
                          )}
 
-                         <h3 style={{ fontSize: isMobile ? "12px" : "14px", margin: 0, fontWeight: "600", color: isActive ? "#fff" : "#aaa", lineHeight: "1.2", pointerEvents: "none" }}>
-                           {p.title}
-                         </h3>
+                         {/* TITLE & BADGE CONTAINER */}
+                         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "5px", width: "100%", pointerEvents: "none" }}>
+                            {p.pcfBadge?.value && badgeStyle && (
+                               <span style={{
+                                   background: badgeStyle.bg,
+                                   color: badgeStyle.color,
+                                   padding: "3px 8px",
+                                   borderRadius: "12px",
+                                   fontSize: isMobile ? "9px" : "10px",
+                                   fontWeight: "bold",
+                                   textTransform: "uppercase",
+                                   letterSpacing: "0.5px",
+                                   boxShadow: "0 2px 4px rgba(0,0,0,0.4)"
+                               }}>
+                                   {p.pcfBadge.value}
+                               </span>
+                            )}
+                            <h3 style={{ fontSize: isMobile ? "12px" : "14px", margin: 0, fontWeight: "600", color: isActive ? "#fff" : "#aaa", lineHeight: "1.2" }}>
+                              {p.title}
+                            </h3>
+                         </div>
                          
                          {isActive && (
                             <div style={{ position: "absolute", bottom: isMobile ? "-25px" : "-30px", fontSize: isMobile ? "11px" : "13px", color: brand === 'amd' ? '#ffcc00' : '#66b3ff', fontWeight: "bold", opacity: 0.9, letterSpacing: "1px", pointerEvents: "none" }}>
