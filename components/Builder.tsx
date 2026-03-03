@@ -1,6 +1,6 @@
 "use client";
 
-import { CSSProperties, useEffect, useState, useCallback, Suspense } from "react";
+import { CSSProperties, useEffect, useState, Suspense } from "react";
 import { shopifyFetch } from "@/lib/shopify";
 import { useSearchParams, useRouter } from "next/navigation";
 
@@ -225,13 +225,48 @@ function BuilderContent() {
     router.replace(window.location.pathname, { scroll: false }); 
   };
 
+  const shareBuild = () => {
+    navigator.clipboard.writeText(window.location.href);
+    alert("Link za vašu konfiguraciju je kopiran!");
+  };
+
   const currentTotal = () => {
     const compPrice = [cpu, mb, ram, gpu, gpu2, ssd, ssd2, hdd, hdd2, pcCase, psu, cooler, os]
       .reduce((sum, p) => sum + Number(p?.selectedVariant?.price?.amount || p?.variants?.edges[0]?.node.price.amount || 0), 0);
     return isReviewStep ? compPrice + ASSEMBLY_FEE : compPrice;
   };
 
-  const handleCheckout = async () => { /* ... existing checkout logic ... */ };
+  const handleCheckout = async () => {
+    setIsProcessing(true);
+    const summary = [cpu, mb, ram, gpu, gpu2, ssd, ssd2, hdd, hdd2, pcCase, psu, cooler, os]
+      .filter(Boolean)
+      .map(p => `${p?.title}${p?.selectedVariant && p?.selectedVariant?.title !== 'Default Title' ? ` (${p?.selectedVariant?.title})` : ''}`)
+      .join(", ");
+      
+    try {
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ totalPrice: currentTotal(), summary }),
+      });
+      const data = await res.json();
+      if (data.draftOrder?.invoiceUrl) window.location.href = data.draftOrder.invoiceUrl;
+      else { alert("Greška"); setIsProcessing(false); }
+    } catch (error) {
+      alert("Serverska greška");
+      setIsProcessing(false);
+    }
+  };
+
+  const getSortedExtras = (type: string) => {
+    return products
+      .filter(p => p.pcfType?.value === type)
+      .sort((a, b) => {
+         const priceA = Number(a.variants.edges[0]?.node.price.amount || 0);
+         const priceB = Number(b.variants.edges[0]?.node.price.amount || 0);
+         return priceB - priceA;
+      });
+  };
 
   // Generate Current Products list
   const currentStep = STEPS[stepIndex];
@@ -436,13 +471,111 @@ function BuilderContent() {
             </div>
           )}
 
-          {/* REVIEW STEP - Adjusted for Dark Theme */}
+          {/* REVIEW STEP - Restored and Adjusted for Dark Theme */}
           {STEPS[stepIndex] === "review" && (
-            <div style={{ textAlign: "center", color: "#fff", paddingTop: "50px" }}>
-              <h1>🎉 Build je spreman!</h1>
-              {/* Review content stays functionally same but styled darker */}
-              {/* ... (Implementation is same as requested earlier, just colors tweaked for dark bg) ... */}
-              <button onClick={resetBuild} style={{ ...bottomNavBtnStyle, marginTop: "50px" }}>Počni ispočetka</button>
+            <div style={{ textAlign: "center", color: "#fff", width: "100%", paddingBottom: "40px", paddingTop: "20px" }}>
+              <div style={{ padding: "40px", background: "rgba(0,0,0,0.5)", borderRadius: "15px", border: "1px solid rgba(255,255,255,0.1)", backdropFilter: "blur(10px)" }}>
+                <h1>🎉 Build je spreman!</h1>
+                <p style={{ fontSize: "28px", margin: "20px 0", fontWeight: "bold", color: brand === 'amd' ? '#ffcc00' : '#66b3ff' }}>
+                  Ukupna cijena: {currentTotal().toFixed(2)} €
+                </p>
+                <p style={{ color: "#aaa", fontSize: "14px" }}>(Uključen PDV i usluga slaganja od {ASSEMBLY_FEE} €)</p>
+                
+                <button disabled={isProcessing} onClick={handleCheckout} style={{ ...checkoutBtnStyle, background: brand === 'amd' ? '#ff6600' : '#0066cc', color: "#fff", border: "none", marginTop: "20px" }}>
+                  {isProcessing ? "Obrađujem..." : `Naruči i Plati`}
+                </button>
+                
+                <button onClick={shareBuild} style={{ width: "100%", marginTop: "15px", padding: "15px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", background: "transparent", cursor: "pointer", fontSize: "16px", fontWeight: "bold" }}>
+                  🔗 Kopiraj link za dijeljenje
+                </button>
+              </div>
+
+              {/* UPSELL SECTION (GPU, SSD, HDD) */}
+              <div style={{ textAlign: "left", marginTop: "30px", padding: "25px", background: "rgba(0,0,0,0.5)", borderRadius: "15px", border: "1px solid rgba(255,255,255,0.1)", backdropFilter: "blur(10px)" }}>
+                <h3 style={{ marginTop: 0, borderBottom: "1px solid rgba(255,255,255,0.2)", paddingBottom: "10px", color: "#fff" }}>Opcionalne Nadogradnje</h3>
+                
+                {/* 2. GPU UPSELL */}
+                <div style={{ marginTop: "15px" }}>
+                  {!gpu2 ? (
+                    <button onClick={() => setAddingExtra(addingExtra === "gpu2" ? null : "gpu2")} style={{...upsellBtnStyle, background: "rgba(255,255,255,0.05)", color: "#fff", borderColor: "rgba(255,255,255,0.2)"}}>
+                      {addingExtra === "gpu2" ? "Odustani" : "➕ Dodaj 2. Grafičku (Za 3D i AI)"}
+                    </button>
+                  ) : (
+                    <div style={{...addedUpsellStyle, background: "rgba(255,255,255,0.1)", color: "#fff", border: "1px solid rgba(255,255,255,0.1)"}}>
+                      <span><strong>2. GPU:</strong> {gpu2.title} {gpu2.selectedVariant && gpu2.selectedVariant.title !== "Default Title" ? `(${gpu2.selectedVariant.title})` : ""}</span>
+                      <button onClick={() => setGpu2(null)} style={removeBtnStyle}>✖ Ukloni</button>
+                    </div>
+                  )}
+                  
+                  {addingExtra === "gpu2" && !gpu2 && (
+                    <div style={{...dropdownListStyle, background: "#222", borderColor: "#444"}}>
+                      {getSortedExtras("gpu").flatMap(p => 
+                        p.variants.edges.map(v => (
+                          <button key={v.node.id} style={{...dropdownItemStyle, background: "#222", color: "#fff", borderBottomColor: "#333"}} onClick={() => { setGpu2({ ...p, selectedVariant: v.node }); setAddingExtra(null); }}>
+                            {p.title} {v.node.title !== "Default Title" ? `- ${v.node.title}` : ""} <span style={{color: brand === 'amd' ? '#ffcc00' : '#66b3ff', fontWeight: "bold"}}>{Number(v.node.price.amount).toFixed(2)} €</span>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. SSD UPSELL */}
+                <div style={{ marginTop: "15px" }}>
+                  {!ssd2 ? (
+                    <button onClick={() => setAddingExtra(addingExtra === "ssd2" ? null : "ssd2")} style={{...upsellBtnStyle, background: "rgba(255,255,255,0.05)", color: "#fff", borderColor: "rgba(255,255,255,0.2)"}}>
+                      {addingExtra === "ssd2" ? "Odustani" : "➕ Dodaj 2. SSD (Dodatna brza pohrana)"}
+                    </button>
+                  ) : (
+                    <div style={{...addedUpsellStyle, background: "rgba(255,255,255,0.1)", color: "#fff", border: "1px solid rgba(255,255,255,0.1)"}}>
+                      <span><strong>2. SSD:</strong> {ssd2.title} {ssd2.selectedVariant && ssd2.selectedVariant.title !== "Default Title" ? `(${ssd2.selectedVariant.title})` : ""}</span>
+                      <button onClick={() => setSsd2(null)} style={removeBtnStyle}>✖ Ukloni</button>
+                    </div>
+                  )}
+                  
+                  {addingExtra === "ssd2" && !ssd2 && (
+                    <div style={{...dropdownListStyle, background: "#222", borderColor: "#444"}}>
+                      {getSortedExtras("ssd").flatMap(p => 
+                        p.variants.edges.map(v => (
+                          <button key={v.node.id} style={{...dropdownItemStyle, background: "#222", color: "#fff", borderBottomColor: "#333"}} onClick={() => { setSsd2({ ...p, selectedVariant: v.node }); setAddingExtra(null); }}>
+                            {p.title} {v.node.title !== "Default Title" ? `- ${v.node.title}` : ""} <span style={{color: brand === 'amd' ? '#ffcc00' : '#66b3ff', fontWeight: "bold"}}>{Number(v.node.price.amount).toFixed(2)} €</span>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. HDD UPSELL */}
+                <div style={{ marginTop: "15px" }}>
+                  {!hdd2 ? (
+                    <button onClick={() => setAddingExtra(addingExtra === "hdd2" ? null : "hdd2")} style={{...upsellBtnStyle, background: "rgba(255,255,255,0.05)", color: "#fff", borderColor: "rgba(255,255,255,0.2)"}}>
+                      {addingExtra === "hdd2" ? "Odustani" : "➕ Dodaj 2. HDD (Masivna pohrana)"}
+                    </button>
+                  ) : (
+                    <div style={{...addedUpsellStyle, background: "rgba(255,255,255,0.1)", color: "#fff", border: "1px solid rgba(255,255,255,0.1)"}}>
+                      <span><strong>2. HDD:</strong> {hdd2.title} {hdd2.selectedVariant && hdd2.selectedVariant.title !== "Default Title" ? `(${hdd2.selectedVariant.title})` : ""}</span>
+                      <button onClick={() => setHdd2(null)} style={removeBtnStyle}>✖ Ukloni</button>
+                    </div>
+                  )}
+                  
+                  {addingExtra === "hdd2" && !hdd2 && (
+                    <div style={{...dropdownListStyle, background: "#222", borderColor: "#444"}}>
+                      {getSortedExtras("hdd").flatMap(p => 
+                        p.variants.edges.map(v => (
+                          <button key={v.node.id} style={{...dropdownItemStyle, background: "#222", color: "#fff", borderBottomColor: "#333"}} onClick={() => { setHdd2({ ...p, selectedVariant: v.node }); setAddingExtra(null); }}>
+                            {p.title} {v.node.title !== "Default Title" ? `- ${v.node.title}` : ""} <span style={{color: brand === 'amd' ? '#ffcc00' : '#66b3ff', fontWeight: "bold"}}>{Number(v.node.price.amount).toFixed(2)} €</span>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+
+              </div>
+              <button onClick={resetBuild} style={{ ...bottomNavBtnStyle, marginTop: "30px", background: "transparent", color: "#fff", border: "1px solid rgba(255,255,255,0.3)" }}>
+                🔄 Počni ispočetka
+              </button>
             </div>
           )}
         </div>
@@ -459,6 +592,7 @@ function BuilderContent() {
           <SidebarRow label="SSD" item={ssd} />
           {ssd2 && <SidebarRow label="SSD 2" item={ssd2} />}
           {hdd && <SidebarRow label="HDD" item={hdd} /> }
+          {hdd2 && <SidebarRow label="HDD 2" item={hdd2} />}
           <SidebarRow label="Kućište" item={pcCase} />
           <SidebarRow label="Napajanje" item={psu} />
           <SidebarRow label="Hladnjak" item={cooler} />
@@ -472,10 +606,44 @@ function BuilderContent() {
             </div>
           )}
 
+          {/* ALWAY VISIBLE WATTAGE BAR */}
+          <div style={{ marginBottom: "20px", padding: "15px", background: "rgba(0,0,0,0.3)", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.1)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", fontSize: "13px", fontWeight: "bold", color: "#ddd" }}>
+              <span>Potrošnja sustava:</span>
+              <span>{estimatedDraw}W {psuCapacity > 0 ? `/ ${psuCapacity}W` : ""}</span>
+            </div>
+            
+            <div style={{ width: "100%", height: "8px", background: "rgba(255,255,255,0.1)", borderRadius: "4px", overflow: "hidden" }}>
+              <div style={{ 
+                height: "100%", 
+                width: `${powerPercentage}%`, 
+                background: psuCapacity > 0 && estimatedDraw >= psuCapacity ? "#dc3545" : (psuCapacity > 0 ? "#28a745" : (brand === 'amd' ? '#ff6600' : '#0066cc')),
+                transition: "width 0.4s ease, background 0.4s ease" 
+              }} />
+            </div>
+            
+            <p style={{ fontSize: "11px", color: "#888", marginTop: "8px", textAlign: "right" }}>
+              {psuCapacity === 0 
+                ? "*Uključeno ~100W za matičnu i periferiju." 
+                : (estimatedDraw >= psuCapacity ? "Upozorenje: Napajanje je preslabo!" : "Napajanje je optimalno.")}
+            </p>
+          </div>
+
           <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold", fontSize: "20px", color: "#fff" }}>
             <span>Ukupno:</span>
             <span>{currentTotal().toFixed(2)} €</span>
           </div>
+          
+          {isReviewStep ? (
+            <p style={{ fontSize: "12px", color: "#999", marginTop: "5px", textAlign: "right", fontWeight: "bold" }}>
+              Uključuje uslugu slaganja ({ASSEMBLY_FEE} €)
+            </p>
+          ) : (
+            <p style={{ fontSize: "12px", color: "#999", marginTop: "5px", textAlign: "right" }}>
+              * Usluga slaganja ({ASSEMBLY_FEE} €) bit će dodana na kraju.
+            </p>
+          )}
+
         </div>
       </div>
     </div>
@@ -505,3 +673,9 @@ function SidebarRow({ label, item }: { label: string; item?: ProductNode | null 
 const brandBtnStyle: CSSProperties = { width: "250px", height: "150px", fontSize: "32px", fontWeight: "bold", color: "#fff", border: "none", borderRadius: "16px", cursor: "pointer", boxShadow: "0 10px 30px rgba(0,0,0,0.5)", transition: "transform 0.2s" };
 const navArrowStyle: CSSProperties = { background: "rgba(255,255,255,0.1)", border: "none", color: "white", fontSize: "30px", width: "50px", height: "50px", borderRadius: "50%", cursor: "pointer", backdropFilter: "blur(5px)" };
 const bottomNavBtnStyle: CSSProperties = { padding: "15px 40px", borderRadius: "30px", fontSize: "16px", fontWeight: "bold", border: "none", cursor: "pointer", background: "rgba(255,255,255,0.8)", color: "#000", transition: "0.2s" };
+const checkoutBtnStyle: CSSProperties = { width: "100%", padding: "20px", fontWeight: "bold", cursor: "pointer", borderRadius: "8px", fontSize: "18px" };
+const upsellBtnStyle: CSSProperties = { width: "100%", padding: "12px", border: "1px dashed", fontWeight: "bold", borderRadius: "8px", cursor: "pointer", textAlign: "left" as const };
+const addedUpsellStyle: CSSProperties = { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px", borderRadius: "8px", fontSize: "14px" };
+const removeBtnStyle: CSSProperties = { color: "#ff4d4d", border: "none", background: "none", cursor: "pointer", fontWeight: "bold" };
+const dropdownListStyle: CSSProperties = { marginTop: "10px", maxHeight: "250px", overflowY: "auto", border: "1px solid", borderRadius: "8px" };
+const dropdownItemStyle: CSSProperties = { width: "100%", display: "flex", justifyContent: "space-between", padding: "12px 15px", border: "none", borderBottom: "1px solid", cursor: "pointer", fontSize: "14px", textAlign: "left" as const };
