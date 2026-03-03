@@ -7,6 +7,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 type ProductNode = {
   id: string;
   title: string;
+  featuredImage?: { url: string; altText?: string };
   variants: { edges: { node: { id: string; title: string; price: { amount: string } } }[] };
   selectedVariant?: any; 
   pcfType?: { value: string };
@@ -145,6 +146,7 @@ function BuilderContent() {
                 node {
                   id
                   title
+                  featuredImage { url altText }
                   variants(first: 50) { edges { node { id title price { amount } } } }
                   pcfType: metafield(namespace: "pcf", key: "type") { value }
                   pcfBrand: metafield(namespace: "pcf", key: "brand") { value }
@@ -314,9 +316,17 @@ function BuilderContent() {
 
   const activeProduct = currentProducts[activeIndex];
 
+  // Carousel Math logic for infinite looping
+  const getOffset = (index: number) => {
+    const N = currentProducts.length;
+    if (N === 0) return 0;
+    let offset = ((index - activeIndex) % N + N) % N;
+    if (offset > Math.floor(N / 2)) offset -= N;
+    return offset;
+  };
+
   useEffect(() => {
     if (activeProduct) {
-      // Set the default selected variant ID whenever active product changes
       setSelectedVarId(activeProduct.variants.edges[0].node.id);
     }
   }, [activeProduct]);
@@ -375,60 +385,109 @@ function BuilderContent() {
             <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", position: "relative" }}>
               
               {/* Carousel Container */}
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "20px", width: "100%", height: "350px", position: "relative" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "350px", position: "relative" }}>
                 
                 {/* Left Arrow */}
-                <button onClick={() => setActiveIndex(Math.max(0, activeIndex - 1))} style={navArrowStyle}>&lt;</button>
+                <button 
+                  onClick={() => setActiveIndex((activeIndex - 1 + currentProducts.length) % currentProducts.length)} 
+                  style={{...navArrowStyle, position: "absolute", left: "0", zIndex: 50}}
+                >
+                  &lt;
+                </button>
 
-                {/* Items */}
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "30px", width: "70%", overflow: "hidden" }}>
+                {/* CoverFlow Items */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", position: "relative" }}>
                   {currentProducts.map((p, idx) => {
-                    const isActive = idx === activeIndex;
-                    const isAdjacent = Math.abs(idx - activeIndex) === 1;
-                    if (!isActive && !isAdjacent) return <div key={p.id} style={{ display: "none" }} />;
+                    const offset = getOffset(idx);
+                    const isVisible = Math.abs(offset) <= 2;
+                    const isActive = offset === 0;
+
+                    if (!isVisible) return <div key={p.id} style={{ display: "none" }} />;
+
+                    // Animation Calculation
+                    let transform = "translateX(0) scale(1.1)";
+                    let zIndex = 10;
+                    let opacity = 1;
+
+                    if (offset === 1) { transform = "translateX(200px) scale(0.85)"; zIndex = 5; opacity = 0.6; }
+                    else if (offset === -1) { transform = "translateX(-200px) scale(0.85)"; zIndex = 5; opacity = 0.6; }
+                    else if (offset === 2) { transform = "translateX(360px) scale(0.7)"; zIndex = 2; opacity = 0.3; }
+                    else if (offset === -2) { transform = "translateX(-360px) scale(0.7)"; zIndex = 2; opacity = 0.3; }
 
                     return (
                       <div 
                         key={p.id} 
-                        onClick={() => setActiveIndex(idx)}
+                        onClick={() => {
+                          if (isActive) {
+                            // Click Center Item = Select and go to next step
+                            const variantNode = p.variants.edges.find((v:any) => v.node.id === selectedVarId)?.node || p.variants.edges[0].node;
+                            handleSelection(STEPS[stepIndex], { ...p, selectedVariant: variantNode });
+                          } else {
+                            // Click Side Item = Bring to center
+                            setActiveIndex(idx);
+                          }
+                        }}
                         style={{
-                          width: isActive ? "240px" : "180px",
-                          height: isActive ? "280px" : "210px",
-                          background: "linear-gradient(145deg, #333, #222)",
+                          position: "absolute",
+                          width: "220px",
+                          height: "260px",
+                          background: "linear-gradient(145deg, rgba(50,50,50,0.9), rgba(20,20,20,0.9))",
                           border: isActive ? `2px solid ${brand === 'amd' ? '#ff6600' : '#0066cc'}` : "1px solid #444",
                           borderRadius: "15px",
                           display: "flex",
                           flexDirection: "column",
-                          justifyContent: "center",
+                          justifyContent: "space-between",
                           alignItems: "center",
                           textAlign: "center",
-                          padding: "20px",
-                          cursor: isActive ? "default" : "pointer",
-                          transition: "all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1)",
-                          opacity: isActive ? 1 : 0.6,
-                          transform: isActive ? "scale(1.05)" : "scale(1)",
-                          boxShadow: isActive ? `0 15px 35px rgba(0,0,0,0.5)` : "none"
+                          padding: "20px 15px",
+                          cursor: "pointer",
+                          transition: "all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1)",
+                          opacity: opacity,
+                          zIndex: zIndex,
+                          transform: transform,
+                          boxShadow: isActive ? `0 15px 35px rgba(0,0,0,0.6)` : "0 5px 15px rgba(0,0,0,0.3)"
                         }}
                       >
-                         <h3 style={{ fontSize: isActive ? "18px" : "14px", margin: 0 }}>{p.title}</h3>
+                         {/* Product Image */}
+                         {p.featuredImage ? (
+                           <img src={p.featuredImage.url} alt={p.title} style={{ width: "100%", height: "65%", objectFit: "contain", marginBottom: "10px", pointerEvents: "none" }} />
+                         ) : (
+                           <div style={{ width: "100%", height: "65%", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,0.05)", borderRadius: "8px", marginBottom: "10px" }}>
+                             <span style={{ fontSize: "50px" }}>📦</span>
+                           </div>
+                         )}
+
+                         {/* Title */}
+                         <h3 style={{ fontSize: "14px", margin: 0, fontWeight: "600", color: isActive ? "#fff" : "#aaa", lineHeight: "1.2" }}>{p.title}</h3>
+                         
+                         {/* Selection Hint overlay for active card */}
+                         {isActive && (
+                            <div style={{ position: "absolute", bottom: "-40px", fontSize: "12px", color: brand === 'amd' ? '#ffcc00' : '#66b3ff', fontWeight: "bold", opacity: 0.8 }}>
+                               KLIKNI ZA ODABIR
+                            </div>
+                         )}
                       </div>
                     );
                   })}
                 </div>
 
                 {/* Right Arrow */}
-                <button onClick={() => setActiveIndex(Math.min(currentProducts.length - 1, activeIndex + 1))} style={navArrowStyle}>&gt;</button>
+                <button 
+                  onClick={() => setActiveIndex((activeIndex + 1) % currentProducts.length)} 
+                  style={{...navArrowStyle, position: "absolute", right: "0", zIndex: 50}}
+                >
+                  &gt;
+                </button>
               </div>
 
-              {/* ACTIVE ITEM DETAILS & VARIANTS (Shows below carousel) */}
-              <div style={{ marginTop: "30px", width: "60%", background: "rgba(0,0,0,0.5)", padding: "20px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.1)", textAlign: "center" }}>
-                 <h2 style={{ margin: "0 0 10px 0" }}>{activeProduct?.title}</h2>
+              {/* ACTIVE ITEM VARIANTS & PRICE (Shows completely outside the carousel) */}
+              <div style={{ marginTop: "40px", width: "100%", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
                  
                  {activeProduct?.variants.edges.length > 1 && (
                     <select 
                       value={selectedVarId} 
                       onChange={(e) => setSelectedVarId(e.target.value)}
-                      style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #555", background: "#222", color: "#fff", marginBottom: "15px", fontSize: "16px", outline: "none", cursor: "pointer" }}
+                      style={{ width: "250px", padding: "12px", borderRadius: "8px", border: `1px solid ${brand === 'amd' ? '#ff6600' : '#0066cc'}`, background: "rgba(0,0,0,0.5)", color: "#fff", marginBottom: "15px", fontSize: "16px", outline: "none", cursor: "pointer", textAlign: "center" }}
                     >
                       {activeProduct.variants.edges.map((v: any) => (
                         <option key={v.node.id} value={v.node.id}>
@@ -438,7 +497,7 @@ function BuilderContent() {
                     </select>
                  )}
 
-                 <div style={{ fontSize: "24px", fontWeight: "bold", color: brand === 'amd' ? '#ffcc00' : '#66b3ff' }}>
+                 <div style={{ fontSize: "36px", fontWeight: "900", color: brand === 'amd' ? '#ffcc00' : '#66b3ff', textShadow: "0px 2px 10px rgba(0,0,0,0.5)" }}>
                     {Number(activeProduct?.variants.edges.find((v:any) => v.node.id === selectedVarId)?.node.price.amount || activeProduct?.variants.edges[0].node.price.amount || 0).toFixed(2)} €
                  </div>
               </div>
@@ -458,16 +517,6 @@ function BuilderContent() {
                   PRESKOČI
                 </button>
               )}
-
-              <button 
-                onClick={() => {
-                  const variantNode = activeProduct.variants.edges.find((v:any) => v.node.id === selectedVarId)?.node || activeProduct.variants.edges[0].node;
-                  handleSelection(STEPS[stepIndex], { ...activeProduct, selectedVariant: variantNode });
-                }} 
-                style={{ ...bottomNavBtnStyle, background: "#fff", color: "#000" }}
-              >
-                DALJE
-              </button>
             </div>
           )}
 
@@ -671,7 +720,7 @@ function SidebarRow({ label, item }: { label: string; item?: ProductNode | null 
 
 /* STYLES */
 const brandBtnStyle: CSSProperties = { width: "250px", height: "150px", fontSize: "32px", fontWeight: "bold", color: "#fff", border: "none", borderRadius: "16px", cursor: "pointer", boxShadow: "0 10px 30px rgba(0,0,0,0.5)", transition: "transform 0.2s" };
-const navArrowStyle: CSSProperties = { background: "rgba(255,255,255,0.1)", border: "none", color: "white", fontSize: "30px", width: "50px", height: "50px", borderRadius: "50%", cursor: "pointer", backdropFilter: "blur(5px)" };
+const navArrowStyle: CSSProperties = { background: "rgba(255,255,255,0.1)", border: "none", color: "white", fontSize: "30px", width: "50px", height: "50px", borderRadius: "50%", cursor: "pointer", backdropFilter: "blur(5px)", transition: "0.2s" };
 const bottomNavBtnStyle: CSSProperties = { padding: "15px 40px", borderRadius: "30px", fontSize: "16px", fontWeight: "bold", border: "none", cursor: "pointer", background: "rgba(255,255,255,0.8)", color: "#000", transition: "0.2s" };
 const checkoutBtnStyle: CSSProperties = { width: "100%", padding: "20px", fontWeight: "bold", cursor: "pointer", borderRadius: "8px", fontSize: "18px" };
 const upsellBtnStyle: CSSProperties = { width: "100%", padding: "12px", border: "1px dashed", fontWeight: "bold", borderRadius: "8px", cursor: "pointer", textAlign: "left" as const };
