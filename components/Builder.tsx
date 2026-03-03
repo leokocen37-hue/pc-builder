@@ -58,6 +58,7 @@ function BuilderContent() {
   const [products, setProducts] = useState<ProductNode[]>([]);
   const [loading, setLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isMobile, setIsMobile] = useState(false); // Mobile Detection State
 
   // Carousel state
   const [activeIndex, setActiveIndex] = useState(0);
@@ -114,6 +115,14 @@ function BuilderContent() {
   };
 
   const bottleneckWarning = checkBottleneck();
+
+  // Handle Mobile Resize Tracking
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 900);
+    handleResize(); // Check immediately
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     if (isReviewStep) {
@@ -341,39 +350,46 @@ function BuilderContent() {
     minHeight: '100vh',
     width: '100%',
     color: '#fff',
-    padding: '40px 20px',
-    transition: 'background 0.5s ease-in-out'
+    padding: isMobile ? '20px 10px' : '40px 20px',
+    transition: 'background 0.5s ease-in-out',
+    overflowX: "hidden" as const
   };
 
   return (
     <div style={bgStyle}>
-      <div style={{ display: "flex", maxWidth: "1400px", margin: "0 auto", gap: "40px" }}>
+      <div style={{ 
+        display: "flex", 
+        flexDirection: isMobile ? "column" : "row", 
+        maxWidth: "1400px", 
+        margin: "0 auto", 
+        gap: isMobile ? "20px" : "40px" 
+      }}>
         
         {/* LEFT MAIN AREA */}
-        <div style={{ flex: 3, display: "flex", flexDirection: "column", minHeight: "80vh", position: "relative" }}>
+        <div style={{ flex: 3, display: "flex", flexDirection: "column", minHeight: isMobile ? "auto" : "80vh", position: "relative" }}>
           
           {/* TOP BAR / STEP TITLE */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "30px", background: "rgba(0,0,0,0.4)", padding: "15px 30px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.1)" }}>
-            <h1 style={{ margin: 0, fontSize: "24px", textTransform: "uppercase", letterSpacing: "2px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: isMobile ? "15px" : "30px", background: "rgba(0,0,0,0.4)", padding: isMobile ? "10px 15px" : "15px 30px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.1)" }}>
+            <h1 style={{ margin: 0, fontSize: isMobile ? "18px" : "24px", textTransform: "uppercase", letterSpacing: "2px" }}>
               {STEP_LABELS[STEPS[stepIndex]]}
             </h1>
-            <div style={{ fontSize: "20px", fontWeight: "bold" }}>
+            <div style={{ fontSize: isMobile ? "16px" : "20px", fontWeight: "bold" }}>
               €{currentTotal().toFixed(2)}
             </div>
           </div>
 
           {/* STEP 0: BRAND SELECTION */}
           {STEPS[stepIndex] === "brand" && (
-            <div style={{ display: "flex", gap: "30px", justifyContent: "center", alignItems: "center", flex: 1 }}>
+            <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", gap: isMobile ? "15px" : "30px", justifyContent: "center", alignItems: "center", flex: 1, padding: isMobile ? "30px 0" : "0" }}>
               <button 
                 onClick={() => { setBrand("intel"); setStepIndex(1); }}
-                style={{ ...brandBtnStyle, background: "linear-gradient(135deg, #004488, #0066cc)" }}
+                style={{ ...brandBtnStyle, width: isMobile ? "100%" : "250px", height: isMobile ? "100px" : "150px", background: "linear-gradient(135deg, #004488, #0066cc)" }}
               >
                 INTEL
               </button>
               <button 
                 onClick={() => { setBrand("amd"); setStepIndex(1); }}
-                style={{ ...brandBtnStyle, background: "linear-gradient(135deg, #cc4400, #ff6600)" }}
+                style={{ ...brandBtnStyle, width: isMobile ? "100%" : "250px", height: isMobile ? "100px" : "150px", background: "linear-gradient(135deg, #cc4400, #ff6600)" }}
               >
                 AMD
               </button>
@@ -385,12 +401,12 @@ function BuilderContent() {
             <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", position: "relative" }}>
               
               {/* Carousel Container */}
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "350px", position: "relative" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: isMobile ? "260px" : "350px", position: "relative", overflow: "hidden" }}>
                 
                 {/* Left Arrow */}
                 <button 
                   onClick={() => setActiveIndex((activeIndex - 1 + currentProducts.length) % currentProducts.length)} 
-                  style={{...navArrowStyle, position: "absolute", left: "0", zIndex: 50}}
+                  style={{...navArrowStyle, width: isMobile ? "35px" : "50px", height: isMobile ? "35px" : "50px", fontSize: isMobile ? "20px" : "30px", position: "absolute", left: isMobile ? "5px" : "0", zIndex: 50}}
                 >
                   &lt;
                 </button>
@@ -404,33 +420,34 @@ function BuilderContent() {
 
                     if (!isVisible) return <div key={p.id} style={{ display: "none" }} />;
 
-                    // Animation Calculation
+                    // Dynamic Mobile Animation Calculation
+                    const baseOffset1 = isMobile ? 110 : 200;
+                    const baseOffset2 = isMobile ? 160 : 360;
+
                     let transform = "translateX(0) scale(1.1)";
                     let zIndex = 10;
                     let opacity = 1;
 
-                    if (offset === 1) { transform = "translateX(200px) scale(0.85)"; zIndex = 5; opacity = 0.6; }
-                    else if (offset === -1) { transform = "translateX(-200px) scale(0.85)"; zIndex = 5; opacity = 0.6; }
-                    else if (offset === 2) { transform = "translateX(360px) scale(0.7)"; zIndex = 2; opacity = 0.3; }
-                    else if (offset === -2) { transform = "translateX(-360px) scale(0.7)"; zIndex = 2; opacity = 0.3; }
+                    if (offset === 1) { transform = `translateX(${baseOffset1}px) scale(0.85)`; zIndex = 5; opacity = 0.6; }
+                    else if (offset === -1) { transform = `translateX(-${baseOffset1}px) scale(0.85)`; zIndex = 5; opacity = 0.6; }
+                    else if (offset === 2) { transform = `translateX(${baseOffset2}px) scale(0.7)`; zIndex = 2; opacity = isMobile ? 0 : 0.3; } // Hidden entirely on mobile to prevent squishing
+                    else if (offset === -2) { transform = `translateX(-${baseOffset2}px) scale(0.7)`; zIndex = 2; opacity = isMobile ? 0 : 0.3; }
 
                     return (
                       <div 
                         key={p.id} 
                         onClick={() => {
                           if (isActive) {
-                            // Click Center Item = Select and go to next step
                             const variantNode = p.variants.edges.find((v:any) => v.node.id === selectedVarId)?.node || p.variants.edges[0].node;
                             handleSelection(STEPS[stepIndex], { ...p, selectedVariant: variantNode });
                           } else {
-                            // Click Side Item = Bring to center
                             setActiveIndex(idx);
                           }
                         }}
                         style={{
                           position: "absolute",
-                          width: "220px",
-                          height: "260px",
+                          width: isMobile ? "160px" : "220px",
+                          height: isMobile ? "210px" : "260px",
                           background: "linear-gradient(145deg, rgba(50,50,50,0.9), rgba(20,20,20,0.9))",
                           border: isActive ? `2px solid ${brand === 'amd' ? '#ff6600' : '#0066cc'}` : "1px solid #444",
                           borderRadius: "15px",
@@ -439,30 +456,28 @@ function BuilderContent() {
                           justifyContent: "space-between",
                           alignItems: "center",
                           textAlign: "center",
-                          padding: "20px 15px",
+                          padding: isMobile ? "10px" : "20px 15px",
                           cursor: "pointer",
                           transition: "all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1)",
                           opacity: opacity,
                           zIndex: zIndex,
                           transform: transform,
-                          boxShadow: isActive ? `0 15px 35px rgba(0,0,0,0.6)` : "0 5px 15px rgba(0,0,0,0.3)"
+                          boxShadow: isActive ? `0 15px 35px rgba(0,0,0,0.6)` : "0 5px 15px rgba(0,0,0,0.3)",
+                          pointerEvents: opacity === 0 ? "none" : "auto"
                         }}
                       >
-                         {/* Product Image */}
                          {p.featuredImage ? (
-                           <img src={p.featuredImage.url} alt={p.title} style={{ width: "100%", height: "65%", objectFit: "contain", marginBottom: "10px", pointerEvents: "none" }} />
+                           <img src={p.featuredImage.url} alt={p.title} style={{ width: "100%", height: "65%", objectFit: "contain", marginBottom: isMobile ? "5px" : "10px", pointerEvents: "none" }} />
                          ) : (
-                           <div style={{ width: "100%", height: "65%", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,0.05)", borderRadius: "8px", marginBottom: "10px" }}>
-                             <span style={{ fontSize: "50px" }}>📦</span>
+                           <div style={{ width: "100%", height: "65%", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,0.05)", borderRadius: "8px", marginBottom: isMobile ? "5px" : "10px" }}>
+                             <span style={{ fontSize: isMobile ? "30px" : "50px" }}>📦</span>
                            </div>
                          )}
 
-                         {/* Title */}
-                         <h3 style={{ fontSize: "14px", margin: 0, fontWeight: "600", color: isActive ? "#fff" : "#aaa", lineHeight: "1.2" }}>{p.title}</h3>
+                         <h3 style={{ fontSize: isMobile ? "12px" : "14px", margin: 0, fontWeight: "600", color: isActive ? "#fff" : "#aaa", lineHeight: "1.2" }}>{p.title}</h3>
                          
-                         {/* Selection Hint overlay for active card */}
                          {isActive && (
-                            <div style={{ position: "absolute", bottom: "-40px", fontSize: "12px", color: brand === 'amd' ? '#ffcc00' : '#66b3ff', fontWeight: "bold", opacity: 0.8 }}>
+                            <div style={{ position: "absolute", bottom: isMobile ? "-30px" : "-40px", fontSize: isMobile ? "10px" : "12px", color: brand === 'amd' ? '#ffcc00' : '#66b3ff', fontWeight: "bold", opacity: 0.8 }}>
                                KLIKNI ZA ODABIR
                             </div>
                          )}
@@ -474,20 +489,20 @@ function BuilderContent() {
                 {/* Right Arrow */}
                 <button 
                   onClick={() => setActiveIndex((activeIndex + 1) % currentProducts.length)} 
-                  style={{...navArrowStyle, position: "absolute", right: "0", zIndex: 50}}
+                  style={{...navArrowStyle, width: isMobile ? "35px" : "50px", height: isMobile ? "35px" : "50px", fontSize: isMobile ? "20px" : "30px", position: "absolute", right: isMobile ? "5px" : "0", zIndex: 50}}
                 >
                   &gt;
                 </button>
               </div>
 
-              {/* ACTIVE ITEM VARIANTS & PRICE (Shows completely outside the carousel) */}
-              <div style={{ marginTop: "40px", width: "100%", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
+              {/* ACTIVE ITEM VARIANTS & PRICE */}
+              <div style={{ marginTop: isMobile ? "30px" : "40px", width: "100%", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
                  
                  {activeProduct?.variants.edges.length > 1 && (
                     <select 
                       value={selectedVarId} 
                       onChange={(e) => setSelectedVarId(e.target.value)}
-                      style={{ width: "250px", padding: "12px", borderRadius: "8px", border: `1px solid ${brand === 'amd' ? '#ff6600' : '#0066cc'}`, background: "rgba(0,0,0,0.5)", color: "#fff", marginBottom: "15px", fontSize: "16px", outline: "none", cursor: "pointer", textAlign: "center" }}
+                      style={{ width: isMobile ? "100%" : "250px", maxWidth: "300px", padding: "12px", borderRadius: "8px", border: `1px solid ${brand === 'amd' ? '#ff6600' : '#0066cc'}`, background: "rgba(0,0,0,0.5)", color: "#fff", marginBottom: "15px", fontSize: isMobile ? "14px" : "16px", outline: "none", cursor: "pointer", textAlign: "center" }}
                     >
                       {activeProduct.variants.edges.map((v: any) => (
                         <option key={v.node.id} value={v.node.id}>
@@ -497,7 +512,7 @@ function BuilderContent() {
                     </select>
                  )}
 
-                 <div style={{ fontSize: "36px", fontWeight: "900", color: brand === 'amd' ? '#ffcc00' : '#66b3ff', textShadow: "0px 2px 10px rgba(0,0,0,0.5)" }}>
+                 <div style={{ fontSize: isMobile ? "28px" : "36px", fontWeight: "900", color: brand === 'amd' ? '#ffcc00' : '#66b3ff', textShadow: "0px 2px 10px rgba(0,0,0,0.5)" }}>
                     {Number(activeProduct?.variants.edges.find((v:any) => v.node.id === selectedVarId)?.node.price.amount || activeProduct?.variants.edges[0].node.price.amount || 0).toFixed(2)} €
                  </div>
               </div>
@@ -508,50 +523,50 @@ function BuilderContent() {
           {/* BOTTOM NAVIGATION BAR */}
           {stepIndex > 0 && stepIndex < STEPS.length - 1 && (
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: "auto", paddingTop: "20px" }}>
-              <button onClick={() => setStepIndex(stepIndex - 1)} style={bottomNavBtnStyle}>
+              <button onClick={() => setStepIndex(stepIndex - 1)} style={{...bottomNavBtnStyle, padding: isMobile ? "10px 20px" : "15px 40px", fontSize: isMobile ? "14px" : "16px"}}>
                 NAZAD
               </button>
               
               {["hdd", "os"].includes(STEPS[stepIndex]) && (
-                <button onClick={handleSkip} style={{ ...bottomNavBtnStyle, background: "rgba(255,255,255,0.1)", color: "#aaa" }}>
+                <button onClick={handleSkip} style={{ ...bottomNavBtnStyle, padding: isMobile ? "10px 20px" : "15px 40px", fontSize: isMobile ? "14px" : "16px", background: "rgba(255,255,255,0.1)", color: "#aaa" }}>
                   PRESKOČI
                 </button>
               )}
             </div>
           )}
 
-          {/* REVIEW STEP - Restored and Adjusted for Dark Theme */}
+          {/* REVIEW STEP */}
           {STEPS[stepIndex] === "review" && (
             <div style={{ textAlign: "center", color: "#fff", width: "100%", paddingBottom: "40px", paddingTop: "20px" }}>
-              <div style={{ padding: "40px", background: "rgba(0,0,0,0.5)", borderRadius: "15px", border: "1px solid rgba(255,255,255,0.1)", backdropFilter: "blur(10px)" }}>
-                <h1>🎉 Build je spreman!</h1>
-                <p style={{ fontSize: "28px", margin: "20px 0", fontWeight: "bold", color: brand === 'amd' ? '#ffcc00' : '#66b3ff' }}>
+              <div style={{ padding: isMobile ? "20px" : "40px", background: "rgba(0,0,0,0.5)", borderRadius: "15px", border: "1px solid rgba(255,255,255,0.1)", backdropFilter: "blur(10px)" }}>
+                <h1 style={{ fontSize: isMobile ? "24px" : "32px" }}>🎉 Build je spreman!</h1>
+                <p style={{ fontSize: isMobile ? "22px" : "28px", margin: "20px 0", fontWeight: "bold", color: brand === 'amd' ? '#ffcc00' : '#66b3ff' }}>
                   Ukupna cijena: {currentTotal().toFixed(2)} €
                 </p>
-                <p style={{ color: "#aaa", fontSize: "14px" }}>(Uključen PDV i usluga slaganja od {ASSEMBLY_FEE} €)</p>
+                <p style={{ color: "#aaa", fontSize: isMobile ? "12px" : "14px" }}>(Uključen PDV i usluga slaganja od {ASSEMBLY_FEE} €)</p>
                 
                 <button disabled={isProcessing} onClick={handleCheckout} style={{ ...checkoutBtnStyle, background: brand === 'amd' ? '#ff6600' : '#0066cc', color: "#fff", border: "none", marginTop: "20px" }}>
                   {isProcessing ? "Obrađujem..." : `Naruči i Plati`}
                 </button>
                 
-                <button onClick={shareBuild} style={{ width: "100%", marginTop: "15px", padding: "15px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", background: "transparent", cursor: "pointer", fontSize: "16px", fontWeight: "bold" }}>
+                <button onClick={shareBuild} style={{ width: "100%", marginTop: "15px", padding: "15px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", background: "transparent", cursor: "pointer", fontSize: isMobile ? "14px" : "16px", fontWeight: "bold" }}>
                   🔗 Kopiraj link za dijeljenje
                 </button>
               </div>
 
-              {/* UPSELL SECTION (GPU, SSD, HDD) */}
-              <div style={{ textAlign: "left", marginTop: "30px", padding: "25px", background: "rgba(0,0,0,0.5)", borderRadius: "15px", border: "1px solid rgba(255,255,255,0.1)", backdropFilter: "blur(10px)" }}>
-                <h3 style={{ marginTop: 0, borderBottom: "1px solid rgba(255,255,255,0.2)", paddingBottom: "10px", color: "#fff" }}>Opcionalne Nadogradnje</h3>
+              {/* UPSELL SECTION */}
+              <div style={{ textAlign: "left", marginTop: "30px", padding: isMobile ? "15px" : "25px", background: "rgba(0,0,0,0.5)", borderRadius: "15px", border: "1px solid rgba(255,255,255,0.1)", backdropFilter: "blur(10px)" }}>
+                <h3 style={{ marginTop: 0, borderBottom: "1px solid rgba(255,255,255,0.2)", paddingBottom: "10px", color: "#fff", fontSize: isMobile ? "16px" : "18px" }}>Opcionalne Nadogradnje</h3>
                 
                 {/* 2. GPU UPSELL */}
                 <div style={{ marginTop: "15px" }}>
                   {!gpu2 ? (
-                    <button onClick={() => setAddingExtra(addingExtra === "gpu2" ? null : "gpu2")} style={{...upsellBtnStyle, background: "rgba(255,255,255,0.05)", color: "#fff", borderColor: "rgba(255,255,255,0.2)"}}>
+                    <button onClick={() => setAddingExtra(addingExtra === "gpu2" ? null : "gpu2")} style={{...upsellBtnStyle, background: "rgba(255,255,255,0.05)", color: "#fff", borderColor: "rgba(255,255,255,0.2)", fontSize: isMobile ? "12px" : "14px"}}>
                       {addingExtra === "gpu2" ? "Odustani" : "➕ Dodaj 2. Grafičku (Za 3D i AI)"}
                     </button>
                   ) : (
                     <div style={{...addedUpsellStyle, background: "rgba(255,255,255,0.1)", color: "#fff", border: "1px solid rgba(255,255,255,0.1)"}}>
-                      <span><strong>2. GPU:</strong> {gpu2.title} {gpu2.selectedVariant && gpu2.selectedVariant.title !== "Default Title" ? `(${gpu2.selectedVariant.title})` : ""}</span>
+                      <span style={{ fontSize: isMobile ? "12px" : "14px" }}><strong>2. GPU:</strong> {gpu2.title} {gpu2.selectedVariant && gpu2.selectedVariant.title !== "Default Title" ? `(${gpu2.selectedVariant.title})` : ""}</span>
                       <button onClick={() => setGpu2(null)} style={removeBtnStyle}>✖ Ukloni</button>
                     </div>
                   )}
@@ -560,8 +575,8 @@ function BuilderContent() {
                     <div style={{...dropdownListStyle, background: "#222", borderColor: "#444"}}>
                       {getSortedExtras("gpu").flatMap(p => 
                         p.variants.edges.map(v => (
-                          <button key={v.node.id} style={{...dropdownItemStyle, background: "#222", color: "#fff", borderBottomColor: "#333"}} onClick={() => { setGpu2({ ...p, selectedVariant: v.node }); setAddingExtra(null); }}>
-                            {p.title} {v.node.title !== "Default Title" ? `- ${v.node.title}` : ""} <span style={{color: brand === 'amd' ? '#ffcc00' : '#66b3ff', fontWeight: "bold"}}>{Number(v.node.price.amount).toFixed(2)} €</span>
+                          <button key={v.node.id} style={{...dropdownItemStyle, background: "#222", color: "#fff", borderBottomColor: "#333", fontSize: isMobile ? "12px" : "14px"}} onClick={() => { setGpu2({ ...p, selectedVariant: v.node }); setAddingExtra(null); }}>
+                            <span>{p.title} {v.node.title !== "Default Title" ? `- ${v.node.title}` : ""}</span> <span style={{color: brand === 'amd' ? '#ffcc00' : '#66b3ff', fontWeight: "bold"}}>{Number(v.node.price.amount).toFixed(2)} €</span>
                           </button>
                         ))
                       )}
@@ -572,12 +587,12 @@ function BuilderContent() {
                 {/* 2. SSD UPSELL */}
                 <div style={{ marginTop: "15px" }}>
                   {!ssd2 ? (
-                    <button onClick={() => setAddingExtra(addingExtra === "ssd2" ? null : "ssd2")} style={{...upsellBtnStyle, background: "rgba(255,255,255,0.05)", color: "#fff", borderColor: "rgba(255,255,255,0.2)"}}>
+                    <button onClick={() => setAddingExtra(addingExtra === "ssd2" ? null : "ssd2")} style={{...upsellBtnStyle, background: "rgba(255,255,255,0.05)", color: "#fff", borderColor: "rgba(255,255,255,0.2)", fontSize: isMobile ? "12px" : "14px"}}>
                       {addingExtra === "ssd2" ? "Odustani" : "➕ Dodaj 2. SSD (Dodatna brza pohrana)"}
                     </button>
                   ) : (
                     <div style={{...addedUpsellStyle, background: "rgba(255,255,255,0.1)", color: "#fff", border: "1px solid rgba(255,255,255,0.1)"}}>
-                      <span><strong>2. SSD:</strong> {ssd2.title} {ssd2.selectedVariant && ssd2.selectedVariant.title !== "Default Title" ? `(${ssd2.selectedVariant.title})` : ""}</span>
+                      <span style={{ fontSize: isMobile ? "12px" : "14px" }}><strong>2. SSD:</strong> {ssd2.title} {ssd2.selectedVariant && ssd2.selectedVariant.title !== "Default Title" ? `(${ssd2.selectedVariant.title})` : ""}</span>
                       <button onClick={() => setSsd2(null)} style={removeBtnStyle}>✖ Ukloni</button>
                     </div>
                   )}
@@ -586,8 +601,8 @@ function BuilderContent() {
                     <div style={{...dropdownListStyle, background: "#222", borderColor: "#444"}}>
                       {getSortedExtras("ssd").flatMap(p => 
                         p.variants.edges.map(v => (
-                          <button key={v.node.id} style={{...dropdownItemStyle, background: "#222", color: "#fff", borderBottomColor: "#333"}} onClick={() => { setSsd2({ ...p, selectedVariant: v.node }); setAddingExtra(null); }}>
-                            {p.title} {v.node.title !== "Default Title" ? `- ${v.node.title}` : ""} <span style={{color: brand === 'amd' ? '#ffcc00' : '#66b3ff', fontWeight: "bold"}}>{Number(v.node.price.amount).toFixed(2)} €</span>
+                          <button key={v.node.id} style={{...dropdownItemStyle, background: "#222", color: "#fff", borderBottomColor: "#333", fontSize: isMobile ? "12px" : "14px"}} onClick={() => { setSsd2({ ...p, selectedVariant: v.node }); setAddingExtra(null); }}>
+                            <span>{p.title} {v.node.title !== "Default Title" ? `- ${v.node.title}` : ""}</span> <span style={{color: brand === 'amd' ? '#ffcc00' : '#66b3ff', fontWeight: "bold"}}>{Number(v.node.price.amount).toFixed(2)} €</span>
                           </button>
                         ))
                       )}
@@ -598,12 +613,12 @@ function BuilderContent() {
                 {/* 2. HDD UPSELL */}
                 <div style={{ marginTop: "15px" }}>
                   {!hdd2 ? (
-                    <button onClick={() => setAddingExtra(addingExtra === "hdd2" ? null : "hdd2")} style={{...upsellBtnStyle, background: "rgba(255,255,255,0.05)", color: "#fff", borderColor: "rgba(255,255,255,0.2)"}}>
+                    <button onClick={() => setAddingExtra(addingExtra === "hdd2" ? null : "hdd2")} style={{...upsellBtnStyle, background: "rgba(255,255,255,0.05)", color: "#fff", borderColor: "rgba(255,255,255,0.2)", fontSize: isMobile ? "12px" : "14px"}}>
                       {addingExtra === "hdd2" ? "Odustani" : "➕ Dodaj 2. HDD (Masivna pohrana)"}
                     </button>
                   ) : (
                     <div style={{...addedUpsellStyle, background: "rgba(255,255,255,0.1)", color: "#fff", border: "1px solid rgba(255,255,255,0.1)"}}>
-                      <span><strong>2. HDD:</strong> {hdd2.title} {hdd2.selectedVariant && hdd2.selectedVariant.title !== "Default Title" ? `(${hdd2.selectedVariant.title})` : ""}</span>
+                      <span style={{ fontSize: isMobile ? "12px" : "14px" }}><strong>2. HDD:</strong> {hdd2.title} {hdd2.selectedVariant && hdd2.selectedVariant.title !== "Default Title" ? `(${hdd2.selectedVariant.title})` : ""}</span>
                       <button onClick={() => setHdd2(null)} style={removeBtnStyle}>✖ Ukloni</button>
                     </div>
                   )}
@@ -612,8 +627,8 @@ function BuilderContent() {
                     <div style={{...dropdownListStyle, background: "#222", borderColor: "#444"}}>
                       {getSortedExtras("hdd").flatMap(p => 
                         p.variants.edges.map(v => (
-                          <button key={v.node.id} style={{...dropdownItemStyle, background: "#222", color: "#fff", borderBottomColor: "#333"}} onClick={() => { setHdd2({ ...p, selectedVariant: v.node }); setAddingExtra(null); }}>
-                            {p.title} {v.node.title !== "Default Title" ? `- ${v.node.title}` : ""} <span style={{color: brand === 'amd' ? '#ffcc00' : '#66b3ff', fontWeight: "bold"}}>{Number(v.node.price.amount).toFixed(2)} €</span>
+                          <button key={v.node.id} style={{...dropdownItemStyle, background: "#222", color: "#fff", borderBottomColor: "#333", fontSize: isMobile ? "12px" : "14px"}} onClick={() => { setHdd2({ ...p, selectedVariant: v.node }); setAddingExtra(null); }}>
+                            <span>{p.title} {v.node.title !== "Default Title" ? `- ${v.node.title}` : ""}</span> <span style={{color: brand === 'amd' ? '#ffcc00' : '#66b3ff', fontWeight: "bold"}}>{Number(v.node.price.amount).toFixed(2)} €</span>
                           </button>
                         ))
                       )}
@@ -629,9 +644,20 @@ function BuilderContent() {
           )}
         </div>
 
-        {/* RIGHT SIDEBAR - GLASSMORPHISM THEME */}
-        <div style={{ flex: 1, background: "rgba(0, 0, 0, 0.6)", backdropFilter: "blur(10px)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "16px", padding: "25px", height: "fit-content", position: "sticky", top: "40px" }}>
-          <h3 style={{ marginTop: 0, borderBottom: "1px solid rgba(255,255,255,0.2)", paddingBottom: "15px", color: "#fff" }}>Vaša Konfiguracija</h3>
+        {/* RIGHT SIDEBAR - STACKS ON MOBILE */}
+        <div style={{ 
+          flex: 1, 
+          background: "rgba(0, 0, 0, 0.6)", 
+          backdropFilter: "blur(10px)", 
+          border: "1px solid rgba(255,255,255,0.1)", 
+          borderRadius: "16px", 
+          padding: isMobile ? "15px" : "25px", 
+          height: "fit-content", 
+          position: isMobile ? "relative" : "sticky", 
+          top: "40px",
+          marginTop: isMobile ? "20px" : "0"
+        }}>
+          <h3 style={{ marginTop: 0, borderBottom: "1px solid rgba(255,255,255,0.2)", paddingBottom: "15px", color: "#fff", fontSize: isMobile ? "18px" : "20px" }}>Vaša Konfiguracija</h3>
           
           <SidebarRow label="Procesor" item={cpu} />
           <SidebarRow label="Matična" item={mb} />
@@ -678,7 +704,7 @@ function BuilderContent() {
             </p>
           </div>
 
-          <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold", fontSize: "20px", color: "#fff" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold", fontSize: isMobile ? "18px" : "20px", color: "#fff" }}>
             <span>Ukupno:</span>
             <span>{currentTotal().toFixed(2)} €</span>
           </div>
@@ -719,12 +745,12 @@ function SidebarRow({ label, item }: { label: string; item?: ProductNode | null 
 }
 
 /* STYLES */
-const brandBtnStyle: CSSProperties = { width: "250px", height: "150px", fontSize: "32px", fontWeight: "bold", color: "#fff", border: "none", borderRadius: "16px", cursor: "pointer", boxShadow: "0 10px 30px rgba(0,0,0,0.5)", transition: "transform 0.2s" };
-const navArrowStyle: CSSProperties = { background: "rgba(255,255,255,0.1)", border: "none", color: "white", fontSize: "30px", width: "50px", height: "50px", borderRadius: "50%", cursor: "pointer", backdropFilter: "blur(5px)", transition: "0.2s" };
-const bottomNavBtnStyle: CSSProperties = { padding: "15px 40px", borderRadius: "30px", fontSize: "16px", fontWeight: "bold", border: "none", cursor: "pointer", background: "rgba(255,255,255,0.8)", color: "#000", transition: "0.2s" };
+const brandBtnStyle: CSSProperties = { fontSize: "32px", fontWeight: "bold", color: "#fff", border: "none", borderRadius: "16px", cursor: "pointer", boxShadow: "0 10px 30px rgba(0,0,0,0.5)", transition: "transform 0.2s" };
+const navArrowStyle: CSSProperties = { background: "rgba(255,255,255,0.1)", border: "none", color: "white", borderRadius: "50%", cursor: "pointer", backdropFilter: "blur(5px)", transition: "0.2s" };
+const bottomNavBtnStyle: CSSProperties = { borderRadius: "30px", fontWeight: "bold", border: "none", cursor: "pointer", background: "rgba(255,255,255,0.8)", color: "#000", transition: "0.2s" };
 const checkoutBtnStyle: CSSProperties = { width: "100%", padding: "20px", fontWeight: "bold", cursor: "pointer", borderRadius: "8px", fontSize: "18px" };
 const upsellBtnStyle: CSSProperties = { width: "100%", padding: "12px", border: "1px dashed", fontWeight: "bold", borderRadius: "8px", cursor: "pointer", textAlign: "left" as const };
 const addedUpsellStyle: CSSProperties = { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px", borderRadius: "8px", fontSize: "14px" };
 const removeBtnStyle: CSSProperties = { color: "#ff4d4d", border: "none", background: "none", cursor: "pointer", fontWeight: "bold" };
 const dropdownListStyle: CSSProperties = { marginTop: "10px", maxHeight: "250px", overflowY: "auto", border: "1px solid", borderRadius: "8px" };
-const dropdownItemStyle: CSSProperties = { width: "100%", display: "flex", justifyContent: "space-between", padding: "12px 15px", border: "none", borderBottom: "1px solid", cursor: "pointer", fontSize: "14px", textAlign: "left" as const };
+const dropdownItemStyle: CSSProperties = { width: "100%", display: "flex", justifyContent: "space-between", padding: "12px 15px", border: "none", borderBottom: "1px solid", cursor: "pointer", textAlign: "left" as const };
