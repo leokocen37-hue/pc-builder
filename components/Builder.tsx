@@ -296,7 +296,6 @@ function BuilderContent() {
       .sort((a, b) => Number(b.variants.edges[0]?.node.price.amount || 0) - Number(a.variants.edges[0]?.node.price.amount || 0));
   };
 
-  // Generate Current Products list
   const currentStep = STEPS[stepIndex];
   const currentProducts = products.filter(p => {
     const type = p.pcfType?.value;
@@ -342,12 +341,14 @@ function BuilderContent() {
 
   const activeProduct = currentProducts[activeIndex];
 
+  // REAL-TIME CONTINUOUS COVERFLOW MATH
   const getCardStyle = (exactOffset: number, isMobile: boolean) => {
     const absOffset = Math.abs(exactOffset);
     const sign = Math.sign(exactOffset) || 1;
     
-    const baseOffset1 = isMobile ? 120 : 220;
-    const baseOffset2 = isMobile ? 180 : 400;
+    // Aligned purely with slideWidth for 1:1 finger tracking
+    const baseOffset1 = isMobile ? 110 : 220;
+    const baseOffset2 = isMobile ? 170 : 380;
 
     let translateX = 0;
     let scale = 1.1;
@@ -403,19 +404,20 @@ function BuilderContent() {
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (startX === null) return;
     const diff = e.clientX - startX;
-    const slideWidth = isMobile ? 160 : 250;
     
-    // Calculate how many full item widths we have dragged past
+    // The precise width of a slot. Matching this to baseOffset1 creates 1:1 dragging.
+    const slideWidth = isMobile ? 110 : 220; 
+    
+    // Instantly process full-width jumps while the finger is still down
     const jumps = Math.trunc(diff / slideWidth);
 
     if (jumps !== 0) {
-      // Shift the active index instantly during the drag
       setActiveIndex((prev) => {
         let next = prev - jumps;
-        while (next < 0) next += currentProducts.length; // Ensure positive modulo
+        while (next < 0) next += currentProducts.length; 
         return next % currentProducts.length;
       });
-      // Move the anchor point to seamlessly continue dragging
+      // Move the anchor point to seamlessly continue the swipe
       setStartX((prev) => (prev !== null ? prev + jumps * slideWidth : e.clientX));
       setDragOffset(diff - jumps * slideWidth);
     } else {
@@ -429,9 +431,9 @@ function BuilderContent() {
 
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
     if (startX !== null) {
-      const slideWidth = isMobile ? 160 : 250;
+      const slideWidth = isMobile ? 110 : 220;
       
-      // Magnetic Snap: If dragged more than 33% of a card, snap to it
+      // Magnetic Snap: If dragged more than 33% of a slot, finalize the jump
       if (dragOffset > slideWidth / 3) {
         setActiveIndex((prev) => (prev - 1 + currentProducts.length) % currentProducts.length);
       } else if (dragOffset < -slideWidth / 3) {
@@ -517,7 +519,8 @@ function BuilderContent() {
                 >
                   {currentProducts.map((p, idx) => {
                     const baseOffset = getOffset(idx);
-                    const slideWidth = isMobile ? 160 : 250; 
+                    
+                    const slideWidth = isMobile ? 110 : 220; 
                     const exactOffset = baseOffset + (dragOffset / slideWidth);
 
                     const { transform, opacity, zIndex } = getCardStyle(exactOffset, isMobile);
