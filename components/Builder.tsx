@@ -108,7 +108,6 @@ function BuilderContent() {
     return 0;
   };
 
-  // RESTORED BADGE COLOR LOGIC
   const getBadgeStyle = (badgeText: string) => {
     const t = badgeText.toLowerCase();
     if (t.includes("ultimativni") || t.includes("kompromisa") || t.includes("apsolutni") || t.includes("profesionalce") || t.includes("trezor") || t.includes("vrh")) 
@@ -343,7 +342,6 @@ function BuilderContent() {
 
   const activeProduct = currentProducts[activeIndex];
 
-  // REAL-TIME CONTINUOUS COVERFLOW MATH
   const getCardStyle = (exactOffset: number, isMobile: boolean) => {
     const absOffset = Math.abs(exactOffset);
     const sign = Math.sign(exactOffset) || 1;
@@ -395,7 +393,7 @@ function BuilderContent() {
     }
   }, [activeProduct]);
 
-  // DRAG & SWIPE PHYSICS
+  // CONTINUOUS MULTI-SWIPE PHYSICS
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     setStartX(e.clientX);
     setDragOffset(0);
@@ -405,7 +403,25 @@ function BuilderContent() {
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (startX === null) return;
     const diff = e.clientX - startX;
-    setDragOffset(diff);
+    const slideWidth = isMobile ? 160 : 250;
+    
+    // Calculate how many full item widths we have dragged past
+    const jumps = Math.trunc(diff / slideWidth);
+
+    if (jumps !== 0) {
+      // Shift the active index instantly during the drag
+      setActiveIndex((prev) => {
+        let next = prev - jumps;
+        while (next < 0) next += currentProducts.length; // Ensure positive modulo
+        return next % currentProducts.length;
+      });
+      // Move the anchor point to seamlessly continue dragging
+      setStartX((prev) => (prev !== null ? prev + jumps * slideWidth : e.clientX));
+      setDragOffset(diff - jumps * slideWidth);
+    } else {
+      setDragOffset(diff);
+    }
+
     if (Math.abs(diff) > 15) { 
       setIsDragging(true); 
     }
@@ -413,12 +429,12 @@ function BuilderContent() {
 
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
     if (startX !== null) {
-      const diff = e.clientX - startX;
-      const threshold = isMobile ? 40 : 80; 
+      const slideWidth = isMobile ? 160 : 250;
       
-      if (diff > threshold) {
+      // Magnetic Snap: If dragged more than 33% of a card, snap to it
+      if (dragOffset > slideWidth / 3) {
         setActiveIndex((prev) => (prev - 1 + currentProducts.length) % currentProducts.length);
-      } else if (diff < -threshold) {
+      } else if (dragOffset < -slideWidth / 3) {
         setActiveIndex((prev) => (prev + 1) % currentProducts.length);
       }
     }
@@ -501,7 +517,6 @@ function BuilderContent() {
                 >
                   {currentProducts.map((p, idx) => {
                     const baseOffset = getOffset(idx);
-                    
                     const slideWidth = isMobile ? 160 : 250; 
                     const exactOffset = baseOffset + (dragOffset / slideWidth);
 
@@ -561,7 +576,6 @@ function BuilderContent() {
                            </div>
                          )}
 
-                         {/* TITLE & BADGE CONTAINER */}
                          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "5px", width: "100%", pointerEvents: "none" }}>
                             {p.pcfBadge?.value && badgeStyle && (
                                <span style={{
@@ -779,7 +793,6 @@ function BuilderContent() {
                 </div>
               </div>
               
-              {/* RESTORED BOTTOM RESET BUTTON */}
               <button 
                 onClick={resetBuild} 
                 style={{ width: "100%", marginTop: "30px", padding: "15px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.3)", color: "#fff", background: "transparent", cursor: "pointer", fontWeight: "bold", fontSize: "16px" }}
