@@ -58,7 +58,7 @@ function BuilderContent() {
   const [products, setProducts] = useState<ProductNode[]>([]);
   const [loading, setLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isMobile, setIsMobile] = useState(false); // Mobile Detection State
+  const [isMobile, setIsMobile] = useState(false); 
 
   // Carousel state
   const [activeIndex, setActiveIndex] = useState(0);
@@ -116,10 +116,9 @@ function BuilderContent() {
 
   const bottleneckWarning = checkBottleneck();
 
-  // Handle Mobile Resize Tracking
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 900);
-    handleResize(); // Check immediately
+    handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
@@ -202,7 +201,6 @@ function BuilderContent() {
     fetchAndSync();
   }, [searchParams]); 
 
-  // Reset carousel index when step changes
   useEffect(() => {
     setActiveIndex(0);
   }, [stepIndex]);
@@ -400,8 +398,8 @@ function BuilderContent() {
           {stepIndex > 0 && stepIndex < STEPS.length - 1 && currentProducts.length > 0 && (
             <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", position: "relative" }}>
               
-              {/* Carousel Container */}
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: isMobile ? "260px" : "350px", position: "relative", overflow: "hidden" }}>
+              {/* Carousel Container - INCREASED HEIGHT TO PREVENT CLIPPING */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: isMobile ? "300px" : "400px", position: "relative", overflow: "hidden" }}>
                 
                 {/* Left Arrow */}
                 <button 
@@ -430,7 +428,7 @@ function BuilderContent() {
 
                     if (offset === 1) { transform = `translateX(${baseOffset1}px) scale(0.85)`; zIndex = 5; opacity = 0.6; }
                     else if (offset === -1) { transform = `translateX(-${baseOffset1}px) scale(0.85)`; zIndex = 5; opacity = 0.6; }
-                    else if (offset === 2) { transform = `translateX(${baseOffset2}px) scale(0.7)`; zIndex = 2; opacity = isMobile ? 0 : 0.3; } // Hidden entirely on mobile to prevent squishing
+                    else if (offset === 2) { transform = `translateX(${baseOffset2}px) scale(0.7)`; zIndex = 2; opacity = isMobile ? 0 : 0.3; }
                     else if (offset === -2) { transform = `translateX(-${baseOffset2}px) scale(0.7)`; zIndex = 2; opacity = isMobile ? 0 : 0.3; }
 
                     return (
@@ -477,7 +475,7 @@ function BuilderContent() {
                          <h3 style={{ fontSize: isMobile ? "12px" : "14px", margin: 0, fontWeight: "600", color: isActive ? "#fff" : "#aaa", lineHeight: "1.2" }}>{p.title}</h3>
                          
                          {isActive && (
-                            <div style={{ position: "absolute", bottom: isMobile ? "-30px" : "-40px", fontSize: isMobile ? "10px" : "12px", color: brand === 'amd' ? '#ffcc00' : '#66b3ff', fontWeight: "bold", opacity: 0.8 }}>
+                            <div style={{ position: "absolute", bottom: isMobile ? "-25px" : "-30px", fontSize: isMobile ? "11px" : "13px", color: brand === 'amd' ? '#ffcc00' : '#66b3ff', fontWeight: "bold", opacity: 0.9, letterSpacing: "1px" }}>
                                KLIKNI ZA ODABIR
                             </div>
                          )}
@@ -496,7 +494,7 @@ function BuilderContent() {
               </div>
 
               {/* ACTIVE ITEM VARIANTS & PRICE */}
-              <div style={{ marginTop: isMobile ? "30px" : "40px", width: "100%", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
+              <div style={{ marginTop: isMobile ? "10px" : "20px", width: "100%", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
                  
                  {activeProduct?.variants.edges.length > 1 && (
                     <select 
@@ -637,9 +635,6 @@ function BuilderContent() {
                 </div>
 
               </div>
-              <button onClick={resetBuild} style={{ ...bottomNavBtnStyle, marginTop: "30px", background: "transparent", color: "#fff", border: "1px solid rgba(255,255,255,0.3)" }}>
-                🔄 Počni ispočetka
-              </button>
             </div>
           )}
         </div>
@@ -718,6 +713,16 @@ function BuilderContent() {
               * Usluga slaganja ({ASSEMBLY_FEE} €) bit će dodana na kraju.
             </p>
           )}
+
+          {/* RESTORED RESET BUTTON FOR ALL STEPS */}
+          <button 
+            onClick={resetBuild} 
+            style={{ width: "100%", marginTop: "25px", padding: "12px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", background: "rgba(220, 53, 69, 0.7)", cursor: "pointer", fontWeight: "bold", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", transition: "0.2s" }}
+            onMouseOver={(e) => e.currentTarget.style.background = "rgba(220, 53, 69, 0.9)"}
+            onMouseOut={(e) => e.currentTarget.style.background = "rgba(220, 53, 69, 0.7)"}
+          >
+            🔄 Počni ispočetka
+          </button>
 
         </div>
       </div>
