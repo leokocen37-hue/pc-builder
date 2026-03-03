@@ -340,17 +340,17 @@ function BuilderContent() {
     }
   }, [activeProduct]);
 
-  // DRAG / SWIPE LOGIC
+  // FIXED DRAG / SWIPE LOGIC
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     setStartX(e.clientX);
     setIsDragging(false);
-    e.currentTarget.setPointerCapture(e.pointerId);
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (startX === null) return;
     const diff = e.clientX - startX;
-    if (Math.abs(diff) > 10) { // If finger moved more than 10px, count as drag
+    // Increased threshold to 15 to prevent accidental drag on standard clicks
+    if (Math.abs(diff) > 15) { 
       setIsDragging(true);
     }
   };
@@ -361,16 +361,14 @@ function BuilderContent() {
       const threshold = 40; // Pixels needed to trigger next/prev swipe
       
       if (diff > threshold) {
-        // Swiped Right -> Go to previous item
         setActiveIndex((prev) => (prev - 1 + currentProducts.length) % currentProducts.length);
       } else if (diff < -threshold) {
-        // Swiped Left -> Go to next item
         setActiveIndex((prev) => (prev + 1) % currentProducts.length);
       }
     }
     setStartX(null);
-    // Delay resetting isDragging so the click handler knows to abort
-    setTimeout(() => setIsDragging(false), 50); 
+    // Timeout gives the click event time to fire and read isDragging=true before it resets
+    setTimeout(() => setIsDragging(false), 100); 
   };
 
   if (loading) return <div style={{ padding: "100px", textAlign: "center", color: "white" }}>Učitavanje...</div>;
@@ -449,6 +447,7 @@ function BuilderContent() {
                   onPointerDown={handlePointerDown}
                   onPointerMove={handlePointerMove}
                   onPointerUp={handlePointerUp}
+                  onPointerLeave={handlePointerUp} // Safeguard if mouse leaves container while dragging
                   onPointerCancel={handlePointerUp}
                   style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", position: "relative", touchAction: "pan-y" }}
                 >
@@ -476,7 +475,7 @@ function BuilderContent() {
                       <div 
                         key={p.id} 
                         onClick={() => {
-                          if (isDragging) return; // Ignore click if user was swiping!
+                          if (isDragging) return; // Completely ignores clicks if user was actively dragging
                           
                           if (isActive) {
                             const variantNode = p.variants.edges.find((v:any) => v.node.id === selectedVarId)?.node || p.variants.edges[0].node;
@@ -505,7 +504,7 @@ function BuilderContent() {
                           transform: transform,
                           boxShadow: isActive ? `0 15px 35px rgba(0,0,0,0.6)` : "0 5px 15px rgba(0,0,0,0.3)",
                           pointerEvents: opacity === 0 ? "none" : "auto",
-                          userSelect: "none" // Prevent text highlighting while dragging
+                          userSelect: "none" // Prevent text highlighting while dragging on PC
                         }}
                       >
                          {p.featuredImage ? (
