@@ -60,10 +60,11 @@ function BuilderContent() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isMobile, setIsMobile] = useState(false); 
 
-  // Carousel & Drag state
+  // Carousel & Drag physics state
   const [activeIndex, setActiveIndex] = useState(0);
   const [selectedVarId, setSelectedVarId] = useState("");
   const [startX, setStartX] = useState<number | null>(null);
+  const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
 
   const [addingExtra, setAddingExtra] = useState<"gpu2" | "ssd2" | "hdd2" | null>(null);
@@ -205,6 +206,7 @@ function BuilderContent() {
 
   useEffect(() => {
     setActiveIndex(0);
+    setDragOffset(0);
   }, [stepIndex]);
 
   const handleSelection = (type: string, p: ProductNode) => {
@@ -247,6 +249,7 @@ function BuilderContent() {
     return isReviewStep ? compPrice + ASSEMBLY_FEE : compPrice;
   };
 
+  // 100% RESTORED CHECKOUT LOGIC
   const handleCheckout = async () => {
     setIsProcessing(true);
     const summary = [cpu, mb, ram, gpu, gpu2, ssd, ssd2, hdd, hdd2, pcCase, psu, cooler, os]
@@ -261,8 +264,12 @@ function BuilderContent() {
         body: JSON.stringify({ totalPrice: currentTotal(), summary }),
       });
       const data = await res.json();
-      if (data.draftOrder?.invoiceUrl) window.location.href = data.draftOrder.invoiceUrl;
-      else { alert("Greška"); setIsProcessing(false); }
+      if (data.draftOrder?.invoiceUrl) {
+        window.location.href = data.draftOrder.invoiceUrl;
+      } else { 
+        alert("Greška pri kreiranju narudžbe."); 
+        setIsProcessing(false); 
+      }
     } catch (error) {
       alert("Serverska greška");
       setIsProcessing(false);
@@ -272,11 +279,7 @@ function BuilderContent() {
   const getSortedExtras = (type: string) => {
     return products
       .filter(p => p.pcfType?.value === type)
-      .sort((a, b) => {
-         const priceA = Number(a.variants.edges[0]?.node.price.amount || 0);
-         const priceB = Number(b.variants.edges[0]?.node.price.amount || 0);
-         return priceB - priceA;
-      });
+      .sort((a, b) => Number(b.variants.edges[0]?.node.price.amount || 0) - Number(a.variants.edges[0]?.node.price.amount || 0));
   };
 
   // Generate Current Products list
@@ -325,7 +328,44 @@ function BuilderContent() {
 
   const activeProduct = currentProducts[activeIndex];
 
-  // Carousel Math logic for infinite looping
+  // REAL-TIME CONTINUOUS COVERFLOW MATH
+  const getCardStyle = (exactOffset: number, isMobile: boolean) => {
+    const absOffset = Math.abs(exactOffset);
+    const sign = Math.sign(exactOffset) || 1;
+    
+    const baseOffset1 = isMobile ? 120 : 220;
+    const baseOffset2 = isMobile ? 180 : 400;
+
+    let translateX = 0;
+    let scale = 1.1;
+    let opacity = 1;
+    let zIndex = 10;
+
+    if (absOffset <= 1) {
+      translateX = exactOffset * baseOffset1;
+      scale = 1.1 - (0.25 * absOffset);
+      opacity = 1 - (0.4 * absOffset);
+      zIndex = 10 - Math.round(absOffset * 5);
+    } else if (absOffset <= 2) {
+      const fraction = absOffset - 1;
+      translateX = sign * (baseOffset1 + fraction * (baseOffset2 - baseOffset1));
+      scale = 0.85 - (0.15 * fraction);
+      opacity = 0.6 - (isMobile ? 0.6 : 0.3) * fraction;
+      zIndex = 5 - Math.round(fraction * 3);
+    } else {
+      translateX = sign * (baseOffset2 + (absOffset - 2) * 100);
+      scale = 0.7 - (0.2 * (absOffset - 2));
+      opacity = 0;
+      zIndex = 0;
+    }
+
+    return { 
+      transform: `translateX(${translateX}px) scale(${scale})`, 
+      opacity: Math.max(0, opacity), 
+      zIndex: Math.max(0, zIndex) 
+    };
+  };
+
   const getOffset = (index: number) => {
     const N = currentProducts.length;
     if (N === 0) return 0;
@@ -340,25 +380,27 @@ function BuilderContent() {
     }
   }, [activeProduct]);
 
-  // FIXED DRAG / SWIPE LOGIC
+  // DRAG & SWIPE PHYSICS
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     setStartX(e.clientX);
+    setDragOffset(0);
     setIsDragging(false);
+    e.currentTarget.setPointerCapture(e.pointerId); 
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (startX === null) return;
     const diff = e.clientX - startX;
-    // Increased threshold to 15 to prevent accidental drag on standard clicks
-    if (Math.abs(diff) > 15) { 
-      setIsDragging(true);
+    setDragOffset(diff);
+    if (Math.abs(diff) > 10) { 
+      setIsDragging(true); 
     }
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
     if (startX !== null) {
       const diff = e.clientX - startX;
-      const threshold = 40; // Pixels needed to trigger next/prev swipe
+      const threshold = isMobile ? 40 : 80; 
       
       if (diff > threshold) {
         setActiveIndex((prev) => (prev - 1 + currentProducts.length) % currentProducts.length);
@@ -366,14 +408,13 @@ function BuilderContent() {
         setActiveIndex((prev) => (prev + 1) % currentProducts.length);
       }
     }
+    setDragOffset(0); 
     setStartX(null);
-    // Timeout gives the click event time to fire and read isDragging=true before it resets
-    setTimeout(() => setIsDragging(false), 100); 
+    setTimeout(() => setIsDragging(false), 50); 
   };
 
   if (loading) return <div style={{ padding: "100px", textAlign: "center", color: "white" }}>Učitavanje...</div>;
 
-  // DYNAMIC BACKGROUND COLOR
   const bgStyle = {
     background: brand === 'amd' ? 'linear-gradient(135deg, #222 45%, #e05e00 45%)' :
                 brand === 'intel' ? 'linear-gradient(135deg, #222 45%, #0066cc 45%)' :
@@ -388,13 +429,7 @@ function BuilderContent() {
 
   return (
     <div style={bgStyle}>
-      <div style={{ 
-        display: "flex", 
-        flexDirection: isMobile ? "column" : "row", 
-        maxWidth: "1400px", 
-        margin: "0 auto", 
-        gap: isMobile ? "20px" : "40px" 
-      }}>
+      <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", maxWidth: "1400px", margin: "0 auto", gap: isMobile ? "20px" : "40px" }}>
         
         {/* LEFT MAIN AREA */}
         <div style={{ flex: 3, display: "flex", flexDirection: "column", minHeight: isMobile ? "auto" : "80vh", position: "relative" }}>
@@ -413,13 +448,13 @@ function BuilderContent() {
           {STEPS[stepIndex] === "brand" && (
             <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", gap: isMobile ? "15px" : "30px", justifyContent: "center", alignItems: "center", flex: 1, padding: isMobile ? "30px 0" : "0" }}>
               <button 
-                onClick={() => { setBrand("intel"); setStepIndex(1); }}
+                onClick={() => { setBrand("intel"); setStepIndex(1); }} 
                 style={{ ...brandBtnStyle, width: isMobile ? "100%" : "250px", height: isMobile ? "100px" : "150px", background: "linear-gradient(135deg, #004488, #0066cc)" }}
               >
                 INTEL
               </button>
               <button 
-                onClick={() => { setBrand("amd"); setStepIndex(1); }}
+                onClick={() => { setBrand("amd"); setStepIndex(1); }} 
                 style={{ ...brandBtnStyle, width: isMobile ? "100%" : "250px", height: isMobile ? "100px" : "150px", background: "linear-gradient(135deg, #cc4400, #ff6600)" }}
               >
                 AMD
@@ -432,9 +467,8 @@ function BuilderContent() {
             <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", position: "relative" }}>
               
               {/* Carousel Container */}
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: isMobile ? "300px" : "400px", position: "relative", overflow: "hidden" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: isMobile ? "300px" : "400px", position: "relative" }}>
                 
-                {/* Left Arrow */}
                 <button 
                   onClick={() => setActiveIndex((activeIndex - 1 + currentProducts.length) % currentProducts.length)} 
                   style={{...navArrowStyle, width: isMobile ? "35px" : "50px", height: isMobile ? "35px" : "50px", fontSize: isMobile ? "20px" : "30px", position: "absolute", left: isMobile ? "5px" : "0", zIndex: 50}}
@@ -442,42 +476,33 @@ function BuilderContent() {
                   &lt;
                 </button>
 
-                {/* DRAG AND SWIPE CAPTURE WRAPPER */}
+                {/* DRAG AND SWIPE PHYSICS WRAPPER */}
                 <div 
                   onPointerDown={handlePointerDown}
                   onPointerMove={handlePointerMove}
                   onPointerUp={handlePointerUp}
-                  onPointerLeave={handlePointerUp} // Safeguard if mouse leaves container while dragging
                   onPointerCancel={handlePointerUp}
                   style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", position: "relative", touchAction: "pan-y" }}
                 >
                   {currentProducts.map((p, idx) => {
-                    const offset = getOffset(idx);
-                    const isVisible = Math.abs(offset) <= 2;
-                    const isActive = offset === 0;
+                    const baseOffset = getOffset(idx);
+                    
+                    const slideWidth = isMobile ? 160 : 250; 
+                    const exactOffset = baseOffset + (dragOffset / slideWidth);
 
-                    if (!isVisible) return <div key={p.id} style={{ display: "none" }} />;
+                    const { transform, opacity, zIndex } = getCardStyle(exactOffset, isMobile);
+                    const isVisible = opacity > 0;
+                    const isActive = baseOffset === 0 && !isDragging; 
 
-                    // Dynamic Mobile Animation Calculation
-                    const baseOffset1 = isMobile ? 110 : 200;
-                    const baseOffset2 = isMobile ? 160 : 360;
-
-                    let transform = "translateX(0) scale(1.1)";
-                    let zIndex = 10;
-                    let opacity = 1;
-
-                    if (offset === 1) { transform = `translateX(${baseOffset1}px) scale(0.85)`; zIndex = 5; opacity = 0.6; }
-                    else if (offset === -1) { transform = `translateX(-${baseOffset1}px) scale(0.85)`; zIndex = 5; opacity = 0.6; }
-                    else if (offset === 2) { transform = `translateX(${baseOffset2}px) scale(0.7)`; zIndex = 2; opacity = isMobile ? 0 : 0.3; }
-                    else if (offset === -2) { transform = `translateX(-${baseOffset2}px) scale(0.7)`; zIndex = 2; opacity = isMobile ? 0 : 0.3; }
+                    if (!isVisible && !isDragging) return <div key={p.id} style={{ display: "none" }} />;
 
                     return (
                       <div 
                         key={p.id} 
                         onClick={() => {
-                          if (isDragging) return; // Completely ignores clicks if user was actively dragging
+                          if (isDragging) return; 
                           
-                          if (isActive) {
+                          if (baseOffset === 0) {
                             const variantNode = p.variants.edges.find((v:any) => v.node.id === selectedVarId)?.node || p.variants.edges[0].node;
                             handleSelection(STEPS[stepIndex], { ...p, selectedVariant: variantNode });
                           } else {
@@ -498,24 +523,30 @@ function BuilderContent() {
                           textAlign: "center",
                           padding: isMobile ? "10px" : "20px 15px",
                           cursor: isDragging ? "grabbing" : "pointer",
-                          transition: isDragging ? "none" : "all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1)",
+                          transition: isDragging ? "none" : "all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1)", 
                           opacity: opacity,
                           zIndex: zIndex,
                           transform: transform,
                           boxShadow: isActive ? `0 15px 35px rgba(0,0,0,0.6)` : "0 5px 15px rgba(0,0,0,0.3)",
-                          pointerEvents: opacity === 0 ? "none" : "auto",
-                          userSelect: "none" // Prevent text highlighting while dragging on PC
+                          userSelect: "none" 
                         }}
                       >
                          {p.featuredImage ? (
-                           <img draggable="false" src={p.featuredImage.url} alt={p.title} style={{ width: "100%", height: "65%", objectFit: "contain", marginBottom: isMobile ? "5px" : "10px", pointerEvents: "none" }} />
+                           <img 
+                             draggable="false" 
+                             src={p.featuredImage.url} 
+                             alt={p.title} 
+                             style={{ width: "100%", height: "65%", objectFit: "contain", marginBottom: isMobile ? "5px" : "10px", pointerEvents: "none" }} 
+                           />
                          ) : (
                            <div style={{ width: "100%", height: "65%", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,0.05)", borderRadius: "8px", marginBottom: isMobile ? "5px" : "10px", pointerEvents: "none" }}>
                              <span style={{ fontSize: isMobile ? "30px" : "50px" }}>📦</span>
                            </div>
                          )}
 
-                         <h3 style={{ fontSize: isMobile ? "12px" : "14px", margin: 0, fontWeight: "600", color: isActive ? "#fff" : "#aaa", lineHeight: "1.2", pointerEvents: "none" }}>{p.title}</h3>
+                         <h3 style={{ fontSize: isMobile ? "12px" : "14px", margin: 0, fontWeight: "600", color: isActive ? "#fff" : "#aaa", lineHeight: "1.2", pointerEvents: "none" }}>
+                           {p.title}
+                         </h3>
                          
                          {isActive && (
                             <div style={{ position: "absolute", bottom: isMobile ? "-25px" : "-30px", fontSize: isMobile ? "11px" : "13px", color: brand === 'amd' ? '#ffcc00' : '#66b3ff', fontWeight: "bold", opacity: 0.9, letterSpacing: "1px", pointerEvents: "none" }}>
@@ -527,7 +558,6 @@ function BuilderContent() {
                   })}
                 </div>
 
-                {/* Right Arrow */}
                 <button 
                   onClick={() => setActiveIndex((activeIndex + 1) % currentProducts.length)} 
                   style={{...navArrowStyle, width: isMobile ? "35px" : "50px", height: isMobile ? "35px" : "50px", fontSize: isMobile ? "20px" : "30px", position: "absolute", right: isMobile ? "5px" : "0", zIndex: 50}}
@@ -538,11 +568,10 @@ function BuilderContent() {
 
               {/* ACTIVE ITEM VARIANTS & PRICE */}
               <div style={{ marginTop: isMobile ? "10px" : "20px", width: "100%", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
-                 
                  {activeProduct?.variants.edges.length > 1 && (
                     <select 
                       value={selectedVarId} 
-                      onChange={(e) => setSelectedVarId(e.target.value)}
+                      onChange={(e) => setSelectedVarId(e.target.value)} 
                       style={{ width: isMobile ? "100%" : "250px", maxWidth: "300px", padding: "12px", borderRadius: "8px", border: `1px solid ${brand === 'amd' ? '#ff6600' : '#0066cc'}`, background: "rgba(0,0,0,0.5)", color: "#fff", marginBottom: "15px", fontSize: isMobile ? "14px" : "16px", outline: "none", cursor: "pointer", textAlign: "center" }}
                     >
                       {activeProduct.variants.edges.map((v: any) => (
@@ -552,7 +581,6 @@ function BuilderContent() {
                       ))}
                     </select>
                  )}
-
                  <div style={{ fontSize: isMobile ? "28px" : "36px", fontWeight: "900", color: brand === 'amd' ? '#ffcc00' : '#66b3ff', textShadow: "0px 2px 10px rgba(0,0,0,0.5)" }}>
                     {Number(activeProduct?.variants.edges.find((v:any) => v.node.id === selectedVarId)?.node.price.amount || activeProduct?.variants.edges[0].node.price.amount || 0).toFixed(2)} €
                  </div>
@@ -564,12 +592,18 @@ function BuilderContent() {
           {/* BOTTOM NAVIGATION BAR */}
           {stepIndex > 0 && stepIndex < STEPS.length - 1 && (
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: "auto", paddingTop: "20px" }}>
-              <button onClick={() => setStepIndex(stepIndex - 1)} style={{...bottomNavBtnStyle, padding: isMobile ? "10px 20px" : "15px 40px", fontSize: isMobile ? "14px" : "16px"}}>
+              <button 
+                onClick={() => setStepIndex(stepIndex - 1)} 
+                style={{...bottomNavBtnStyle, padding: isMobile ? "10px 20px" : "15px 40px", fontSize: isMobile ? "14px" : "16px"}}
+              >
                 NAZAD
               </button>
               
               {["hdd", "os"].includes(STEPS[stepIndex]) && (
-                <button onClick={handleSkip} style={{ ...bottomNavBtnStyle, padding: isMobile ? "10px 20px" : "15px 40px", fontSize: isMobile ? "14px" : "16px", background: "rgba(255,255,255,0.1)", color: "#aaa" }}>
+                <button 
+                  onClick={handleSkip} 
+                  style={{ ...bottomNavBtnStyle, padding: isMobile ? "10px 20px" : "15px 40px", fontSize: isMobile ? "14px" : "16px", background: "rgba(255,255,255,0.1)", color: "#aaa" }}
+                >
                   PRESKOČI
                 </button>
               )}
@@ -584,43 +618,61 @@ function BuilderContent() {
                 <p style={{ fontSize: isMobile ? "22px" : "28px", margin: "20px 0", fontWeight: "bold", color: brand === 'amd' ? '#ffcc00' : '#66b3ff' }}>
                   Ukupna cijena: {currentTotal().toFixed(2)} €
                 </p>
-                <p style={{ color: "#aaa", fontSize: isMobile ? "12px" : "14px" }}>(Uključen PDV i usluga slaganja od {ASSEMBLY_FEE} €)</p>
+                <p style={{ color: "#aaa", fontSize: isMobile ? "12px" : "14px" }}>
+                  (Uključen PDV i usluga slaganja od {ASSEMBLY_FEE} €)
+                </p>
                 
-                <button disabled={isProcessing} onClick={handleCheckout} style={{ ...checkoutBtnStyle, background: brand === 'amd' ? '#ff6600' : '#0066cc', color: "#fff", border: "none", marginTop: "20px" }}>
+                <button 
+                  disabled={isProcessing} 
+                  onClick={handleCheckout} 
+                  style={{ ...checkoutBtnStyle, background: brand === 'amd' ? '#ff6600' : '#0066cc', color: "#fff", border: "none", marginTop: "20px" }}
+                >
                   {isProcessing ? "Obrađujem..." : `Naruči i Plati`}
                 </button>
-                
-                <button onClick={shareBuild} style={{ width: "100%", marginTop: "15px", padding: "15px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", background: "transparent", cursor: "pointer", fontSize: isMobile ? "14px" : "16px", fontWeight: "bold" }}>
+
+                <button 
+                  onClick={shareBuild} 
+                  style={{ width: "100%", marginTop: "15px", padding: "15px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", background: "transparent", cursor: "pointer", fontSize: isMobile ? "14px" : "16px", fontWeight: "bold" }}
+                >
                   🔗 Kopiraj link za dijeljenje
                 </button>
               </div>
 
               {/* UPSELL SECTION */}
               <div style={{ textAlign: "left", marginTop: "30px", padding: isMobile ? "15px" : "25px", background: "rgba(0,0,0,0.5)", borderRadius: "15px", border: "1px solid rgba(255,255,255,0.1)", backdropFilter: "blur(10px)" }}>
-                <h3 style={{ marginTop: 0, borderBottom: "1px solid rgba(255,255,255,0.2)", paddingBottom: "10px", color: "#fff", fontSize: isMobile ? "16px" : "18px" }}>Opcionalne Nadogradnje</h3>
+                <h3 style={{ marginTop: 0, borderBottom: "1px solid rgba(255,255,255,0.2)", paddingBottom: "10px", color: "#fff", fontSize: isMobile ? "16px" : "18px" }}>
+                  Opcionalne Nadogradnje
+                </h3>
                 
                 {/* 2. GPU UPSELL */}
                 <div style={{ marginTop: "15px" }}>
                   {!gpu2 ? (
-                    <button onClick={() => setAddingExtra(addingExtra === "gpu2" ? null : "gpu2")} style={{...upsellBtnStyle, background: "rgba(255,255,255,0.05)", color: "#fff", borderColor: "rgba(255,255,255,0.2)", fontSize: isMobile ? "12px" : "14px"}}>
+                    <button 
+                      onClick={() => setAddingExtra(addingExtra === "gpu2" ? null : "gpu2")} 
+                      style={{...upsellBtnStyle, background: "rgba(255,255,255,0.05)", color: "#fff", borderColor: "rgba(255,255,255,0.2)", fontSize: isMobile ? "12px" : "14px"}}
+                    >
                       {addingExtra === "gpu2" ? "Odustani" : "➕ Dodaj 2. Grafičku (Za 3D i AI)"}
                     </button>
                   ) : (
                     <div style={{...addedUpsellStyle, background: "rgba(255,255,255,0.1)", color: "#fff", border: "1px solid rgba(255,255,255,0.1)"}}>
-                      <span style={{ fontSize: isMobile ? "12px" : "14px" }}><strong>2. GPU:</strong> {gpu2.title} {gpu2.selectedVariant && gpu2.selectedVariant.title !== "Default Title" ? `(${gpu2.selectedVariant.title})` : ""}</span>
+                      <span style={{ fontSize: isMobile ? "12px" : "14px" }}>
+                        <strong>2. GPU:</strong> {gpu2.title} {gpu2.selectedVariant && gpu2.selectedVariant.title !== "Default Title" ? `(${gpu2.selectedVariant.title})` : ""}
+                      </span>
                       <button onClick={() => setGpu2(null)} style={removeBtnStyle}>✖ Ukloni</button>
                     </div>
                   )}
-                  
                   {addingExtra === "gpu2" && !gpu2 && (
                     <div style={{...dropdownListStyle, background: "#222", borderColor: "#444"}}>
-                      {getSortedExtras("gpu").flatMap(p => 
-                        p.variants.edges.map(v => (
-                          <button key={v.node.id} style={{...dropdownItemStyle, background: "#222", color: "#fff", borderBottomColor: "#333", fontSize: isMobile ? "12px" : "14px"}} onClick={() => { setGpu2({ ...p, selectedVariant: v.node }); setAddingExtra(null); }}>
-                            <span>{p.title} {v.node.title !== "Default Title" ? `- ${v.node.title}` : ""}</span> <span style={{color: brand === 'amd' ? '#ffcc00' : '#66b3ff', fontWeight: "bold"}}>{Number(v.node.price.amount).toFixed(2)} €</span>
+                      {getSortedExtras("gpu").flatMap(p => p.variants.edges.map(v => (
+                          <button 
+                            key={v.node.id} 
+                            style={{...dropdownItemStyle, background: "#222", color: "#fff", borderBottomColor: "#333", fontSize: isMobile ? "12px" : "14px"}} 
+                            onClick={() => { setGpu2({ ...p, selectedVariant: v.node }); setAddingExtra(null); }}
+                          >
+                            <span>{p.title} {v.node.title !== "Default Title" ? `- ${v.node.title}` : ""}</span> 
+                            <span style={{color: brand === 'amd' ? '#ffcc00' : '#66b3ff', fontWeight: "bold"}}>{Number(v.node.price.amount).toFixed(2)} €</span>
                           </button>
-                        ))
-                      )}
+                      )))}
                     </div>
                   )}
                 </div>
@@ -628,25 +680,32 @@ function BuilderContent() {
                 {/* 2. SSD UPSELL */}
                 <div style={{ marginTop: "15px" }}>
                   {!ssd2 ? (
-                    <button onClick={() => setAddingExtra(addingExtra === "ssd2" ? null : "ssd2")} style={{...upsellBtnStyle, background: "rgba(255,255,255,0.05)", color: "#fff", borderColor: "rgba(255,255,255,0.2)", fontSize: isMobile ? "12px" : "14px"}}>
+                    <button 
+                      onClick={() => setAddingExtra(addingExtra === "ssd2" ? null : "ssd2")} 
+                      style={{...upsellBtnStyle, background: "rgba(255,255,255,0.05)", color: "#fff", borderColor: "rgba(255,255,255,0.2)", fontSize: isMobile ? "12px" : "14px"}}
+                    >
                       {addingExtra === "ssd2" ? "Odustani" : "➕ Dodaj 2. SSD (Dodatna brza pohrana)"}
                     </button>
                   ) : (
                     <div style={{...addedUpsellStyle, background: "rgba(255,255,255,0.1)", color: "#fff", border: "1px solid rgba(255,255,255,0.1)"}}>
-                      <span style={{ fontSize: isMobile ? "12px" : "14px" }}><strong>2. SSD:</strong> {ssd2.title} {ssd2.selectedVariant && ssd2.selectedVariant.title !== "Default Title" ? `(${ssd2.selectedVariant.title})` : ""}</span>
+                      <span style={{ fontSize: isMobile ? "12px" : "14px" }}>
+                        <strong>2. SSD:</strong> {ssd2.title} {ssd2.selectedVariant && ssd2.selectedVariant.title !== "Default Title" ? `(${ssd2.selectedVariant.title})` : ""}
+                      </span>
                       <button onClick={() => setSsd2(null)} style={removeBtnStyle}>✖ Ukloni</button>
                     </div>
                   )}
-                  
                   {addingExtra === "ssd2" && !ssd2 && (
                     <div style={{...dropdownListStyle, background: "#222", borderColor: "#444"}}>
-                      {getSortedExtras("ssd").flatMap(p => 
-                        p.variants.edges.map(v => (
-                          <button key={v.node.id} style={{...dropdownItemStyle, background: "#222", color: "#fff", borderBottomColor: "#333", fontSize: isMobile ? "12px" : "14px"}} onClick={() => { setSsd2({ ...p, selectedVariant: v.node }); setAddingExtra(null); }}>
-                            <span>{p.title} {v.node.title !== "Default Title" ? `- ${v.node.title}` : ""}</span> <span style={{color: brand === 'amd' ? '#ffcc00' : '#66b3ff', fontWeight: "bold"}}>{Number(v.node.price.amount).toFixed(2)} €</span>
+                      {getSortedExtras("ssd").flatMap(p => p.variants.edges.map(v => (
+                          <button 
+                            key={v.node.id} 
+                            style={{...dropdownItemStyle, background: "#222", color: "#fff", borderBottomColor: "#333", fontSize: isMobile ? "12px" : "14px"}} 
+                            onClick={() => { setSsd2({ ...p, selectedVariant: v.node }); setAddingExtra(null); }}
+                          >
+                            <span>{p.title} {v.node.title !== "Default Title" ? `- ${v.node.title}` : ""}</span> 
+                            <span style={{color: brand === 'amd' ? '#ffcc00' : '#66b3ff', fontWeight: "bold"}}>{Number(v.node.price.amount).toFixed(2)} €</span>
                           </button>
-                        ))
-                      )}
+                      )))}
                     </div>
                   )}
                 </div>
@@ -654,35 +713,49 @@ function BuilderContent() {
                 {/* 2. HDD UPSELL */}
                 <div style={{ marginTop: "15px" }}>
                   {!hdd2 ? (
-                    <button onClick={() => setAddingExtra(addingExtra === "hdd2" ? null : "hdd2")} style={{...upsellBtnStyle, background: "rgba(255,255,255,0.05)", color: "#fff", borderColor: "rgba(255,255,255,0.2)", fontSize: isMobile ? "12px" : "14px"}}>
+                    <button 
+                      onClick={() => setAddingExtra(addingExtra === "hdd2" ? null : "hdd2")} 
+                      style={{...upsellBtnStyle, background: "rgba(255,255,255,0.05)", color: "#fff", borderColor: "rgba(255,255,255,0.2)", fontSize: isMobile ? "12px" : "14px"}}
+                    >
                       {addingExtra === "hdd2" ? "Odustani" : "➕ Dodaj 2. HDD (Masivna pohrana)"}
                     </button>
                   ) : (
                     <div style={{...addedUpsellStyle, background: "rgba(255,255,255,0.1)", color: "#fff", border: "1px solid rgba(255,255,255,0.1)"}}>
-                      <span style={{ fontSize: isMobile ? "12px" : "14px" }}><strong>2. HDD:</strong> {hdd2.title} {hdd2.selectedVariant && hdd2.selectedVariant.title !== "Default Title" ? `(${hdd2.selectedVariant.title})` : ""}</span>
+                      <span style={{ fontSize: isMobile ? "12px" : "14px" }}>
+                        <strong>2. HDD:</strong> {hdd2.title} {hdd2.selectedVariant && hdd2.selectedVariant.title !== "Default Title" ? `(${hdd2.selectedVariant.title})` : ""}
+                      </span>
                       <button onClick={() => setHdd2(null)} style={removeBtnStyle}>✖ Ukloni</button>
                     </div>
                   )}
-                  
                   {addingExtra === "hdd2" && !hdd2 && (
                     <div style={{...dropdownListStyle, background: "#222", borderColor: "#444"}}>
-                      {getSortedExtras("hdd").flatMap(p => 
-                        p.variants.edges.map(v => (
-                          <button key={v.node.id} style={{...dropdownItemStyle, background: "#222", color: "#fff", borderBottomColor: "#333", fontSize: isMobile ? "12px" : "14px"}} onClick={() => { setHdd2({ ...p, selectedVariant: v.node }); setAddingExtra(null); }}>
-                            <span>{p.title} {v.node.title !== "Default Title" ? `- ${v.node.title}` : ""}</span> <span style={{color: brand === 'amd' ? '#ffcc00' : '#66b3ff', fontWeight: "bold"}}>{Number(v.node.price.amount).toFixed(2)} €</span>
+                      {getSortedExtras("hdd").flatMap(p => p.variants.edges.map(v => (
+                          <button 
+                            key={v.node.id} 
+                            style={{...dropdownItemStyle, background: "#222", color: "#fff", borderBottomColor: "#333", fontSize: isMobile ? "12px" : "14px"}} 
+                            onClick={() => { setHdd2({ ...p, selectedVariant: v.node }); setAddingExtra(null); }}
+                          >
+                            <span>{p.title} {v.node.title !== "Default Title" ? `- ${v.node.title}` : ""}</span> 
+                            <span style={{color: brand === 'amd' ? '#ffcc00' : '#66b3ff', fontWeight: "bold"}}>{Number(v.node.price.amount).toFixed(2)} €</span>
                           </button>
-                        ))
-                      )}
+                      )))}
                     </div>
                   )}
                 </div>
-
               </div>
+              
+              {/* RESTORED BOTTOM RESET BUTTON */}
+              <button 
+                onClick={resetBuild} 
+                style={{ width: "100%", marginTop: "30px", padding: "15px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.3)", color: "#fff", background: "transparent", cursor: "pointer", fontWeight: "bold", fontSize: "16px" }}
+              >
+                🔄 Počni ispočetka
+              </button>
             </div>
           )}
         </div>
 
-        {/* RIGHT SIDEBAR - STACKS ON MOBILE */}
+        {/* RIGHT SIDEBAR */}
         <div style={{ 
           flex: 1, 
           background: "rgba(0, 0, 0, 0.6)", 
@@ -692,7 +765,7 @@ function BuilderContent() {
           padding: isMobile ? "15px" : "25px", 
           height: "fit-content", 
           position: isMobile ? "relative" : "sticky", 
-          top: "40px",
+          top: "40px", 
           marginTop: isMobile ? "20px" : "0"
         }}>
           <h3 style={{ marginTop: 0, borderBottom: "1px solid rgba(255,255,255,0.2)", paddingBottom: "15px", color: "#fff", fontSize: isMobile ? "18px" : "20px" }}>Vaša Konfiguracija</h3>
@@ -719,27 +792,14 @@ function BuilderContent() {
             </div>
           )}
 
-          {/* ALWAY VISIBLE WATTAGE BAR */}
           <div style={{ marginBottom: "20px", padding: "15px", background: "rgba(0,0,0,0.3)", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.1)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", fontSize: "13px", fontWeight: "bold", color: "#ddd" }}>
               <span>Potrošnja sustava:</span>
               <span>{estimatedDraw}W {psuCapacity > 0 ? `/ ${psuCapacity}W` : ""}</span>
             </div>
-            
             <div style={{ width: "100%", height: "8px", background: "rgba(255,255,255,0.1)", borderRadius: "4px", overflow: "hidden" }}>
-              <div style={{ 
-                height: "100%", 
-                width: `${powerPercentage}%`, 
-                background: psuCapacity > 0 && estimatedDraw >= psuCapacity ? "#dc3545" : (psuCapacity > 0 ? "#28a745" : (brand === 'amd' ? '#ff6600' : '#0066cc')),
-                transition: "width 0.4s ease, background 0.4s ease" 
-              }} />
+              <div style={{ height: "100%", width: `${powerPercentage}%`, background: psuCapacity > 0 && estimatedDraw >= psuCapacity ? "#dc3545" : (psuCapacity > 0 ? "#28a745" : (brand === 'amd' ? '#ff6600' : '#0066cc')), transition: "width 0.4s ease, background 0.4s ease" }} />
             </div>
-            
-            <p style={{ fontSize: "11px", color: "#888", marginTop: "8px", textAlign: "right" }}>
-              {psuCapacity === 0 
-                ? "*Uključeno ~100W za matičnu i periferiju." 
-                : (estimatedDraw >= psuCapacity ? "Upozorenje: Napajanje je preslabo!" : "Napajanje je optimalno.")}
-            </p>
           </div>
 
           <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold", fontSize: isMobile ? "18px" : "20px", color: "#fff" }}>
@@ -747,26 +807,12 @@ function BuilderContent() {
             <span>{currentTotal().toFixed(2)} €</span>
           </div>
           
-          {isReviewStep ? (
-            <p style={{ fontSize: "12px", color: "#999", marginTop: "5px", textAlign: "right", fontWeight: "bold" }}>
-              Uključuje uslugu slaganja ({ASSEMBLY_FEE} €)
-            </p>
-          ) : (
-            <p style={{ fontSize: "12px", color: "#999", marginTop: "5px", textAlign: "right" }}>
-              * Usluga slaganja ({ASSEMBLY_FEE} €) bit će dodana na kraju.
-            </p>
-          )}
-
-          {/* RESTORED RESET BUTTON FOR ALL STEPS */}
           <button 
             onClick={resetBuild} 
             style={{ width: "100%", marginTop: "25px", padding: "12px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", background: "rgba(220, 53, 69, 0.7)", cursor: "pointer", fontWeight: "bold", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", transition: "0.2s" }}
-            onMouseOver={(e) => e.currentTarget.style.background = "rgba(220, 53, 69, 0.9)"}
-            onMouseOut={(e) => e.currentTarget.style.background = "rgba(220, 53, 69, 0.7)"}
           >
             🔄 Počni ispočetka
           </button>
-
         </div>
       </div>
     </div>
