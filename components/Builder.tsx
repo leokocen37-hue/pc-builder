@@ -249,7 +249,6 @@ function BuilderContent() {
     return isReviewStep ? compPrice + ASSEMBLY_FEE : compPrice;
   };
 
-  // 100% RESTORED CHECKOUT LOGIC
   const handleCheckout = async () => {
     setIsProcessing(true);
     const summary = [cpu, mb, ram, gpu, gpu2, ssd, ssd2, hdd, hdd2, pcCase, psu, cooler, os]
@@ -385,14 +384,15 @@ function BuilderContent() {
     setStartX(e.clientX);
     setDragOffset(0);
     setIsDragging(false);
-    e.currentTarget.setPointerCapture(e.pointerId); 
+    // REMOVED: setPointerCapture to ensure PC clicks work normally
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (startX === null) return;
     const diff = e.clientX - startX;
     setDragOffset(diff);
-    if (Math.abs(diff) > 10) { 
+    // Increased threshold slightly so clicking on a PC isn't mistakenly read as dragging
+    if (Math.abs(diff) > 15) { 
       setIsDragging(true); 
     }
   };
@@ -481,6 +481,7 @@ function BuilderContent() {
                   onPointerDown={handlePointerDown}
                   onPointerMove={handlePointerMove}
                   onPointerUp={handlePointerUp}
+                  onPointerLeave={handlePointerUp} // Added safeguard for PC dragging
                   onPointerCancel={handlePointerUp}
                   style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", position: "relative", touchAction: "pan-y" }}
                 >
