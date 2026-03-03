@@ -60,9 +60,11 @@ function BuilderContent() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isMobile, setIsMobile] = useState(false); 
 
-  // Carousel state
+  // Carousel & Drag state
   const [activeIndex, setActiveIndex] = useState(0);
   const [selectedVarId, setSelectedVarId] = useState("");
+  const [startX, setStartX] = useState<number | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   const [addingExtra, setAddingExtra] = useState<"gpu2" | "ssd2" | "hdd2" | null>(null);
 
@@ -338,6 +340,39 @@ function BuilderContent() {
     }
   }, [activeProduct]);
 
+  // DRAG / SWIPE LOGIC
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    setStartX(e.clientX);
+    setIsDragging(false);
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (startX === null) return;
+    const diff = e.clientX - startX;
+    if (Math.abs(diff) > 10) { // If finger moved more than 10px, count as drag
+      setIsDragging(true);
+    }
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (startX !== null) {
+      const diff = e.clientX - startX;
+      const threshold = 40; // Pixels needed to trigger next/prev swipe
+      
+      if (diff > threshold) {
+        // Swiped Right -> Go to previous item
+        setActiveIndex((prev) => (prev - 1 + currentProducts.length) % currentProducts.length);
+      } else if (diff < -threshold) {
+        // Swiped Left -> Go to next item
+        setActiveIndex((prev) => (prev + 1) % currentProducts.length);
+      }
+    }
+    setStartX(null);
+    // Delay resetting isDragging so the click handler knows to abort
+    setTimeout(() => setIsDragging(false), 50); 
+  };
+
   if (loading) return <div style={{ padding: "100px", textAlign: "center", color: "white" }}>Učitavanje...</div>;
 
   // DYNAMIC BACKGROUND COLOR
@@ -398,7 +433,7 @@ function BuilderContent() {
           {stepIndex > 0 && stepIndex < STEPS.length - 1 && currentProducts.length > 0 && (
             <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", position: "relative" }}>
               
-              {/* Carousel Container - INCREASED HEIGHT TO PREVENT CLIPPING */}
+              {/* Carousel Container */}
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: isMobile ? "300px" : "400px", position: "relative", overflow: "hidden" }}>
                 
                 {/* Left Arrow */}
@@ -409,8 +444,14 @@ function BuilderContent() {
                   &lt;
                 </button>
 
-                {/* CoverFlow Items */}
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", position: "relative" }}>
+                {/* DRAG AND SWIPE CAPTURE WRAPPER */}
+                <div 
+                  onPointerDown={handlePointerDown}
+                  onPointerMove={handlePointerMove}
+                  onPointerUp={handlePointerUp}
+                  onPointerCancel={handlePointerUp}
+                  style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", position: "relative", touchAction: "pan-y" }}
+                >
                   {currentProducts.map((p, idx) => {
                     const offset = getOffset(idx);
                     const isVisible = Math.abs(offset) <= 2;
@@ -435,6 +476,8 @@ function BuilderContent() {
                       <div 
                         key={p.id} 
                         onClick={() => {
+                          if (isDragging) return; // Ignore click if user was swiping!
+                          
                           if (isActive) {
                             const variantNode = p.variants.edges.find((v:any) => v.node.id === selectedVarId)?.node || p.variants.edges[0].node;
                             handleSelection(STEPS[stepIndex], { ...p, selectedVariant: variantNode });
@@ -455,27 +498,28 @@ function BuilderContent() {
                           alignItems: "center",
                           textAlign: "center",
                           padding: isMobile ? "10px" : "20px 15px",
-                          cursor: "pointer",
-                          transition: "all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1)",
+                          cursor: isDragging ? "grabbing" : "pointer",
+                          transition: isDragging ? "none" : "all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1)",
                           opacity: opacity,
                           zIndex: zIndex,
                           transform: transform,
                           boxShadow: isActive ? `0 15px 35px rgba(0,0,0,0.6)` : "0 5px 15px rgba(0,0,0,0.3)",
-                          pointerEvents: opacity === 0 ? "none" : "auto"
+                          pointerEvents: opacity === 0 ? "none" : "auto",
+                          userSelect: "none" // Prevent text highlighting while dragging
                         }}
                       >
                          {p.featuredImage ? (
-                           <img src={p.featuredImage.url} alt={p.title} style={{ width: "100%", height: "65%", objectFit: "contain", marginBottom: isMobile ? "5px" : "10px", pointerEvents: "none" }} />
+                           <img draggable="false" src={p.featuredImage.url} alt={p.title} style={{ width: "100%", height: "65%", objectFit: "contain", marginBottom: isMobile ? "5px" : "10px", pointerEvents: "none" }} />
                          ) : (
-                           <div style={{ width: "100%", height: "65%", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,0.05)", borderRadius: "8px", marginBottom: isMobile ? "5px" : "10px" }}>
+                           <div style={{ width: "100%", height: "65%", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,0.05)", borderRadius: "8px", marginBottom: isMobile ? "5px" : "10px", pointerEvents: "none" }}>
                              <span style={{ fontSize: isMobile ? "30px" : "50px" }}>📦</span>
                            </div>
                          )}
 
-                         <h3 style={{ fontSize: isMobile ? "12px" : "14px", margin: 0, fontWeight: "600", color: isActive ? "#fff" : "#aaa", lineHeight: "1.2" }}>{p.title}</h3>
+                         <h3 style={{ fontSize: isMobile ? "12px" : "14px", margin: 0, fontWeight: "600", color: isActive ? "#fff" : "#aaa", lineHeight: "1.2", pointerEvents: "none" }}>{p.title}</h3>
                          
                          {isActive && (
-                            <div style={{ position: "absolute", bottom: isMobile ? "-25px" : "-30px", fontSize: isMobile ? "11px" : "13px", color: brand === 'amd' ? '#ffcc00' : '#66b3ff', fontWeight: "bold", opacity: 0.9, letterSpacing: "1px" }}>
+                            <div style={{ position: "absolute", bottom: isMobile ? "-25px" : "-30px", fontSize: isMobile ? "11px" : "13px", color: brand === 'amd' ? '#ffcc00' : '#66b3ff', fontWeight: "bold", opacity: 0.9, letterSpacing: "1px", pointerEvents: "none" }}>
                                KLIKNI ZA ODABIR
                             </div>
                          )}
