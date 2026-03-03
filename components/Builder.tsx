@@ -1,6 +1,6 @@
 "use client";
 
-import { CSSProperties, useEffect, useState, Suspense } from "react";
+import { CSSProperties, useEffect, useState, Suspense, useRef } from "react";
 import { shopifyFetch } from "@/lib/shopify";
 import { useSearchParams, useRouter } from "next/navigation";
 
@@ -53,6 +53,7 @@ const STEP_LABELS: Record<Step, string> = {
 function BuilderContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const initialized = useRef(false);
 
   const [stepIndex, setStepIndex] = useState(0);
   const [products, setProducts] = useState<ProductNode[]>([]);
@@ -145,24 +146,26 @@ function BuilderContent() {
     if (isReviewStep) {
       const params = new URLSearchParams();
       if (brand) params.set("brand", brand);
-      if (cpu?.id) params.set("cpu", cpu.id);
-      if (mb?.id) params.set("mb", mb.id);
-      if (ram?.id) params.set("ram", ram.id);
-      if (gpu?.id) params.set("gpu", gpu.id);
-      if (gpu2?.id) params.set("gpu2", gpu2.id);
-      if (ssd?.id) params.set("ssd", ssd.id);
-      if (ssd2?.id) params.set("ssd2", ssd2.id);
-      if (hdd?.id) params.set("hdd", hdd.id);
-      if (hdd2?.id) params.set("hdd2", hdd2.id);
-      if (pcCase?.id) params.set("case", pcCase.id);
-      if (psu?.id) params.set("psu", psu.id);
-      if (cooler?.id) params.set("cooler", cooler.id);
-      if (os?.id) params.set("os", os.id);
+      if (cpu) params.set("cpu", cpu.selectedVariant?.id || cpu.id);
+      if (mb) params.set("mb", mb.selectedVariant?.id || mb.id);
+      if (ram) params.set("ram", ram.selectedVariant?.id || ram.id);
+      if (gpu) params.set("gpu", gpu.selectedVariant?.id || gpu.id);
+      if (gpu2) params.set("gpu2", gpu2.selectedVariant?.id || gpu2.id);
+      if (ssd) params.set("ssd", ssd.selectedVariant?.id || ssd.id);
+      if (ssd2) params.set("ssd2", ssd2.selectedVariant?.id || ssd2.id);
+      if (hdd) params.set("hdd", hdd.selectedVariant?.id || hdd.id);
+      if (hdd2) params.set("hdd2", hdd2.selectedVariant?.id || hdd2.id);
+      if (pcCase) params.set("case", pcCase.selectedVariant?.id || pcCase.id);
+      if (psu) params.set("psu", psu.selectedVariant?.id || psu.id);
+      if (cooler) params.set("cooler", cooler.selectedVariant?.id || cooler.id);
+      if (os) params.set("os", os.selectedVariant?.id || os.id);
       router.replace(`?${params.toString()}`, { scroll: false });
     }
   }, [stepIndex, brand, cpu, mb, ram, gpu, gpu2, ssd, ssd2, hdd, hdd2, pcCase, psu, cooler, os, router]);
 
   useEffect(() => {
+    if (initialized.current) return;
+    
     async function fetchAndSync() {
       try {
         const data = await shopifyFetch<any>(`
@@ -197,8 +200,17 @@ function BuilderContent() {
         setProducts(allProducts);
         
         const loadParam = (param: string, setter: any) => {
-          const found = allProducts.find((p: any) => p.id === searchParams.get(param));
-          if (found) setter({ ...found, selectedVariant: found.variants.edges[0].node });
+          const val = searchParams.get(param);
+          if (!val) return;
+          
+          const found = allProducts.find((p: any) => 
+            p.id === val || p.variants.edges.some((v: any) => v.node.id === val)
+          );
+          
+          if (found) {
+            const varNode = found.variants.edges.find((v: any) => v.node.id === val)?.node || found.variants.edges[0].node;
+            setter({ ...found, selectedVariant: varNode });
+          }
         };
 
         const uBrand = searchParams.get("brand");
@@ -214,7 +226,7 @@ function BuilderContent() {
         if (searchParams.get("cpu") && searchParams.get("gpu") && searchParams.get("case")) {
           setStepIndex(STEPS.indexOf("review"));
         }
-      } catch (err) { console.error(err); } finally { setLoading(false); }
+      } catch (err) { console.error(err); } finally { setLoading(false); initialized.current = true; }
     }
     fetchAndSync();
   }, [searchParams]); 
