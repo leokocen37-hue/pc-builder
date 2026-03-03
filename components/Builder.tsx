@@ -341,12 +341,10 @@ function BuilderContent() {
 
   const activeProduct = currentProducts[activeIndex];
 
-  // REAL-TIME CONTINUOUS COVERFLOW MATH
   const getCardStyle = (exactOffset: number, isMobile: boolean) => {
     const absOffset = Math.abs(exactOffset);
     const sign = Math.sign(exactOffset) || 1;
     
-    // Aligned purely with slideWidth for 1:1 finger tracking
     const baseOffset1 = isMobile ? 110 : 220;
     const baseOffset2 = isMobile ? 170 : 380;
 
@@ -405,10 +403,8 @@ function BuilderContent() {
     if (startX === null) return;
     const diff = e.clientX - startX;
     
-    // The precise width of a slot. Matching this to baseOffset1 creates 1:1 dragging.
     const slideWidth = isMobile ? 110 : 220; 
     
-    // Instantly process full-width jumps while the finger is still down
     const jumps = Math.trunc(diff / slideWidth);
 
     if (jumps !== 0) {
@@ -417,7 +413,6 @@ function BuilderContent() {
         while (next < 0) next += currentProducts.length; 
         return next % currentProducts.length;
       });
-      // Move the anchor point to seamlessly continue the swipe
       setStartX((prev) => (prev !== null ? prev + jumps * slideWidth : e.clientX));
       setDragOffset(diff - jumps * slideWidth);
     } else {
@@ -433,7 +428,6 @@ function BuilderContent() {
     if (startX !== null) {
       const slideWidth = isMobile ? 110 : 220;
       
-      // Magnetic Snap: If dragged more than 33% of a slot, finalize the jump
       if (dragOffset > slideWidth / 3) {
         setActiveIndex((prev) => (prev - 1 + currentProducts.length) % currentProducts.length);
       } else if (dragOffset < -slideWidth / 3) {
@@ -467,7 +461,7 @@ function BuilderContent() {
         <div style={{ flex: 3, display: "flex", flexDirection: "column", minHeight: isMobile ? "auto" : "80vh", position: "relative" }}>
           
           {/* TOP BAR / STEP TITLE */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: isMobile ? "15px" : "30px", background: "rgba(0,0,0,0.4)", padding: isMobile ? "10px 15px" : "15px 30px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.1)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: isMobile ? "10px" : "20px", background: "rgba(0,0,0,0.4)", padding: isMobile ? "10px 15px" : "15px 30px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.1)" }}>
             <h1 style={{ margin: 0, fontSize: isMobile ? "18px" : "24px", textTransform: "uppercase", letterSpacing: "2px" }}>
               {STEP_LABELS[STEPS[stepIndex]]}
             </h1>
@@ -475,6 +469,34 @@ function BuilderContent() {
               €{currentTotal().toFixed(2)}
             </div>
           </div>
+
+          {/* NAVIGATION CONTROL BAR (MOVED TO TOP) */}
+          {stepIndex > 0 && (
+            <div style={{ display: "flex", justifyContent: "space-between", width: "100%", marginBottom: isMobile ? "15px" : "30px" }}>
+              <div style={{ display: "flex", gap: isMobile ? "10px" : "15px" }}>
+                <button 
+                  onClick={() => setStepIndex(stepIndex - 1)} 
+                  style={{ padding: isMobile ? "8px 15px" : "10px 20px", borderRadius: "20px", background: "rgba(255,255,255,0.1)", color: "#fff", border: "1px solid rgba(255,255,255,0.2)", cursor: "pointer", fontWeight: "bold", fontSize: isMobile ? "12px" : "14px", transition: "0.2s" }}
+                >
+                  ← NAZAD
+                </button>
+                <button 
+                  onClick={resetBuild} 
+                  style={{ padding: isMobile ? "8px 15px" : "10px 20px", borderRadius: "20px", background: "rgba(220, 53, 69, 0.15)", color: "#ff8787", border: "1px solid rgba(220, 53, 69, 0.4)", cursor: "pointer", fontWeight: "bold", fontSize: isMobile ? "12px" : "14px", transition: "0.2s" }}
+                >
+                  🔄 ISPOČETKA
+                </button>
+              </div>
+              {["hdd", "os"].includes(STEPS[stepIndex]) && (
+                <button 
+                  onClick={handleSkip} 
+                  style={{ padding: isMobile ? "8px 15px" : "10px 20px", borderRadius: "20px", background: "rgba(255,255,255,0.05)", color: "#aaa", border: "1px solid rgba(255,255,255,0.1)", cursor: "pointer", fontWeight: "bold", fontSize: isMobile ? "12px" : "14px", transition: "0.2s" }}
+                >
+                  PRESKOČI ⏭
+                </button>
+              )}
+            </div>
+          )}
 
           {/* STEP 0: BRAND SELECTION */}
           {STEPS[stepIndex] === "brand" && (
@@ -641,27 +663,6 @@ function BuilderContent() {
             </div>
           )}
 
-          {/* BOTTOM NAVIGATION BAR */}
-          {stepIndex > 0 && stepIndex < STEPS.length - 1 && (
-            <div style={{ display: "flex", justifyContent: "space-between", marginTop: "auto", paddingTop: "20px" }}>
-              <button 
-                onClick={() => setStepIndex(stepIndex - 1)} 
-                style={{...bottomNavBtnStyle, padding: isMobile ? "10px 20px" : "15px 40px", fontSize: isMobile ? "14px" : "16px"}}
-              >
-                NAZAD
-              </button>
-              
-              {["hdd", "os"].includes(STEPS[stepIndex]) && (
-                <button 
-                  onClick={handleSkip} 
-                  style={{ ...bottomNavBtnStyle, padding: isMobile ? "10px 20px" : "15px 40px", fontSize: isMobile ? "14px" : "16px", background: "rgba(255,255,255,0.1)", color: "#aaa" }}
-                >
-                  PRESKOČI
-                </button>
-              )}
-            </div>
-          )}
-
           {/* REVIEW STEP */}
           {STEPS[stepIndex] === "review" && (
             <div style={{ textAlign: "center", color: "#fff", width: "100%", paddingBottom: "40px", paddingTop: "20px" }}>
@@ -795,13 +796,6 @@ function BuilderContent() {
                   )}
                 </div>
               </div>
-              
-              <button 
-                onClick={resetBuild} 
-                style={{ width: "100%", marginTop: "30px", padding: "15px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.3)", color: "#fff", background: "transparent", cursor: "pointer", fontWeight: "bold", fontSize: "16px" }}
-              >
-                🔄 Počni ispočetka
-              </button>
             </div>
           )}
         </div>
@@ -857,13 +851,6 @@ function BuilderContent() {
             <span>Ukupno:</span>
             <span>{currentTotal().toFixed(2)} €</span>
           </div>
-          
-          <button 
-            onClick={resetBuild} 
-            style={{ width: "100%", marginTop: "25px", padding: "12px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", background: "rgba(220, 53, 69, 0.7)", cursor: "pointer", fontWeight: "bold", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", transition: "0.2s" }}
-          >
-            🔄 Počni ispočetka
-          </button>
         </div>
       </div>
     </div>
@@ -892,7 +879,6 @@ function SidebarRow({ label, item }: { label: string; item?: ProductNode | null 
 /* STYLES */
 const brandBtnStyle: CSSProperties = { fontSize: "32px", fontWeight: "bold", color: "#fff", border: "none", borderRadius: "16px", cursor: "pointer", boxShadow: "0 10px 30px rgba(0,0,0,0.5)", transition: "transform 0.2s" };
 const navArrowStyle: CSSProperties = { background: "rgba(255,255,255,0.1)", border: "none", color: "white", borderRadius: "50%", cursor: "pointer", backdropFilter: "blur(5px)", transition: "0.2s" };
-const bottomNavBtnStyle: CSSProperties = { borderRadius: "30px", fontWeight: "bold", border: "none", cursor: "pointer", background: "rgba(255,255,255,0.8)", color: "#000", transition: "0.2s" };
 const checkoutBtnStyle: CSSProperties = { width: "100%", padding: "20px", fontWeight: "bold", cursor: "pointer", borderRadius: "8px", fontSize: "18px" };
 const upsellBtnStyle: CSSProperties = { width: "100%", padding: "12px", border: "1px dashed", fontWeight: "bold", borderRadius: "8px", cursor: "pointer", textAlign: "left" as const };
 const addedUpsellStyle: CSSProperties = { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px", borderRadius: "8px", fontSize: "14px" };
