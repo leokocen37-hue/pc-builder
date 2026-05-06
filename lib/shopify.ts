@@ -9,7 +9,6 @@ export async function shopifyFetch<T>(
   const token = process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_TOKEN;
 
   if (!domain || !token) {
-    console.error("🚨 Missing Shopify Environment Variables!");
     throw new Error("Shopify domain or token is missing.");
   }
 
@@ -21,7 +20,7 @@ export async function shopifyFetch<T>(
       headers: {
         "Content-Type": "application/json",
         "X-Shopify-Storefront-Access-Token": token.trim(),
-        // Ključni fix: Prisiljava engleski jezik kako Shopify ne bi sakrio metafielde
+        // FORCES English data to avoid the Language Ghost bug
         "Accept-Language": "en-US, en;q=0.9", 
       },
       body: JSON.stringify({ query, variables }),
@@ -31,13 +30,12 @@ export async function shopifyFetch<T>(
     const responseBody = await res.json();
 
     if (responseBody.errors) {
-      console.error("❌ Shopify GraphQL Errors:", responseBody.errors);
       throw new Error(`[GraphQL Error]: ${responseBody.errors[0].message}`);
     }
 
     return responseBody.data as T;
   } catch (error) {
-    console.error("❌ Shopify Fetch Network Error:", error);
+    console.error("Shopify Network Error:", error);
     throw error;
   }
 }
