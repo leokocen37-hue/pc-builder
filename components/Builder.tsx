@@ -4,6 +4,7 @@ import { CSSProperties, useEffect, useState, Suspense, useRef } from "react";
 import { shopifyFetch } from "@/lib/shopify";
 import { useSearchParams, useRouter } from "next/navigation";
 
+// --- TIPOLOGIJA (TYPES) ---
 type ProductNode = {
   id: string;
   title: string;
@@ -29,33 +30,23 @@ type ProductNode = {
 
 type Step = "brand" | "cpu" | "motherboard" | "ram" | "gpu" | "ssd" | "hdd" | "case" | "psu" | "cooler" | "os" | "review";
 
-const STEPS: Step[] = [
-  "brand", "cpu", "motherboard", "ram", 
-  "gpu", "ssd", "hdd", 
-  "case", "psu", "cooler", "os", "review"
-];
+// --- KONSTANTE (CONSTANTS) ---
+const STEPS: Step[] = ["brand", "cpu", "motherboard", "ram", "gpu", "ssd", "hdd", "case", "psu", "cooler", "os", "review"];
 
 const STEP_LABELS: Record<Step, string> = {
-  brand: "Platformu",
-  cpu: "Procesor",
-  motherboard: "Matična ploča",
-  ram: "Radna memorija",
-  gpu: "Grafička kartica",
-  ssd: "Glavni SSD",
-  hdd: "Tvrdi disk (Opcionalno)",
-  case: "Kućište",
-  psu: "Napajanje",
-  cooler: "Hladnjak procesora",
-  os: "Operativni sustav (Opcionalno)",
-  review: "Pregled"
+  brand: "Platformu", cpu: "Procesor", motherboard: "Matična ploča", ram: "Radna memorija",
+  gpu: "Grafička kartica", ssd: "Glavni SSD", hdd: "Tvrdi disk (Opcionalno)", case: "Kućište",
+  psu: "Napajanje", cooler: "Hladnjak procesora", os: "Operativni sustav (Opcionalno)", review: "Pregled"
 };
+
+const ASSEMBLY_FEE = 200;
 
 function BuilderContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const initialized = useRef(false);
 
-  // --- SVI REACT HOOKOVI SU OVDJE NA VRHU ---
+  // --- STATE HOOKOVI (STATE) ---
   const [stepIndex, setStepIndex] = useState(0);
   const [products, setProducts] = useState<ProductNode[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,14 +54,15 @@ function BuilderContent() {
   const [isMobile, setIsMobile] = useState(false); 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Navigacija i Drag logika
   const [activeIndex, setActiveIndex] = useState(0);
   const [selectedVarId, setSelectedVarId] = useState("");
   const [startX, setStartX] = useState<number | null>(null);
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
 
+  // Odabrane komponente
   const [addingExtra, setAddingExtra] = useState<"gpu2" | "ssd2" | "hdd2" | null>(null);
-
   const [brand, setBrand] = useState<string | null>(null);
   const [cpu, setCpu] = useState<ProductNode | null>(null);
   const [mb, setMb] = useState<ProductNode | null>(null);
@@ -86,14 +78,12 @@ function BuilderContent() {
   const [cooler, setCooler] = useState<ProductNode | null>(null);
   const [os, setOs] = useState<ProductNode | null>(null);
 
-  const ASSEMBLY_FEE = 200;
   const isReviewStep = STEPS[stepIndex] === "review";
 
+  // --- POMOĆNE FUNKCIJE (HELPERS) ---
   const calculateSystemTDP = () => {
     const parts = [cpu, mb, ram, gpu, gpu2, pcCase, cooler];
-    const componentsDraw = parts.reduce((sum, part) => {
-      return sum + Number(part?.pcfTdp?.value || 0);
-    }, 0);
+    const componentsDraw = parts.reduce((sum, part) => sum + Number(part?.pcfTdp?.value || 0), 0);
     return componentsDraw + 100; 
   };
 
@@ -136,6 +126,7 @@ function BuilderContent() {
 
   const bottleneckWarning = checkBottleneck();
 
+  // --- EFEKTI (EFFECTS) ---
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 900);
     handleResize();
@@ -174,33 +165,30 @@ function BuilderContent() {
             products(first: 250) {
               edges {
                 node {
-                  id
-                  title
+                  id title
                   featuredImage { url altText }
                   variants(first: 50) { edges { node { id title price { amount } } } }
-                  pcfType: metafield(namespace: "pcf", key: "type") { value }
-                  pcfBrand: metafield(namespace: "pcf", key: "brand") { value }
-                  pcfSocket: metafield(namespace: "pcf", key: "socket") { value }
-                  pcfTdp: metafield(namespace: "pcf", key: "tdp") { value }
-                  pcfRamType: metafield(namespace: "pcf", key: "ram_type") { value }
-                  pcfFormFactor: metafield(namespace: "pcf", key: "form_factor") { value }
-                  pcfSupportedFormFactors: metafield(namespace: "pcf", key: "supported_form_factors") { value }
-                  pcfMaxGpuLength: metafield(namespace: "pcf", key: "max_gpu_length") { value }
-                  pcfMaxCoolerHeight: metafield(namespace: "pcf", key: "max_cooler_height") { value }
-                  pcfWattage: metafield(namespace: "pcf", key: "wattage") { value }
-                  pcfCoolerHeight: metafield(namespace: "pcf", key: "cooler_height") { value }
-                  pcfMaxTdp: metafield(namespace: "pcf", key: "max_tdp") { value }
-                  pcfQuality: metafield(namespace: "pcf", key: "quality") { value }
-                  pcfBadge: metafield(namespace: "pcf", key: "badge") { value }
+                  pcfType: metafield(namespace: "custom", key: "type") { value }
+                  pcfBrand: metafield(namespace: "custom", key: "brand") { value }
+                  pcfSocket: metafield(namespace: "custom", key: "socket") { value }
+                  pcfTdp: metafield(namespace: "custom", key: "tdp") { value }
+                  pcfRamType: metafield(namespace: "custom", key: "ram_type") { value }
+                  pcfFormFactor: metafield(namespace: "custom", key: "form_factor") { value }
+                  pcfSupportedFormFactors: metafield(namespace: "custom", key: "supported_form_factors") { value }
+                  pcfMaxGpuLength: metafield(namespace: "custom", key: "max_gpu_length") { value }
+                  pcfMaxCoolerHeight: metafield(namespace: "custom", key: "max_cooler_height") { value }
+                  pcfWattage: metafield(namespace: "custom", key: "wattage") { value }
+                  pcfCoolerHeight: metafield(namespace: "custom", key: "cooler_height") { value }
+                  pcfMaxTdp: metafield(namespace: "custom", key: "max_tdp") { value }
+                  pcfQuality: metafield(namespace: "custom", key: "quality") { value }
+                  pcfBadge: metafield(namespace: "custom", key: "badge") { value }
                 }
               }
             }
           }
         `);
         
-        if (!data || !data.products) {
-          throw new Error("Shopify didn't return a 'products' object.");
-        }
+        if (!data || !data.products) throw new Error("Shopify returned invalid data.");
 
         const allProducts = data.products.edges.map((e: any) => e.node);
         setProducts(allProducts);
@@ -208,19 +196,14 @@ function BuilderContent() {
         const loadParam = (param: string, setter: any) => {
           const val = searchParams.get(param);
           if (!val) return;
-          
-          const found = allProducts.find((p: any) => 
-            p.id === val || p.variants.edges.some((v: any) => v.node.id === val)
-          );
-          
+          const found = allProducts.find((p: any) => p.id === val || p.variants.edges.some((v: any) => v.node.id === val));
           if (found) {
             const varNode = found.variants.edges.find((v: any) => v.node.id === val)?.node || found.variants.edges[0].node;
             setter({ ...found, selectedVariant: varNode });
           }
         };
 
-        const uBrand = searchParams.get("brand");
-        if (uBrand) setBrand(uBrand);
+        if (searchParams.get("brand")) setBrand(searchParams.get("brand"));
 
         loadParam("cpu", setCpu); loadParam("mb", setMb); loadParam("ram", setRam);
         loadParam("gpu", setGpu); loadParam("gpu2", setGpu2); 
@@ -233,8 +216,8 @@ function BuilderContent() {
           setStepIndex(STEPS.indexOf("review"));
         }
       } catch (err: any) { 
-        console.error(err); 
-        setErrorMessage(err.message || "Unknown error occurred while fetching.");
+        console.error("Fetch Error:", err); 
+        setErrorMessage(err.message || "Unknown error occurred.");
       } finally { 
         setLoading(false); 
         initialized.current = true; 
@@ -248,6 +231,7 @@ function BuilderContent() {
     setDragOffset(0);
   }, [stepIndex]);
 
+  // --- FILTERIRANJE PROIZVODA (FILTERING) ---
   const currentStep = STEPS[stepIndex];
   const currentProducts = products.filter(p => {
     const type = p.pcfType?.value;
@@ -299,7 +283,7 @@ function BuilderContent() {
     }
   }, [activeProduct]);
 
-  // --- NON-HOOK FUNKCIJE ---
+  // --- KORISNIČKE AKCIJE (HANDLERS) ---
   const handleSelection = (type: string, p: ProductNode) => {
     if (type === "cpu") setCpu(p);
     else if (type === "motherboard") setMb(p); 
@@ -331,7 +315,7 @@ function BuilderContent() {
 
   const shareBuild = () => {
     navigator.clipboard.writeText(window.location.href);
-    alert("Link za vašu konfiguraciju je kopiran!");
+    alert("Link za vašu konfiguraciju je uspješno kopiran!");
   };
 
   const currentTotal = () => {
@@ -361,7 +345,7 @@ function BuilderContent() {
         setIsProcessing(false); 
       }
     } catch (error) {
-      alert("Serverska greška");
+      alert("Dogodila se serverska greška.");
       setIsProcessing(false);
     }
   };
@@ -372,17 +356,13 @@ function BuilderContent() {
       .sort((a, b) => Number(b.variants.edges[0]?.node.price.amount || 0) - Number(a.variants.edges[0]?.node.price.amount || 0));
   };
 
+  // --- DRAG FIZIKA (CAROUSEL PHYSICS) ---
   const getCardStyle = (exactOffset: number, isMobile: boolean) => {
     const absOffset = Math.abs(exactOffset);
     const sign = Math.sign(exactOffset) || 1;
-    
     const baseOffset1 = isMobile ? 110 : 220;
     const baseOffset2 = isMobile ? 170 : 380;
-
-    let translateX = 0;
-    let scale = 1.1;
-    let opacity = 1;
-    let zIndex = 10;
+    let translateX = 0, scale = 1.1, opacity = 1, zIndex = 10;
 
     if (absOffset <= 1) {
       translateX = exactOffset * baseOffset1;
@@ -426,9 +406,7 @@ function BuilderContent() {
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (startX === null) return;
     const diff = e.clientX - startX;
-    
     const slideWidth = isMobile ? 110 : 220; 
-    
     const jumps = Math.trunc(diff / slideWidth);
 
     if (jumps !== 0) {
@@ -442,16 +420,12 @@ function BuilderContent() {
     } else {
       setDragOffset(diff);
     }
-
-    if (Math.abs(diff) > 15) { 
-      setIsDragging(true); 
-    }
+    if (Math.abs(diff) > 15) setIsDragging(true); 
   };
 
-  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+  const handlePointerUp = () => {
     if (startX !== null) {
       const slideWidth = isMobile ? 110 : 220;
-      
       if (dragOffset > slideWidth / 3) {
         setActiveIndex((prev) => (prev - 1 + currentProducts.length) % currentProducts.length);
       } else if (dragOffset < -slideWidth / 3) {
@@ -463,72 +437,37 @@ function BuilderContent() {
     setTimeout(() => setIsDragging(false), 50); 
   };
 
-
-  // --- DIAGNOSTIČKI EKRANI (SIGURNA ZONA, ISPOD SVIH HOOKOVA) ---
-  if (loading) return <div style={{ padding: "100px", textAlign: "center", color: "white" }}>Učitavanje...</div>;
+  // --- RENDERIRANJE (UI) ---
+  if (loading) {
+    return <div style={{ padding: "100px", textAlign: "center", color: "white" }}>Učitavanje komponenti...</div>;
+  }
 
   if (errorMessage) {
     return (
-      <div style={{ padding: "50px", textAlign: "center", background: "#222", color: "white", minHeight: "100vh" }}>
-        <h1 style={{ color: "#ff4d4d" }}>🚨 FETCH ERROR 🚨</h1>
-        <p>Aplikacija se ne može spojiti na Shopify.</p>
-        <div style={{ padding: "20px", background: "#000", color: "#ff4d4d", fontFamily: "monospace", display: "inline-block", marginTop: "20px" }}>
-          {errorMessage}
-        </div>
+      <div style={{ padding: "50px", textAlign: "center", color: "white", minHeight: "100vh", background: "#222" }}>
+        <h2 style={{ color: "#ff4d4d" }}>Problem sa spajanjem</h2>
+        <p>Aplikacija se trenutno ne može povezati sa serverom. Molimo pokušajte ponovno kasnije.</p>
+        <p style={{ fontSize: "12px", color: "#888" }}>({errorMessage})</p>
       </div>
     );
   }
-
-  if (!loading && products.length === 0) {
-    return (
-      <div style={{ padding: "50px", textAlign: "center", background: "#222", color: "white", minHeight: "100vh" }}>
-        <h1 style={{ color: "#ffcc00" }}>🚨 DETEKTIVSKI MOD 🚨</h1>
-        <h2>API i kod rade savršeno, ali Shopify šalje 0 proizvoda.</h2>
-        <p>Domena na koju se spajamo: <strong style={{color: "#0f0"}}>{process.env.NEXT_PUBLIC_SHOPIFY_DOMAIN || "Nedostaje Domena!"}</strong></p>
-        <p>Duljina Tokena: <strong style={{color: "#0f0"}}>{process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_TOKEN?.length || 0} znakova</strong></p>
-        <div style={{ marginTop: "30px", padding: "20px", background: "#333", borderRadius: "10px", textAlign: "left", display: "inline-block", maxWidth: "600px" }}>
-          <h3 style={{marginTop: 0}}>Zašto se ovo događa?</h3>
-          <p>Ovaj uređaj nema <strong>Shopify Admin Cookie</strong> kao tvoj PC. Shopify te tretira kao "javnog kupca" i namjerno sakriva proizvode iz jednog od dva razloga:</p>
-          <ol>
-            <li><strong>Proizvodi nemaju kvačicu za "Headless" kanal.</strong> Otvori Shopify -&gt; Products -&gt; Označi sve -&gt; Bulk Edit -&gt; Uključi kvačicu za tvoj PC Builder app i spremi.</li>
-            <li><strong>Shopify Markets / International.</strong> Ako si ograničio prodaju na samo jednu državu, Shopify blokira uređaje za koje misli da su van te države (npr. laptop s VPN-om ili iCloud Private Relay).</li>
-          </ol>
-        </div>
-      </div>
-    );
-  }
-  // --- KRAJ DIAGNOSTIKE ---
 
   const bgStyle = {
     background: brand === 'amd' ? 'linear-gradient(135deg, #222 45%, #e05e00 45%)' :
                 brand === 'intel' ? 'linear-gradient(135deg, #222 45%, #0066cc 45%)' :
                 'linear-gradient(135deg, #222 45%, #333 45%)',
-    minHeight: '100vh',
-    width: '100%',
-    color: '#fff',
+    minHeight: '100vh', width: '100%', color: '#fff',
     padding: isMobile ? '20px 10px' : '40px 20px',
-    transition: 'background 0.5s ease-in-out',
-    overflowX: "hidden" as const
+    transition: 'background 0.5s ease-in-out', overflowX: "hidden" as const
   };
 
   return (
     <div style={bgStyle}>
-
-      {/* DEBUG BANNER - Možeš obrisati ovo kasnije kad sve proradi */}
-      {!loading && (
-        <div style={{ background: "rgba(255,0,0,0.8)", padding: "15px", color: "white", textAlign: "center", fontWeight: "bold", zIndex: 9999, marginBottom: "20px", borderRadius: "10px", border: "2px solid white" }}>
-          UKUPNO PROIZVODA DETEKTIRANO: {products.length} <br/>
-          KOLIKO PROCESORA(CPU) APLIKACIJA VIDI: {products.filter(p => p.pcfType?.value === "cpu").length} <br/>
-          METAFIELD TEST (Za 1. proizvod): {products[0] ? (products[0].pcfType?.value || "❌ METAFIELD JE PRAZAN (NULL) ZBOG JEZIKA ❌") : "Nema proizvoda"}
-        </div>
-      )}
-
       <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", maxWidth: "1400px", margin: "0 auto", gap: isMobile ? "20px" : "40px" }}>
         
-        {/* LEFT MAIN AREA */}
+        {/* LIJEVI GLAVNI DIO (LEFT MAIN AREA) */}
         <div style={{ flex: 3, display: "flex", flexDirection: "column", minHeight: isMobile ? "auto" : "80vh", position: "relative" }}>
           
-          {/* TOP BAR / STEP TITLE */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: isMobile ? "10px" : "20px", background: "rgba(0,0,0,0.4)", padding: isMobile ? "10px 15px" : "15px 30px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.1)" }}>
             <h1 style={{ margin: 0, fontSize: isMobile ? "18px" : "24px", textTransform: "uppercase", letterSpacing: "2px" }}>
               {STEP_LABELS[STEPS[stepIndex]]}
@@ -538,7 +477,6 @@ function BuilderContent() {
             </div>
           </div>
 
-          {/* NAVIGATION CONTROL BAR */}
           {stepIndex > 0 && (
             <div style={{ display: "flex", justifyContent: "space-between", width: "100%", marginBottom: isMobile ? "15px" : "30px" }}>
               <div style={{ display: "flex", gap: isMobile ? "10px" : "15px" }}>
@@ -566,7 +504,7 @@ function BuilderContent() {
             </div>
           )}
 
-          {/* STEP 0: BRAND SELECTION */}
+          {/* ODABIR BRANDA (BRAND SELECTION) */}
           {STEPS[stepIndex] === "brand" && (
             <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", gap: isMobile ? "15px" : "30px", justifyContent: "center", alignItems: "center", flex: 1, padding: isMobile ? "30px 0" : "0" }}>
               <button 
@@ -584,12 +522,11 @@ function BuilderContent() {
             </div>
           )}
 
-          {/* CAROUSEL STEPS */}
+          {/* VRTULJAK KOMPONENTI (CAROUSEL) */}
           {stepIndex > 0 && stepIndex < STEPS.length - 1 && currentProducts.length > 0 && (
             <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", position: "relative" }}>
               
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: isMobile ? "300px" : "400px", position: "relative" }}>
-                
                 <button 
                   onClick={() => setActiveIndex((activeIndex - 1 + currentProducts.length) % currentProducts.length)} 
                   style={{...navArrowStyle, width: isMobile ? "35px" : "50px", height: isMobile ? "35px" : "50px", fontSize: isMobile ? "20px" : "30px", position: "absolute", left: isMobile ? "5px" : "0", zIndex: 50}}
@@ -630,34 +567,20 @@ function BuilderContent() {
                           }
                         }}
                         style={{
-                          position: "absolute",
-                          width: isMobile ? "160px" : "220px",
-                          height: isMobile ? "210px" : "260px",
+                          position: "absolute", width: isMobile ? "160px" : "220px", height: isMobile ? "210px" : "260px",
                           background: "linear-gradient(145deg, rgba(50,50,50,0.9), rgba(20,20,20,0.9))",
                           border: isActive ? `2px solid ${brand === 'amd' ? '#ff6600' : '#0066cc'}` : "1px solid #444",
-                          borderRadius: "15px",
-                          display: "flex",
-                          flexDirection: "column",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          textAlign: "center",
-                          padding: isMobile ? "10px" : "20px 15px",
+                          borderRadius: "15px", display: "flex", flexDirection: "column", justifyContent: "space-between",
+                          alignItems: "center", textAlign: "center", padding: isMobile ? "10px" : "20px 15px",
                           cursor: isDragging ? "grabbing" : "pointer",
                           transition: isDragging ? "none" : "all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1)", 
-                          opacity: opacity,
-                          zIndex: zIndex,
-                          transform: transform,
+                          opacity, zIndex, transform,
                           boxShadow: isActive ? `0 15px 35px rgba(0,0,0,0.6)` : "0 5px 15px rgba(0,0,0,0.3)",
                           userSelect: "none" 
                         }}
                       >
                          {p.featuredImage ? (
-                           <img 
-                             draggable="false" 
-                             src={p.featuredImage.url} 
-                             alt={p.title} 
-                             style={{ width: "100%", height: "55%", objectFit: "contain", marginBottom: "5px", pointerEvents: "none" }} 
-                           />
+                           <img draggable="false" src={p.featuredImage.url} alt={p.title} style={{ width: "100%", height: "55%", objectFit: "contain", marginBottom: "5px", pointerEvents: "none" }} />
                          ) : (
                            <div style={{ width: "100%", height: "55%", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,0.05)", borderRadius: "8px", marginBottom: "5px", pointerEvents: "none" }}>
                              <span style={{ fontSize: isMobile ? "30px" : "50px" }}>📦</span>
@@ -666,23 +589,11 @@ function BuilderContent() {
 
                          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "5px", width: "100%", pointerEvents: "none" }}>
                             {p.pcfBadge?.value && badgeStyle && (
-                               <span style={{
-                                   background: badgeStyle.bg,
-                                   color: badgeStyle.color,
-                                   padding: "3px 8px",
-                                   borderRadius: "12px",
-                                   fontSize: isMobile ? "9px" : "10px",
-                                   fontWeight: "bold",
-                                   textTransform: "uppercase",
-                                   letterSpacing: "0.5px",
-                                   boxShadow: "0 2px 4px rgba(0,0,0,0.4)"
-                               }}>
+                               <span style={{ background: badgeStyle.bg, color: badgeStyle.color, padding: "3px 8px", borderRadius: "12px", fontSize: isMobile ? "9px" : "10px", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "0.5px", boxShadow: "0 2px 4px rgba(0,0,0,0.4)" }}>
                                    {p.pcfBadge.value}
                                </span>
                             )}
-                            <h3 style={{ fontSize: isMobile ? "12px" : "14px", margin: 0, fontWeight: "600", color: isActive ? "#fff" : "#aaa", lineHeight: "1.2" }}>
-                              {p.title}
-                            </h3>
+                            <h3 style={{ fontSize: isMobile ? "12px" : "14px", margin: 0, fontWeight: "600", color: isActive ? "#fff" : "#aaa", lineHeight: "1.2" }}>{p.title}</h3>
                          </div>
                          
                          {isActive && (
@@ -703,7 +614,6 @@ function BuilderContent() {
                 </button>
               </div>
 
-              {/* ACTIVE ITEM VARIANTS & PRICE */}
               <div style={{ marginTop: isMobile ? "10px" : "20px", width: "100%", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
                  {activeProduct?.variants.edges.length > 1 && (
                     <select 
@@ -712,9 +622,7 @@ function BuilderContent() {
                       style={{ width: isMobile ? "100%" : "250px", maxWidth: "300px", padding: "12px", borderRadius: "8px", border: `1px solid ${brand === 'amd' ? '#ff6600' : '#0066cc'}`, background: "rgba(0,0,0,0.5)", color: "#fff", marginBottom: "15px", fontSize: isMobile ? "14px" : "16px", outline: "none", cursor: "pointer", textAlign: "center" }}
                     >
                       {activeProduct.variants.edges.map((v: any) => (
-                        <option key={v.node.id} value={v.node.id}>
-                          {v.node.title !== "Default Title" ? v.node.title : "Standard"}
-                        </option>
+                        <option key={v.node.id} value={v.node.id}>{v.node.title !== "Default Title" ? v.node.title : "Standard"}</option>
                       ))}
                     </select>
                  )}
@@ -722,15 +630,14 @@ function BuilderContent() {
                     {Number(activeProduct?.variants.edges.find((v:any) => v.node.id === selectedVarId)?.node.price.amount || activeProduct?.variants.edges[0].node.price.amount || 0).toFixed(2)} €
                  </div>
               </div>
-
             </div>
           )}
 
-          {/* REVIEW STEP */}
+          {/* ZADNJA STRANICA - PREGLED I DODACI (REVIEW STEP) */}
           {STEPS[stepIndex] === "review" && (
             <div style={{ textAlign: "center", color: "#fff", width: "100%", paddingBottom: "40px", paddingTop: "20px" }}>
               <div style={{ padding: isMobile ? "20px" : "40px", background: "rgba(0,0,0,0.5)", borderRadius: "15px", border: "1px solid rgba(255,255,255,0.1)", backdropFilter: "blur(10px)" }}>
-                <h1 style={{ fontSize: isMobile ? "24px" : "32px" }}>🎉 Build je spreman!</h1>
+                <h1 style={{ fontSize: isMobile ? "24px" : "32px" }}>🎉 Konfiguracija je spremna!</h1>
                 <p style={{ fontSize: isMobile ? "22px" : "28px", margin: "20px 0", fontWeight: "bold", color: brand === 'amd' ? '#ffcc00' : '#66b3ff' }}>
                   Ukupna cijena: {currentTotal().toFixed(2)} €
                 </p>
@@ -754,37 +661,27 @@ function BuilderContent() {
                 </button>
               </div>
 
-              {/* UPSELL SECTION */}
+              {/* DODATNE NADOGRADNJE (UPSELLS) */}
               <div style={{ textAlign: "left", marginTop: "30px", padding: isMobile ? "15px" : "25px", background: "rgba(0,0,0,0.5)", borderRadius: "15px", border: "1px solid rgba(255,255,255,0.1)", backdropFilter: "blur(10px)" }}>
                 <h3 style={{ marginTop: 0, borderBottom: "1px solid rgba(255,255,255,0.2)", paddingBottom: "10px", color: "#fff", fontSize: isMobile ? "16px" : "18px" }}>
                   Opcionalne Nadogradnje
                 </h3>
                 
-                {/* 2. GPU UPSELL */}
                 <div style={{ marginTop: "15px" }}>
                   {!gpu2 ? (
-                    <button 
-                      onClick={() => setAddingExtra(addingExtra === "gpu2" ? null : "gpu2")} 
-                      style={{...upsellBtnStyle, background: "rgba(255,255,255,0.05)", color: "#fff", borderColor: "rgba(255,255,255,0.2)", fontSize: isMobile ? "12px" : "14px"}}
-                    >
+                    <button onClick={() => setAddingExtra(addingExtra === "gpu2" ? null : "gpu2")} style={{...upsellBtnStyle, background: "rgba(255,255,255,0.05)", color: "#fff", borderColor: "rgba(255,255,255,0.2)", fontSize: isMobile ? "12px" : "14px"}}>
                       {addingExtra === "gpu2" ? "Odustani" : "➕ Dodaj 2. Grafičku (Za 3D i AI)"}
                     </button>
                   ) : (
                     <div style={{...addedUpsellStyle, background: "rgba(255,255,255,0.1)", color: "#fff", border: "1px solid rgba(255,255,255,0.1)"}}>
-                      <span style={{ fontSize: isMobile ? "12px" : "14px" }}>
-                        <strong>2. GPU:</strong> {gpu2.title} {gpu2.selectedVariant && gpu2.selectedVariant.title !== "Default Title" ? `(${gpu2.selectedVariant.title})` : ""}
-                      </span>
+                      <span style={{ fontSize: isMobile ? "12px" : "14px" }}><strong>2. GPU:</strong> {gpu2.title}</span>
                       <button onClick={() => setGpu2(null)} style={removeBtnStyle}>✖ Ukloni</button>
                     </div>
                   )}
                   {addingExtra === "gpu2" && !gpu2 && (
                     <div style={{...dropdownListStyle, background: "#222", borderColor: "#444"}}>
                       {getSortedExtras("gpu").flatMap(p => p.variants.edges.map(v => (
-                          <button 
-                            key={v.node.id} 
-                            style={{...dropdownItemStyle, background: "#222", color: "#fff", borderBottomColor: "#333", fontSize: isMobile ? "12px" : "14px"}} 
-                            onClick={() => { setGpu2({ ...p, selectedVariant: v.node }); setAddingExtra(null); }}
-                          >
+                          <button key={v.node.id} style={{...dropdownItemStyle, background: "#222", color: "#fff", borderBottomColor: "#333", fontSize: isMobile ? "12px" : "14px"}} onClick={() => { setGpu2({ ...p, selectedVariant: v.node }); setAddingExtra(null); }}>
                             <span>{p.title} {v.node.title !== "Default Title" ? `- ${v.node.title}` : ""}</span> 
                             <span style={{color: brand === 'amd' ? '#ffcc00' : '#66b3ff', fontWeight: "bold"}}>{Number(v.node.price.amount).toFixed(2)} €</span>
                           </button>
@@ -793,31 +690,21 @@ function BuilderContent() {
                   )}
                 </div>
 
-                {/* 2. SSD UPSELL */}
                 <div style={{ marginTop: "15px" }}>
                   {!ssd2 ? (
-                    <button 
-                      onClick={() => setAddingExtra(addingExtra === "ssd2" ? null : "ssd2")} 
-                      style={{...upsellBtnStyle, background: "rgba(255,255,255,0.05)", color: "#fff", borderColor: "rgba(255,255,255,0.2)", fontSize: isMobile ? "12px" : "14px"}}
-                    >
+                    <button onClick={() => setAddingExtra(addingExtra === "ssd2" ? null : "ssd2")} style={{...upsellBtnStyle, background: "rgba(255,255,255,0.05)", color: "#fff", borderColor: "rgba(255,255,255,0.2)", fontSize: isMobile ? "12px" : "14px"}}>
                       {addingExtra === "ssd2" ? "Odustani" : "➕ Dodaj 2. SSD (Dodatna brza pohrana)"}
                     </button>
                   ) : (
                     <div style={{...addedUpsellStyle, background: "rgba(255,255,255,0.1)", color: "#fff", border: "1px solid rgba(255,255,255,0.1)"}}>
-                      <span style={{ fontSize: isMobile ? "12px" : "14px" }}>
-                        <strong>2. SSD:</strong> {ssd2.title} {ssd2.selectedVariant && ssd2.selectedVariant.title !== "Default Title" ? `(${ssd2.selectedVariant.title})` : ""}
-                      </span>
+                      <span style={{ fontSize: isMobile ? "12px" : "14px" }}><strong>2. SSD:</strong> {ssd2.title}</span>
                       <button onClick={() => setSsd2(null)} style={removeBtnStyle}>✖ Ukloni</button>
                     </div>
                   )}
                   {addingExtra === "ssd2" && !ssd2 && (
                     <div style={{...dropdownListStyle, background: "#222", borderColor: "#444"}}>
                       {getSortedExtras("ssd").flatMap(p => p.variants.edges.map(v => (
-                          <button 
-                            key={v.node.id} 
-                            style={{...dropdownItemStyle, background: "#222", color: "#fff", borderBottomColor: "#333", fontSize: isMobile ? "12px" : "14px"}} 
-                            onClick={() => { setSsd2({ ...p, selectedVariant: v.node }); setAddingExtra(null); }}
-                          >
+                          <button key={v.node.id} style={{...dropdownItemStyle, background: "#222", color: "#fff", borderBottomColor: "#333", fontSize: isMobile ? "12px" : "14px"}} onClick={() => { setSsd2({ ...p, selectedVariant: v.node }); setAddingExtra(null); }}>
                             <span>{p.title} {v.node.title !== "Default Title" ? `- ${v.node.title}` : ""}</span> 
                             <span style={{color: brand === 'amd' ? '#ffcc00' : '#66b3ff', fontWeight: "bold"}}>{Number(v.node.price.amount).toFixed(2)} €</span>
                           </button>
@@ -826,31 +713,21 @@ function BuilderContent() {
                   )}
                 </div>
 
-                {/* 2. HDD UPSELL */}
                 <div style={{ marginTop: "15px" }}>
                   {!hdd2 ? (
-                    <button 
-                      onClick={() => setAddingExtra(addingExtra === "hdd2" ? null : "hdd2")} 
-                      style={{...upsellBtnStyle, background: "rgba(255,255,255,0.05)", color: "#fff", borderColor: "rgba(255,255,255,0.2)", fontSize: isMobile ? "12px" : "14px"}}
-                    >
+                    <button onClick={() => setAddingExtra(addingExtra === "hdd2" ? null : "hdd2")} style={{...upsellBtnStyle, background: "rgba(255,255,255,0.05)", color: "#fff", borderColor: "rgba(255,255,255,0.2)", fontSize: isMobile ? "12px" : "14px"}}>
                       {addingExtra === "hdd2" ? "Odustani" : "➕ Dodaj 2. HDD (Masivna pohrana)"}
                     </button>
                   ) : (
                     <div style={{...addedUpsellStyle, background: "rgba(255,255,255,0.1)", color: "#fff", border: "1px solid rgba(255,255,255,0.1)"}}>
-                      <span style={{ fontSize: isMobile ? "12px" : "14px" }}>
-                        <strong>2. HDD:</strong> {hdd2.title} {hdd2.selectedVariant && hdd2.selectedVariant.title !== "Default Title" ? `(${hdd2.selectedVariant.title})` : ""}
-                      </span>
+                      <span style={{ fontSize: isMobile ? "12px" : "14px" }}><strong>2. HDD:</strong> {hdd2.title}</span>
                       <button onClick={() => setHdd2(null)} style={removeBtnStyle}>✖ Ukloni</button>
                     </div>
                   )}
                   {addingExtra === "hdd2" && !hdd2 && (
                     <div style={{...dropdownListStyle, background: "#222", borderColor: "#444"}}>
                       {getSortedExtras("hdd").flatMap(p => p.variants.edges.map(v => (
-                          <button 
-                            key={v.node.id} 
-                            style={{...dropdownItemStyle, background: "#222", color: "#fff", borderBottomColor: "#333", fontSize: isMobile ? "12px" : "14px"}} 
-                            onClick={() => { setHdd2({ ...p, selectedVariant: v.node }); setAddingExtra(null); }}
-                          >
+                          <button key={v.node.id} style={{...dropdownItemStyle, background: "#222", color: "#fff", borderBottomColor: "#333", fontSize: isMobile ? "12px" : "14px"}} onClick={() => { setHdd2({ ...p, selectedVariant: v.node }); setAddingExtra(null); }}>
                             <span>{p.title} {v.node.title !== "Default Title" ? `- ${v.node.title}` : ""}</span> 
                             <span style={{color: brand === 'amd' ? '#ffcc00' : '#66b3ff', fontWeight: "bold"}}>{Number(v.node.price.amount).toFixed(2)} €</span>
                           </button>
@@ -863,18 +740,11 @@ function BuilderContent() {
           )}
         </div>
 
-        {/* RIGHT SIDEBAR */}
+        {/* DESNI SIDEBAR (RIGHT SIDEBAR) */}
         <div style={{ 
-          flex: 1, 
-          background: "rgba(0, 0, 0, 0.6)", 
-          backdropFilter: "blur(10px)", 
-          border: "1px solid rgba(255,255,255,0.1)", 
-          borderRadius: "16px", 
-          padding: isMobile ? "15px" : "25px", 
-          height: "fit-content", 
-          position: isMobile ? "relative" : "sticky", 
-          top: "40px", 
-          marginTop: isMobile ? "20px" : "0"
+          flex: 1, background: "rgba(0, 0, 0, 0.6)", backdropFilter: "blur(10px)", border: "1px solid rgba(255,255,255,0.1)", 
+          borderRadius: "16px", padding: isMobile ? "15px" : "25px", height: "fit-content", position: isMobile ? "relative" : "sticky", 
+          top: "40px", marginTop: isMobile ? "20px" : "0"
         }}>
           <h3 style={{ marginTop: 0, borderBottom: "1px solid rgba(255,255,255,0.2)", paddingBottom: "15px", color: "#fff", fontSize: isMobile ? "18px" : "20px" }}>Vaša Konfiguracija</h3>
           
@@ -922,12 +792,13 @@ function BuilderContent() {
 
 export default function Builder() {
   return (
-    <Suspense fallback={<div style={{color: "white"}}>Učitavanje...</div>}>
+    <Suspense fallback={<div style={{color: "white", padding: "50px", textAlign: "center"}}>Učitavanje aplikacije...</div>}>
       <BuilderContent />
     </Suspense>
   );
 }
 
+// --- POMOĆNE UI KOMPONENTE (SUB-COMPONENTS) ---
 function SidebarRow({ label, item }: { label: string; item?: ProductNode | null }) {
   if (!item) return null; 
   const variantName = item.selectedVariant && item.selectedVariant.title !== "Default Title" ? ` (${item.selectedVariant.title})` : "";
@@ -939,7 +810,7 @@ function SidebarRow({ label, item }: { label: string; item?: ProductNode | null 
   );
 }
 
-/* STYLES */
+// --- STILOVI (STYLES) ---
 const brandBtnStyle: CSSProperties = { fontSize: "32px", fontWeight: "bold", color: "#fff", border: "none", borderRadius: "16px", cursor: "pointer", boxShadow: "0 10px 30px rgba(0,0,0,0.5)", transition: "transform 0.2s" };
 const navArrowStyle: CSSProperties = { background: "rgba(255,255,255,0.1)", border: "none", color: "white", borderRadius: "50%", cursor: "pointer", backdropFilter: "blur(5px)", transition: "0.2s" };
 const checkoutBtnStyle: CSSProperties = { width: "100%", padding: "20px", fontWeight: "bold", cursor: "pointer", borderRadius: "8px", fontSize: "18px" };
