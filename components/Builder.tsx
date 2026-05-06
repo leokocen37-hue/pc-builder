@@ -55,6 +55,7 @@ function BuilderContent() {
   const router = useRouter();
   const initialized = useRef(false);
 
+  // --- ALL REACT HOOKS AT THE TOP (SAFE ZONE) ---
   const [stepIndex, setStepIndex] = useState(0);
   const [products, setProducts] = useState<ProductNode[]>([]);
   const [loading, setLoading] = useState(true);
@@ -248,6 +249,58 @@ function BuilderContent() {
     setDragOffset(0);
   }, [stepIndex]);
 
+  const currentStep = STEPS[stepIndex];
+  const currentProducts = products.filter(p => {
+    const type = p.pcfType?.value;
+    if (currentStep === "cpu") return type === "cpu" && p.pcfBrand?.value === brand;
+    if (currentStep === "motherboard") return type === "motherboard" && p.pcfSocket?.value === cpu?.pcfSocket?.value;
+    if (currentStep === "ram") return type === "ram" && p.pcfRamType?.value === mb?.pcfRamType?.value;
+    if (currentStep === "gpu") return type === "gpu";
+    if (currentStep === "ssd") return type === "ssd";
+    if (currentStep === "hdd") return type === "hdd";
+    if (currentStep === "os") return type === "os";
+    
+    if (currentStep === "case") {
+      if (type !== "case") return false;
+      const supported = p.pcfSupportedFormFactors?.value?.split(",").map(s => s.trim().toLowerCase()) || [];
+      const mbFits = supported.includes((mb?.pcfFormFactor?.value || "").toLowerCase());
+      const gpuLength = Math.max(Number(gpu?.pcfGpuLength?.value || 0), Number(gpu2?.pcfGpuLength?.value || 0));
+      return mbFits && (gpuLength <= Number(p.pcfMaxGpuLength?.value || 0));
+    }
+    
+    if (currentStep === "psu") {
+      const requiredWattage = calculateSystemTDP() + 100;
+      return type === "psu" && Number(p.pcfWattage?.value || 0) >= requiredWattage;
+    }
+    
+    if (currentStep === "cooler") {
+      if (type !== "cooler") return false;
+      const sockets = p.pcfSocket?.value?.split(",").map(s => s.trim().toLowerCase()) || [];
+      return sockets.includes((cpu?.pcfSocket?.value || "").toLowerCase());
+    }
+    return false;
+  }).sort((a, b) => {
+    const wA = getQualityScore(a.pcfQuality?.value);
+    const wB = getQualityScore(b.pcfQuality?.value);
+    if (wB !== wA) return wB - wA; 
+    const priceA = Number(a.variants.edges[0]?.node.price.amount || 0);
+    const priceB = Number(b.variants.edges[0]?.node.price.amount || 0);
+    if (priceB !== priceA) return priceB - priceA; 
+    const tdpA = Number(a.pcfTdp?.value || 0);
+    const tdpB = Number(b.pcfTdp?.value || 0);
+    if (tdpB !== tdpA) return tdpB - tdpA;
+    return a.title.localeCompare(b.title);
+  });
+
+  const activeProduct = currentProducts[activeIndex];
+
+  useEffect(() => {
+    if (activeProduct) {
+      setSelectedVarId(activeProduct.variants.edges[0].node.id);
+    }
+  }, [activeProduct]);
+
+  // --- NON-HOOK FUNCTIONS ---
   const handleSelection = (type: string, p: ProductNode) => {
     if (type === "cpu") setCpu(p);
     else if (type === "motherboard") setMb(p); 
@@ -320,86 +373,6 @@ function BuilderContent() {
       .sort((a, b) => Number(b.variants.edges[0]?.node.price.amount || 0) - Number(a.variants.edges[0]?.node.price.amount || 0));
   };
 
-  // --- DIAGNOSTIC SCREENS ---
-  if (loading) return <div style={{ padding: "100px", textAlign: "center", color: "white" }}>Učitavanje...</div>;
-
-  if (errorMessage) {
-    return (
-      <div style={{ padding: "50px", textAlign: "center", background: "#222", color: "white", minHeight: "100vh" }}>
-        <h1 style={{ color: "#ff4d4d" }}>🚨 FETCH ERROR 🚨</h1>
-        <p>Aplikacija se ne može spojiti na Shopify.</p>
-        <div style={{ padding: "20px", background: "#000", color: "#ff4d4d", fontFamily: "monospace", display: "inline-block", marginTop: "20px" }}>
-          {errorMessage}
-        </div>
-      </div>
-    );
-  }
-
-  if (!loading && products.length === 0) {
-    return (
-      <div style={{ padding: "50px", textAlign: "center", background: "#222", color: "white", minHeight: "100vh" }}>
-        <h1 style={{ color: "#ffcc00" }}>🚨 DETEKTIVSKI MOD 🚨</h1>
-        <h2>API i kod rade savršeno, ali Shopify šalje 0 proizvoda.</h2>
-        <p>Domena na koju se spajamo: <strong style={{color: "#0f0"}}>{process.env.NEXT_PUBLIC_SHOPIFY_DOMAIN || "Nedostaje Domena!"}</strong></p>
-        <p>Duljina Tokena: <strong style={{color: "#0f0"}}>{process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_TOKEN?.length || 0} znakova</strong></p>
-        <div style={{ marginTop: "30px", padding: "20px", background: "#333", borderRadius: "10px", textAlign: "left", display: "inline-block", maxWidth: "600px" }}>
-          <h3 style={{marginTop: 0}}>Zašto se ovo događa?</h3>
-          <p>Ovaj uređaj nema <strong>Shopify Admin Cookie</strong> kao tvoj PC. Shopify te tretira kao "javnog kupca" i namjerno sakriva proizvode iz jednog od dva razloga:</p>
-          <ol>
-            <li><strong>Proizvodi nemaju kvačicu za "Headless" kanal.</strong> Otvori Shopify -&gt; Products -&gt; Označi sve -&gt; Bulk Edit -&gt; Uključi kvačicu za tvoj PC Builder app i spremi.</li>
-            <li><strong>Shopify Markets / International.</strong> Ako si ograničio prodaju na samo jednu državu, Shopify blokira uređaje za koje misli da su van te države (npr. laptop s VPN-om ili iCloud Private Relay).</li>
-          </ol>
-        </div>
-      </div>
-    );
-  }
-  // --- END DIAGNOSTIC SCREENS ---
-
-  const currentStep = STEPS[stepIndex];
-  const currentProducts = products.filter(p => {
-    const type = p.pcfType?.value;
-    if (currentStep === "cpu") return type === "cpu" && p.pcfBrand?.value === brand;
-    if (currentStep === "motherboard") return type === "motherboard" && p.pcfSocket?.value === cpu?.pcfSocket?.value;
-    if (currentStep === "ram") return type === "ram" && p.pcfRamType?.value === mb?.pcfRamType?.value;
-    if (currentStep === "gpu") return type === "gpu";
-    if (currentStep === "ssd") return type === "ssd";
-    if (currentStep === "hdd") return type === "hdd";
-    if (currentStep === "os") return type === "os";
-    
-    if (currentStep === "case") {
-      if (type !== "case") return false;
-      const supported = p.pcfSupportedFormFactors?.value?.split(",").map(s => s.trim().toLowerCase()) || [];
-      const mbFits = supported.includes((mb?.pcfFormFactor?.value || "").toLowerCase());
-      const gpuLength = Math.max(Number(gpu?.pcfGpuLength?.value || 0), Number(gpu2?.pcfGpuLength?.value || 0));
-      return mbFits && (gpuLength <= Number(p.pcfMaxGpuLength?.value || 0));
-    }
-    
-    if (currentStep === "psu") {
-      const requiredWattage = calculateSystemTDP() + 100;
-      return type === "psu" && Number(p.pcfWattage?.value || 0) >= requiredWattage;
-    }
-    
-    if (currentStep === "cooler") {
-      if (type !== "cooler") return false;
-      const sockets = p.pcfSocket?.value?.split(",").map(s => s.trim().toLowerCase()) || [];
-      return sockets.includes((cpu?.pcfSocket?.value || "").toLowerCase());
-    }
-    return false;
-  }).sort((a, b) => {
-    const wA = getQualityScore(a.pcfQuality?.value);
-    const wB = getQualityScore(b.pcfQuality?.value);
-    if (wB !== wA) return wB - wA; 
-    const priceA = Number(a.variants.edges[0]?.node.price.amount || 0);
-    const priceB = Number(b.variants.edges[0]?.node.price.amount || 0);
-    if (priceB !== priceA) return priceB - priceA; 
-    const tdpA = Number(a.pcfTdp?.value || 0);
-    const tdpB = Number(b.pcfTdp?.value || 0);
-    if (tdpB !== tdpA) return tdpB - tdpA;
-    return a.title.localeCompare(b.title);
-  });
-
-  const activeProduct = currentProducts[activeIndex];
-
   const getCardStyle = (exactOffset: number, isMobile: boolean) => {
     const absOffset = Math.abs(exactOffset);
     const sign = Math.sign(exactOffset) || 1;
@@ -444,12 +417,6 @@ function BuilderContent() {
     if (offset > Math.floor(N / 2)) offset -= N;
     return offset;
   };
-
-  useEffect(() => {
-    if (activeProduct) {
-      setSelectedVarId(activeProduct.variants.edges[0].node.id);
-    }
-  }, [activeProduct]);
 
   // CONTINUOUS MULTI-SWIPE PHYSICS
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -498,6 +465,42 @@ function BuilderContent() {
     setTimeout(() => setIsDragging(false), 50); 
   };
 
+
+  // --- DIAGNOSTIC SCREENS (SAFE ZONE: BELOW ALL HOOKS) ---
+  if (loading) return <div style={{ padding: "100px", textAlign: "center", color: "white" }}>Učitavanje...</div>;
+
+  if (errorMessage) {
+    return (
+      <div style={{ padding: "50px", textAlign: "center", background: "#222", color: "white", minHeight: "100vh" }}>
+        <h1 style={{ color: "#ff4d4d" }}>🚨 FETCH ERROR 🚨</h1>
+        <p>Aplikacija se ne može spojiti na Shopify.</p>
+        <div style={{ padding: "20px", background: "#000", color: "#ff4d4d", fontFamily: "monospace", display: "inline-block", marginTop: "20px" }}>
+          {errorMessage}
+        </div>
+      </div>
+    );
+  }
+
+  if (!loading && products.length === 0) {
+    return (
+      <div style={{ padding: "50px", textAlign: "center", background: "#222", color: "white", minHeight: "100vh" }}>
+        <h1 style={{ color: "#ffcc00" }}>🚨 DETEKTIVSKI MOD 🚨</h1>
+        <h2>API i kod rade savršeno, ali Shopify šalje 0 proizvoda.</h2>
+        <p>Domena na koju se spajamo: <strong style={{color: "#0f0"}}>{process.env.NEXT_PUBLIC_SHOPIFY_DOMAIN || "Nedostaje Domena!"}</strong></p>
+        <p>Duljina Tokena: <strong style={{color: "#0f0"}}>{process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_TOKEN?.length || 0} znakova</strong></p>
+        <div style={{ marginTop: "30px", padding: "20px", background: "#333", borderRadius: "10px", textAlign: "left", display: "inline-block", maxWidth: "600px" }}>
+          <h3 style={{marginTop: 0}}>Zašto se ovo događa?</h3>
+          <p>Ovaj uređaj nema <strong>Shopify Admin Cookie</strong> kao tvoj PC. Shopify te tretira kao "javnog kupca" i namjerno sakriva proizvode iz jednog od dva razloga:</p>
+          <ol>
+            <li><strong>Proizvodi nemaju kvačicu za "Headless" kanal.</strong> Otvori Shopify -&gt; Products -&gt; Označi sve -&gt; Bulk Edit -&gt; Uključi kvačicu za tvoj PC Builder app i spremi.</li>
+            <li><strong>Shopify Markets / International.</strong> Ako si ograničio prodaju na samo jednu državu, Shopify blokira uređaje za koje misli da su van te države (npr. laptop s VPN-om ili iCloud Private Relay).</li>
+          </ol>
+        </div>
+      </div>
+    );
+  }
+  // --- END DIAGNOSTIC SCREENS ---
+
   const bgStyle = {
     background: brand === 'amd' ? 'linear-gradient(135deg, #222 45%, #e05e00 45%)' :
                 brand === 'intel' ? 'linear-gradient(135deg, #222 45%, #0066cc 45%)' :
@@ -527,7 +530,7 @@ function BuilderContent() {
             </div>
           </div>
 
-          {/* NAVIGATION CONTROL BAR (MOVED TO TOP) */}
+          {/* NAVIGATION CONTROL BAR */}
           {stepIndex > 0 && (
             <div style={{ display: "flex", justifyContent: "space-between", width: "100%", marginBottom: isMobile ? "15px" : "30px" }}>
               <div style={{ display: "flex", gap: isMobile ? "10px" : "15px" }}>
