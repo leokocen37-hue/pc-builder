@@ -611,7 +611,7 @@ function BuilderContent() {
   // --- UI RENDERING ---
   if (loading) {
     return (
-      <div style={{ padding: "100px", textAlign: "center", color: "white" }}>
+      <div style={{ padding: "100px", textAlign: "center", color: "white", fontFamily: "'Roboto Condensed', sans-serif" }}>
         Učitavanje komponenti...
       </div>
     );
@@ -619,7 +619,7 @@ function BuilderContent() {
 
   if (errorMessage) {
     return (
-      <div style={{ padding: "50px", textAlign: "center", color: "white", minHeight: "100vh", background: "#222" }}>
+      <div style={{ padding: "50px", textAlign: "center", color: "white", minHeight: "100vh", background: "#222", fontFamily: "'Roboto Condensed', sans-serif" }}>
         <h2 style={{ color: "#ff4d4d" }}>Problem sa spajanjem</h2>
         <p>Aplikacija se trenutno ne može povezati sa serverom.</p>
         <p style={{ fontSize: "12px", color: "#888" }}>({errorMessage})</p>
@@ -634,7 +634,8 @@ function BuilderContent() {
     color: '#fff', 
     padding: isMobile ? '20px 10px' : '40px 20px', 
     transition: 'background 0.5s ease', 
-    overflowX: "hidden" as const
+    overflowX: "hidden" as const,
+    fontFamily: "'Roboto Condensed', sans-serif"
   };
 
   return (
@@ -821,7 +822,8 @@ function BuilderContent() {
                         fontSize: isMobile ? "14px" : "16px", 
                         outline: "none", 
                         cursor: "pointer", 
-                        textAlign: "center" 
+                        textAlign: "center",
+                        fontFamily: "'Roboto Condensed', sans-serif"
                       }}
                     >
                       {activeProduct.variants.edges.map((v: any) => (
@@ -1007,7 +1009,7 @@ function BuilderContent() {
             {isReviewStep && (
               <button 
                 onClick={shareBuild} 
-                style={{ width: "100%", padding: "12px", marginTop: "10px", background: "transparent", border: `1px solid ${COLORS.border}`, color: COLORS.textMain, borderRadius: "12px", cursor: "pointer", fontWeight: "bold", fontSize: "14px", transition: "0.2s" }}
+                style={{ width: "100%", padding: "12px", marginTop: "10px", background: "transparent", border: `1px solid ${COLORS.border}`, color: COLORS.textMain, borderRadius: "12px", cursor: "pointer", fontWeight: "bold", fontSize: "14px", transition: "0.2s", fontFamily: "'Roboto Condensed', sans-serif" }}
               >
                 🔗 Podijeli konfiguraciju
               </button>
@@ -1016,7 +1018,7 @@ function BuilderContent() {
             {/* CUSTOM PC LINK */}
             <div style={{ marginTop: "25px", textAlign: "center", fontSize: "12px", color: COLORS.textMuted, lineHeight: "1.5", padding: "15px", background: "rgba(255,255,255,0.02)", borderRadius: "10px" }}>
               Želite još prilagođenije računalo?<br/>Možemo to napraviti!<br/>
-              <a href="https://racunalo.hr/pages/contact" target="_blank" rel="noopener noreferrer" style={{ color: COLORS.accent, textDecoration: "underline", fontWeight: "bold", display: "inline-block", marginTop: "5px" }}>
+              <a href="https://racunalo.hr/pages/contact" target="_blank" rel="noopener noreferrer" style={{ color: COLORS.accent, textDecoration: "underline", fontWeight: "bold", display: "inline-block", marginTop: "5px", fontFamily: "'Roboto Condensed', sans-serif" }}>
                 Kontaktirajte nas
               </a>
             </div>
@@ -1056,7 +1058,7 @@ function UpsellRow({ label, item, onAdd, onRemove, isAdding }: { label: string, 
     return (
       <button 
         onClick={onAdd} 
-        style={{ width: "100%", padding: "15px", border: `1px dashed ${COLORS.border}`, background: "transparent", color: COLORS.textMain, fontWeight: "bold", borderRadius: "12px", cursor: "pointer", textAlign: "left", fontSize: "14px", transition: "0.2s" }}
+        style={{ width: "100%", padding: "15px", border: `1px dashed ${COLORS.border}`, background: "transparent", color: COLORS.textMain, fontWeight: "bold", borderRadius: "12px", cursor: "pointer", textAlign: "left", fontSize: "14px", transition: "0.2s", fontFamily: "'Roboto Condensed', sans-serif" }}
       >
         {isAdding ? "Odustani" : `➕ Dodaj: ${label}`}
       </button>
@@ -1068,7 +1070,7 @@ function UpsellRow({ label, item, onAdd, onRemove, isAdding }: { label: string, 
       <span><strong>{label}:</strong> {item.title}</span>
       <button 
         onClick={onRemove} 
-        style={{ color: "#ff4d4d", border: "none", background: "none", cursor: "pointer", fontWeight: "bold" }}
+        style={{ color: "#ff4d4d", border: "none", background: "none", cursor: "pointer", fontWeight: "bold", fontFamily: "'Roboto Condensed', sans-serif" }}
       >
         ✖ Ukloni
       </button>
@@ -1085,7 +1087,8 @@ const navBtnStyle: CSSProperties = {
   border: `1px solid ${COLORS.border}`, 
   cursor: "pointer", 
   fontWeight: "bold", 
-  fontSize: "12px" 
+  fontSize: "12px",
+  fontFamily: "'Roboto Condensed', sans-serif"
 };
 
 const brandBtnStyle: CSSProperties = { 
@@ -1099,7 +1102,8 @@ const brandBtnStyle: CSSProperties = {
   border: `1px solid ${COLORS.border}`, 
   borderRadius: "16px", 
   cursor: "pointer", 
-  transition: "0.2s" 
+  transition: "0.2s",
+  fontFamily: "'Roboto Condensed', sans-serif"
 };
 
 const navArrowStyle: CSSProperties = { 
@@ -1114,7 +1118,8 @@ const navArrowStyle: CSSProperties = {
   height: "50px",
   fontSize: "30px",
   position: "absolute",
-  zIndex: 50
+  zIndex: 50,
+  fontFamily: "'Roboto Condensed', sans-serif"
 };
 
 const cardStyle: CSSProperties = { 
@@ -1162,7 +1167,8 @@ const checkoutBtnStyle: CSSProperties = {
   fontSize: "18px", 
   color: "white", 
   border: "none", 
-  marginTop: "20px" 
+  marginTop: "20px",
+  fontFamily: "'Roboto Condensed', sans-serif"
 };
 
 const dropdownStyle: CSSProperties = { 
@@ -1184,12 +1190,13 @@ const dropdownItemStyle: CSSProperties = {
   background: "#222", 
   color: "#fff", 
   cursor: "pointer", 
-  textAlign: "left" 
+  textAlign: "left",
+  fontFamily: "'Roboto Condensed', sans-serif"
 };
 
 export default function Builder() { 
   return (
-    <Suspense fallback={<div style={{color: "white", padding: "100px", textAlign: "center", background: COLORS.bgMain, minHeight: "100vh"}}>Učitavanje aplikacije...</div>}>
+    <Suspense fallback={<div style={{color: "white", padding: "100px", textAlign: "center", background: COLORS.bgMain, minHeight: "100vh", fontFamily: "'Roboto Condensed', sans-serif"}}>Učitavanje aplikacije...</div>}>
       <BuilderContent />
     </Suspense>
   ); 
