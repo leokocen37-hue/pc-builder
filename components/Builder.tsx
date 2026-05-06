@@ -55,7 +55,7 @@ function BuilderContent() {
   const router = useRouter();
   const initialized = useRef(false);
 
-  // --- ALL REACT HOOKS AT THE TOP (SAFE ZONE) ---
+  // --- SVI REACT HOOKOVI SU OVDJE NA VRHU ---
   const [stepIndex, setStepIndex] = useState(0);
   const [products, setProducts] = useState<ProductNode[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,7 +63,6 @@ function BuilderContent() {
   const [isMobile, setIsMobile] = useState(false); 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Carousel & Drag physics state
   const [activeIndex, setActiveIndex] = useState(0);
   const [selectedVarId, setSelectedVarId] = useState("");
   const [startX, setStartX] = useState<number | null>(null);
@@ -300,7 +299,7 @@ function BuilderContent() {
     }
   }, [activeProduct]);
 
-  // --- NON-HOOK FUNCTIONS ---
+  // --- NON-HOOK FUNKCIJE ---
   const handleSelection = (type: string, p: ProductNode) => {
     if (type === "cpu") setCpu(p);
     else if (type === "motherboard") setMb(p); 
@@ -418,7 +417,6 @@ function BuilderContent() {
     return offset;
   };
 
-  // CONTINUOUS MULTI-SWIPE PHYSICS
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     setStartX(e.clientX);
     setDragOffset(0);
@@ -466,7 +464,7 @@ function BuilderContent() {
   };
 
 
-  // --- DIAGNOSTIC SCREENS (SAFE ZONE: BELOW ALL HOOKS) ---
+  // --- DIAGNOSTIČKI EKRANI (SIGURNA ZONA, ISPOD SVIH HOOKOVA) ---
   if (loading) return <div style={{ padding: "100px", textAlign: "center", color: "white" }}>Učitavanje...</div>;
 
   if (errorMessage) {
@@ -499,7 +497,7 @@ function BuilderContent() {
       </div>
     );
   }
-  // --- END DIAGNOSTIC SCREENS ---
+  // --- KRAJ DIAGNOSTIKE ---
 
   const bgStyle = {
     background: brand === 'amd' ? 'linear-gradient(135deg, #222 45%, #e05e00 45%)' :
@@ -515,6 +513,16 @@ function BuilderContent() {
 
   return (
     <div style={bgStyle}>
+
+      {/* DEBUG BANNER - Možeš obrisati ovo kasnije kad sve proradi */}
+      {!loading && (
+        <div style={{ background: "rgba(255,0,0,0.8)", padding: "15px", color: "white", textAlign: "center", fontWeight: "bold", zIndex: 9999, marginBottom: "20px", borderRadius: "10px", border: "2px solid white" }}>
+          UKUPNO PROIZVODA DETEKTIRANO: {products.length} <br/>
+          KOLIKO PROCESORA(CPU) APLIKACIJA VIDI: {products.filter(p => p.pcfType?.value === "cpu").length} <br/>
+          METAFIELD TEST (Za 1. proizvod): {products[0] ? (products[0].pcfType?.value || "❌ METAFIELD JE PRAZAN (NULL) ZBOG JEZIKA ❌") : "Nema proizvoda"}
+        </div>
+      )}
+
       <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", maxWidth: "1400px", margin: "0 auto", gap: isMobile ? "20px" : "40px" }}>
         
         {/* LEFT MAIN AREA */}
@@ -580,7 +588,6 @@ function BuilderContent() {
           {stepIndex > 0 && stepIndex < STEPS.length - 1 && currentProducts.length > 0 && (
             <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", position: "relative" }}>
               
-              {/* Carousel Container */}
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: isMobile ? "300px" : "400px", position: "relative" }}>
                 
                 <button 
@@ -590,7 +597,6 @@ function BuilderContent() {
                   &lt;
                 </button>
 
-                {/* DRAG AND SWIPE PHYSICS WRAPPER */}
                 <div 
                   onPointerDown={handlePointerDown}
                   onPointerMove={handlePointerMove}
@@ -601,10 +607,8 @@ function BuilderContent() {
                 >
                   {currentProducts.map((p, idx) => {
                     const baseOffset = getOffset(idx);
-                    
                     const slideWidth = isMobile ? 110 : 220; 
                     const exactOffset = baseOffset + (dragOffset / slideWidth);
-
                     const { transform, opacity, zIndex } = getCardStyle(exactOffset, isMobile);
                     const isVisible = opacity > 0;
                     const isActive = baseOffset === 0 && !isDragging; 
@@ -618,7 +622,6 @@ function BuilderContent() {
                         key={p.id} 
                         onClick={() => {
                           if (isDragging) return; 
-                          
                           if (baseOffset === 0) {
                             const variantNode = p.variants.edges.find((v:any) => v.node.id === selectedVarId)?.node || p.variants.edges[0].node;
                             handleSelection(STEPS[stepIndex], { ...p, selectedVariant: variantNode });
