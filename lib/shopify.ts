@@ -25,8 +25,8 @@ export async function shopifyFetch<T>(
       headers: {
         "Content-Type": "application/json",
         "X-Shopify-Storefront-Access-Token": cleanToken,
-        // OVO JE KLJUČNO: Prisiljava Shopify da vrati hrvatske podatke i metafielde!
-        "Accept-Language": "hr-HR, hr;q=0.9, en-US;q=0.8, en;q=0.7", 
+        // Force English/Default language so Shopify doesn't hide the metafields!
+        "Accept-Language": "en-US, en;q=0.9", 
       },
       body: JSON.stringify({
         query,
