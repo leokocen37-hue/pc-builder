@@ -1003,13 +1003,15 @@ function BuilderContent() {
               🛒 {isProcessing ? "Obrađujem..." : "Dodaj u košaricu"}
             </button>
 
-            {/* SHARE BUTTON */}
-            <button 
-              onClick={shareBuild} 
-              style={{ width: "100%", padding: "12px", marginTop: "10px", background: "transparent", border: `1px solid ${COLORS.border}`, color: COLORS.textMain, borderRadius: "12px", cursor: "pointer", fontWeight: "bold", fontSize: "14px", transition: "0.2s" }}
-            >
-              🔗 Podijeli konfiguraciju
-            </button>
+            {/* SHARE BUTTON - ONLY ON REVIEW STEP */}
+            {isReviewStep && (
+              <button 
+                onClick={shareBuild} 
+                style={{ width: "100%", padding: "12px", marginTop: "10px", background: "transparent", border: `1px solid ${COLORS.border}`, color: COLORS.textMain, borderRadius: "12px", cursor: "pointer", fontWeight: "bold", fontSize: "14px", transition: "0.2s" }}
+              >
+                🔗 Podijeli konfiguraciju
+              </button>
+            )}
 
             {/* CUSTOM PC LINK */}
             <div style={{ marginTop: "25px", textAlign: "center", fontSize: "12px", color: COLORS.textMuted, lineHeight: "1.5", padding: "15px", background: "rgba(255,255,255,0.02)", borderRadius: "10px" }}>
@@ -1187,7 +1189,7 @@ const dropdownItemStyle: CSSProperties = {
 
 export default function Builder() { 
   return (
-    <Suspense fallback={<div style={{color: "white", padding: "100px", textAlign: "center"}}>Učitavanje aplikacije...</div>}>
+    <Suspense fallback={<div style={{color: "white", padding: "100px", textAlign: "center", background: COLORS.bgMain, minHeight: "100vh"}}>Učitavanje aplikacije...</div>}>
       <BuilderContent />
     </Suspense>
   ); 
