@@ -382,18 +382,22 @@ function BuilderContent() {
                     {part.label}
                   </div>
                   <div style={{ width: "60px", height: "60px", background: COLORS.bgDark, borderRadius: "8px", padding: "5px", flexShrink: 0 }}>
-                    <img src={part.item.featuredImage?.url} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                    {/* Added optional chaining here */}
+                    <img src={part.item?.featuredImage?.url} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: "16px", fontWeight: "bold", color: COLORS.textMain }}>
-                      {part.item.title} {part.item.selectedVariant && part.item.selectedVariant.title !== "Default Title" ? `(${part.item.selectedVariant.title})` : ""}
+                      {/* Added optional chaining here */}
+                      {part.item?.title} {part.item?.selectedVariant && part.item?.selectedVariant.title !== "Default Title" ? `(${part.item?.selectedVariant.title})` : ""}
                     </div>
                     <div style={{ fontSize: "12px", color: COLORS.textMuted, marginTop: "4px" }}>
-                      {part.item.pcfSocket?.value || part.item.pcfFormFactor?.value || part.item.pcfWattage?.value || "Standard Component"}
+                      {/* Added optional chaining here */}
+                      {part.item?.pcfSocket?.value || part.item?.pcfFormFactor?.value || part.item?.pcfWattage?.value || "Standard Component"}
                     </div>
                   </div>
                   <div style={{ fontSize: "18px", fontWeight: "bold", color: COLORS.textMain }}>
-                    €{part.item.selectedVariant?.price?.amount || part.item.variants.edges[0].node.price.amount}
+                    {/* Added optional chaining here */}
+                    €{part.item?.selectedVariant?.price?.amount || part.item?.variants.edges[0].node.price.amount}
                   </div>
                 </div>
               ))}
