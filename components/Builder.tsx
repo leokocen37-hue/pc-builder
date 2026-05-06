@@ -60,6 +60,7 @@ function BuilderContent() {
   const [loading, setLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isMobile, setIsMobile] = useState(false); 
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Carousel & Drag physics state
   const [activeIndex, setActiveIndex] = useState(0);
@@ -196,6 +197,11 @@ function BuilderContent() {
             }
           }
         `);
+        
+        if (!data || !data.products) {
+          throw new Error("Shopify didn't return a 'products' object.");
+        }
+
         const allProducts = data.products.edges.map((e: any) => e.node);
         setProducts(allProducts);
         
@@ -226,7 +232,13 @@ function BuilderContent() {
         if (searchParams.get("cpu") && searchParams.get("gpu") && searchParams.get("case")) {
           setStepIndex(STEPS.indexOf("review"));
         }
-      } catch (err) { console.error(err); } finally { setLoading(false); initialized.current = true; }
+      } catch (err: any) { 
+        console.error(err); 
+        setErrorMessage(err.message || "Unknown error occurred while fetching.");
+      } finally { 
+        setLoading(false); 
+        initialized.current = true; 
+      }
     }
     fetchAndSync();
   }, [searchParams]); 
@@ -307,6 +319,41 @@ function BuilderContent() {
       .filter(p => p.pcfType?.value === type)
       .sort((a, b) => Number(b.variants.edges[0]?.node.price.amount || 0) - Number(a.variants.edges[0]?.node.price.amount || 0));
   };
+
+  // --- DIAGNOSTIC SCREENS ---
+  if (loading) return <div style={{ padding: "100px", textAlign: "center", color: "white" }}>Učitavanje...</div>;
+
+  if (errorMessage) {
+    return (
+      <div style={{ padding: "50px", textAlign: "center", background: "#222", color: "white", minHeight: "100vh" }}>
+        <h1 style={{ color: "#ff4d4d" }}>🚨 FETCH ERROR 🚨</h1>
+        <p>Aplikacija se ne može spojiti na Shopify.</p>
+        <div style={{ padding: "20px", background: "#000", color: "#ff4d4d", fontFamily: "monospace", display: "inline-block", marginTop: "20px" }}>
+          {errorMessage}
+        </div>
+      </div>
+    );
+  }
+
+  if (!loading && products.length === 0) {
+    return (
+      <div style={{ padding: "50px", textAlign: "center", background: "#222", color: "white", minHeight: "100vh" }}>
+        <h1 style={{ color: "#ffcc00" }}>🚨 DETEKTIVSKI MOD 🚨</h1>
+        <h2>API i kod rade savršeno, ali Shopify šalje 0 proizvoda.</h2>
+        <p>Domena na koju se spajamo: <strong style={{color: "#0f0"}}>{process.env.NEXT_PUBLIC_SHOPIFY_DOMAIN || "Nedostaje Domena!"}</strong></p>
+        <p>Duljina Tokena: <strong style={{color: "#0f0"}}>{process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_TOKEN?.length || 0} znakova</strong></p>
+        <div style={{ marginTop: "30px", padding: "20px", background: "#333", borderRadius: "10px", textAlign: "left", display: "inline-block", maxWidth: "600px" }}>
+          <h3 style={{marginTop: 0}}>Zašto se ovo događa?</h3>
+          <p>Ovaj uređaj nema <strong>Shopify Admin Cookie</strong> kao tvoj PC. Shopify te tretira kao "javnog kupca" i namjerno sakriva proizvode iz jednog od dva razloga:</p>
+          <ol>
+            <li><strong>Proizvodi nemaju kvačicu za "Headless" kanal.</strong> Otvori Shopify -> Products -> Označi sve -> Bulk Edit -> Uključi kvačicu za tvoj PC Builder app i spremi.</li>
+            <li><strong>Shopify Markets / International.</strong> Ako si ograničio prodaju na samo jednu državu, Shopify blokira uređaje za koje misli da su van te države (npr. laptop s VPN-om ili iCloud Private Relay).</li>
+          </ol>
+        </div>
+      </div>
+    );
+  }
+  // --- END DIAGNOSTIC SCREENS ---
 
   const currentStep = STEPS[stepIndex];
   const currentProducts = products.filter(p => {
@@ -450,8 +497,6 @@ function BuilderContent() {
     setStartX(null);
     setTimeout(() => setIsDragging(false), 50); 
   };
-
-  if (loading) return <div style={{ padding: "100px", textAlign: "center", color: "white" }}>Učitavanje...</div>;
 
   const bgStyle = {
     background: brand === 'amd' ? 'linear-gradient(135deg, #222 45%, #e05e00 45%)' :
