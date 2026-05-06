@@ -137,7 +137,7 @@ function BuilderContent() {
     const componentsDraw = parts.reduce((sum, part) => {
       return sum + Number(part?.pcfTdp?.value || 0);
     }, 0);
-    return componentsDraw + 150; // Requested: 150W base overhead
+    return componentsDraw + 150; 
   };
 
   const estimatedDraw = calculateSystemTDP();
@@ -479,11 +479,9 @@ function BuilderContent() {
       
       setActiveIndex(newActiveIndex);
 
-      // Requested Feature: Auto-select item if dragging resulted in a snap
       if (didSnap) {
         const snappedProduct = currentProducts[newActiveIndex];
         if (snappedProduct) {
-          // Slight timeout to let the snap animation finish before moving to next step
           setTimeout(() => {
             handleSelection(currentStep, snappedProduct);
           }, 400); 
@@ -524,7 +522,6 @@ function BuilderContent() {
   };
 
   const resetBuild = () => {
-    // 1. Reset all state to null
     setStepIndex(0);
     setBrand(null); 
     setCpu(null); 
@@ -542,8 +539,12 @@ function BuilderContent() {
     setOs(null); 
     setAddingExtra(null);
     
-    // 2. Erase the URL entirely to drop the parameters completely
     window.history.replaceState(null, '', window.location.pathname);
+  };
+
+  const shareBuild = () => {
+    navigator.clipboard.writeText(window.location.href);
+    alert("Link za vašu konfiguraciju je uspješno kopiran!");
   };
 
   const currentTotal = () => {
@@ -864,7 +865,6 @@ function BuilderContent() {
                     <div style={{ fontSize: "16px", fontWeight: "bold", color: COLORS.textMain }}>
                       {part.item?.title} {part.item?.selectedVariant && part.item?.selectedVariant.title !== "Default Title" ? `(${part.item?.selectedVariant.title})` : ""}
                     </div>
-                    {/* Removed subtext completely from Review cards as requested */}
                   </div>
                   <div style={{ fontSize: "18px", fontWeight: "bold", color: COLORS.textMain }}>
                     €{part.item?.selectedVariant?.price?.amount || part.item?.variants.edges[0].node.price.amount}
@@ -1002,7 +1002,23 @@ function BuilderContent() {
             <button disabled={isProcessing} onClick={handleCheckout} style={{ ...checkoutBtnStyle, background: COLORS.accent, color: "#fff" }}>
               🛒 {isProcessing ? "Obrađujem..." : "Dodaj u košaricu"}
             </button>
-            {/* Removed Trust Badges here as requested */}
+
+            {/* SHARE BUTTON */}
+            <button 
+              onClick={shareBuild} 
+              style={{ width: "100%", padding: "12px", marginTop: "10px", background: "transparent", border: `1px solid ${COLORS.border}`, color: COLORS.textMain, borderRadius: "12px", cursor: "pointer", fontWeight: "bold", fontSize: "14px", transition: "0.2s" }}
+            >
+              🔗 Podijeli konfiguraciju
+            </button>
+
+            {/* CUSTOM PC LINK */}
+            <div style={{ marginTop: "25px", textAlign: "center", fontSize: "12px", color: COLORS.textMuted, lineHeight: "1.5", padding: "15px", background: "rgba(255,255,255,0.02)", borderRadius: "10px" }}>
+              Želite još prilagođenije računalo?<br/>Možemo to napraviti!<br/>
+              <a href="https://racunalo.hr/pages/contact" target="_blank" rel="noopener noreferrer" style={{ color: COLORS.accent, textDecoration: "underline", fontWeight: "bold", display: "inline-block", marginTop: "5px" }}>
+                Kontaktirajte nas
+              </a>
+            </div>
+
           </div>
         </div>
 
@@ -1085,24 +1101,29 @@ const brandBtnStyle: CSSProperties = {
 };
 
 const navArrowStyle: CSSProperties = { 
-  background: COLORS.bgDark, 
-  border: `1px solid ${COLORS.border}`, 
-  color: COLORS.textMain, 
+  background: "rgba(255,255,255,0.1)", 
+  border: "none", 
+  color: "white", 
   borderRadius: "50%", 
   cursor: "pointer", 
-  width: "50px", 
-  height: "50px", 
-  fontSize: "24px", 
-  position: "absolute", 
-  zIndex: 50 
+  backdropFilter: "blur(5px)", 
+  transition: "0.2s",
+  width: "50px",
+  height: "50px",
+  fontSize: "30px",
+  position: "absolute",
+  zIndex: 50
 };
 
 const cardStyle: CSSProperties = { 
   position: "absolute", 
-  background: COLORS.bgCard, 
-  borderRadius: "16px", 
+  background: "linear-gradient(145deg, rgba(50,50,50,0.9), rgba(20,20,20,0.9))", 
+  borderRadius: "15px", 
   display: "flex", 
   flexDirection: "column", 
+  justifyContent: "space-between", 
+  alignItems: "center", 
+  textAlign: "center", 
   cursor: "pointer", 
   userSelect: "none" 
 };
@@ -1133,38 +1154,40 @@ const warningStyle: CSSProperties = {
 const checkoutBtnStyle: CSSProperties = { 
   width: "100%", 
   padding: "20px", 
-  fontWeight: "800", 
+  fontWeight: "bold", 
   cursor: "pointer", 
-  borderRadius: "12px", 
+  borderRadius: "8px", 
   fontSize: "18px", 
-  border: "none" 
+  color: "white", 
+  border: "none", 
+  marginTop: "20px" 
 };
 
 const dropdownStyle: CSSProperties = { 
   marginTop: "10px", 
   maxHeight: "250px", 
   overflowY: "auto", 
-  border: `1px solid ${COLORS.border}`, 
-  background: COLORS.bgDark,
-  borderRadius: "12px" 
+  border: "1px solid #444", 
+  background: "#222",
+  borderRadius: "8px" 
 };
 
 const dropdownItemStyle: CSSProperties = { 
   width: "100%", 
   display: "flex", 
   justifyContent: "space-between", 
-  padding: "15px 20px", 
+  padding: "12px 15px", 
   border: "none", 
-  borderBottom: `1px solid ${COLORS.border}`, 
-  background: "transparent", 
-  color: COLORS.textMain, 
+  borderBottom: "1px solid #333", 
+  background: "#222", 
+  color: "#fff", 
   cursor: "pointer", 
   textAlign: "left" 
 };
 
 export default function Builder() { 
   return (
-    <Suspense fallback={<div style={{color: "white", padding: "100px", textAlign: "center", background: COLORS.bgMain, minHeight: "100vh"}}>Učitavanje aplikacije...</div>}>
+    <Suspense fallback={<div style={{color: "white", padding: "100px", textAlign: "center"}}>Učitavanje aplikacije...</div>}>
       <BuilderContent />
     </Suspense>
   ); 
