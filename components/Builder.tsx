@@ -346,7 +346,7 @@ function BuilderContent() {
           <h3 style={{marginTop: 0}}>Zašto se ovo događa?</h3>
           <p>Ovaj uređaj nema <strong>Shopify Admin Cookie</strong> kao tvoj PC. Shopify te tretira kao "javnog kupca" i namjerno sakriva proizvode iz jednog od dva razloga:</p>
           <ol>
-            <li><strong>Proizvodi nemaju kvačicu za "Headless" kanal.</strong> Otvori Shopify -> Products -> Označi sve -> Bulk Edit -> Uključi kvačicu za tvoj PC Builder app i spremi.</li>
+            <li><strong>Proizvodi nemaju kvačicu za "Headless" kanal.</strong> Otvori Shopify -&gt; Products -&gt; Označi sve -&gt; Bulk Edit -&gt; Uključi kvačicu za tvoj PC Builder app i spremi.</li>
             <li><strong>Shopify Markets / International.</strong> Ako si ograničio prodaju na samo jednu državu, Shopify blokira uređaje za koje misli da su van te države (npr. laptop s VPN-om ili iCloud Private Relay).</li>
           </ol>
         </div>
