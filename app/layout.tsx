@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Racunalo.hr Konfigurator",
+  title: "Konfigurator - RACUNALO.hr",
   description: "KRENI U STVARANJE SVOJE SAVRŠENE KONFIGURACIJE",
 };
 
