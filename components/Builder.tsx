@@ -197,6 +197,17 @@ function BuilderContent() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // Osigurava da se "Obrađujem..." vrati na normalno stanje ako korisnik stisne Browser "Back" gumb
+  useEffect(() => {
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        setIsProcessing(false);
+      }
+    };
+    window.addEventListener("pageshow", handlePageShow);
+    return () => window.removeEventListener("pageshow", handlePageShow);
+  }, []);
+
   useEffect(() => {
     if (isReviewStep) {
       const params = new URLSearchParams();
@@ -313,6 +324,7 @@ function BuilderContent() {
   useEffect(() => {
     setActiveIndex(0);
     setDragOffset(0);
+    setIsProcessing(false); // Osigurava da je gumb uvijek klikabilan kad god se mijenja korak
   }, [stepIndex]);
 
   // --- CAROUSEL LOGIC & FILTERING ---
@@ -1001,9 +1013,12 @@ function BuilderContent() {
               </div>
             </div>
 
-            <button disabled={isProcessing} onClick={handleCheckout} style={{ ...checkoutBtnStyle, background: COLORS.accent, color: "#fff" }}>
-              🛒 {isProcessing ? "Obrađujem..." : "Dodaj u košaricu"}
-            </button>
+            {/* CHECKOUT BUTTON - ONLY ON REVIEW STEP */}
+            {isReviewStep && (
+              <button disabled={isProcessing} onClick={handleCheckout} style={{ ...checkoutBtnStyle, background: COLORS.accent, color: "#fff" }}>
+                🛒 {isProcessing ? "Obrađujem..." : "Dodaj u košaricu"}
+              </button>
+            )}
 
             {/* SHARE BUTTON - ONLY ON REVIEW STEP */}
             {isReviewStep && (
