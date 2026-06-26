@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kalkulator cijene konfiguracije</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#07080c; --card:#11131b; --dark:#0b0d14; --border:rgba(255,255,255,.08);
+    --text:#f3f4f8; --muted:#888da3; --faint:#5a5f73; --accent:#d81fd8;
+    --green:#27c08a; --red:#ff5e7a; --amber:#ffb84d;
+    --font:'Space Grotesk',sans-serif; --mono:'IBM Plex Mono',monospace;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:radial-gradient(1100px 560px at 75% -16%,rgba(216,31,216,.10),transparent 62%),var(--bg);
+    color:var(--text);font-family:var(--font);padding:24px 16px 80px;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1080px;margin:0 auto;}
+  h1{font-size:24px;font-weight:700;letter-spacing:-.5px;margin:0 0 4px;}
+  .sub{color:var(--muted);font-size:14px;margin-bottom:24px;}
+  .kicker{font-family:var(--mono);font-size:11px;letter-spacing:2.5px;color:var(--accent);text-transform:uppercase;margin-bottom:8px;}
+  .panel{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:18px;}
+  .panel h2{font-size:13px;font-family:var(--mono);letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin:0 0 16px;font-weight:600;}
+
+  /* settings grid */
+  .settings{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;}
+  .field label{display:block;font-size:11px;color:var(--faint);font-family:var(--mono);letter-spacing:.5px;margin-bottom:6px;text-transform:uppercase;}
+  .field input{width:100%;padding:10px 12px;background:var(--dark);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--mono);font-size:14px;outline:none;}
+  .field input:focus{border-color:rgba(216,31,216,.6);}
+
+  /* table */
+  .tablewrap{overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;min-width:620px;}
+  th{font-family:var(--mono);font-size:10px;letter-spacing:1px;color:var(--faint);text-transform:uppercase;text-align:right;padding:0 10px 10px;font-weight:600;}
+  th:first-child{text-align:left;}
+  td{padding:6px 10px;}
+  td:first-child{text-align:left;}
+  .cellnum{text-align:right;}
+  table input{width:100%;padding:9px 11px;background:var(--dark);border:1px solid var(--border);border-radius:9px;color:var(--text);font-size:14px;outline:none;font-family:var(--font);}
+  table input.num{font-family:var(--mono);text-align:right;}
+  table input:focus{border-color:rgba(216,31,216,.6);}
+  .computed{font-family:var(--mono);font-size:13px;color:var(--muted);text-align:right;white-space:nowrap;}
+  .computed b{color:var(--text);}
+  .spread-pos{color:var(--green);}
+  .spread-neg{color:var(--red);}
+  .delbtn{background:none;border:none;color:var(--faint);cursor:pointer;font-size:16px;padding:4px 8px;border-radius:8px;line-height:1;}
+  .delbtn:hover{color:var(--red);background:rgba(255,94,122,.08);}
+  .addbtn{margin-top:14px;padding:10px 16px;background:transparent;border:1px dashed rgba(255,255,255,.18);color:var(--muted);border-radius:10px;cursor:pointer;font-family:var(--font);font-weight:600;font-size:13px;}
+  .addbtn:hover{border-color:rgba(216,31,216,.5);color:var(--text);}
+
+  .totalsrow td{border-top:1px solid var(--border);padding-top:14px;font-weight:700;}
+  .totalsrow .computed b{font-size:15px;}
+
+  /* results */
+  .results{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  @media(max-width:680px){.results{grid-template-columns:1fr;}}
+  .stat{background:var(--dark);border:1px solid var(--border);border-radius:13px;padding:16px 18px;}
+  .stat .lab{font-family:var(--mono);font-size:10px;letter-spacing:1.5px;color:var(--faint);text-transform:uppercase;margin-bottom:7px;}
+  .stat .val{font-size:24px;font-weight:700;letter-spacing:-.5px;}
+  .stat .note{font-size:12px;color:var(--muted);margin-top:5px;}
+  .stat.hero{grid-column:1/-1;background:linear-gradient(150deg,rgba(216,31,216,.10),var(--dark));border-color:rgba(216,31,216,.35);}
+  .stat.hero .val{font-size:38px;}
+
+  .sellrow{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:16px;}
+  .sellrow .field{flex:1;min-width:160px;}
+  .sellrow .field input{font-size:18px;font-weight:700;padding:13px;}
+  .ghost{padding:13px 16px;background:transparent;border:1px solid var(--border);color:var(--text);border-radius:10px;cursor:pointer;font-family:var(--font);font-weight:600;font-size:13px;white-space:nowrap;}
+  .ghost:hover{border-color:rgba(216,31,216,.5);}
+  .suggest{font-family:var(--mono);font-size:12px;color:var(--muted);margin-bottom:6px;}
+  .suggest b{color:var(--accent);}
+
+  .badge{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:8px;font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.5px;}
+  .badge.ok{background:rgba(39,192,138,.13);color:var(--green);}
+  .badge.bad{background:rgba(255,94,122,.13);color:var(--red);}
+  .val.green{color:var(--green);} .val.red{color:var(--red);}
+
+  .footnote{color:var(--faint);font-size:12px;line-height:1.6;margin-top:22px;}
+  .footnote b{color:var(--muted);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="kicker">RAČUNALO.HR · interni alat</div>
+  <h1>Kalkulator cijene konfiguracije</h1>
+  <div class="sub">Upiši cijene s Casekinga/Alternatea (s njemačkim PDV-om) i cijene s popularne hrvatske trgovine. Alat sve preračuna u tvoju stvarnu zaradu.</div>
+
+  <div class="panel">
+    <h2>Postavke</h2>
+    <div class="settings">
+      <div class="field"><label>PDV dobavljača %</label><input id="supVat" class="num" type="number" value="19" step="0.1"></div>
+      <div class="field"><label>Tvoj PDV (prodaja) %</label><input id="sellVat" class="num" type="number" value="25" step="0.1"></div>
+      <div class="field"><label>Dostava (uvoz) €</label><input id="ship" class="num" type="number" value="60" step="5"></div>
+      <div class="field"><label>Rezerva (DOA/povrat) €</label><input id="doa" class="num" type="number" value="90" step="5"></div>
+      <div class="field"><label>Naknada kartice %</label><input id="fee" class="num" type="number" value="1.8" step="0.1"></div>
+      <div class="field"><label>Ispod police %</label><input id="undercut" class="num" type="number" value="3" step="0.5"></div>
+      <div class="field"><label>Min. zarada (prag) €</label><input id="floor" class="num" type="number" value="250" step="10"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Komponente</h2>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:30%">Komponenta</th>
+            <th>Dobavljač € <span style="color:var(--faint)">(s PDV)</span></th>
+            <th>HR trgovina € <span style="color:var(--faint)">(s PDV)</span></th>
+            <th>Tvoj trošak</th>
+            <th>Razlika*</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+        <tfoot>
+          <tr class="totalsrow">
+            <td>UKUPNO</td>
+            <td class="computed" id="tSup">€0</td>
+            <td class="computed" id="tCro"><b>€0</b></td>
+            <td class="computed" id="tCost"><b>€0</b></td>
+            <td class="computed" id="tSpread">€0</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    <button class="addbtn" id="addRow">+ Dodaj komponentu</button>
+  </div>
+
+  <div class="panel">
+    <h2>Cijena i zarada</h2>
+
+    <div class="suggest" id="suggestLine">Preporučena prodajna cijena: —</div>
+    <div class="sellrow">
+      <div class="field" style="flex:1;">
+        <label>Prodajna cijena (s PDV-om) €</label>
+        <input id="sell" class="num" type="number" step="10" placeholder="npr. 5490">
+      </div>
+      <button class="ghost" id="useSuggest">Koristi preporučenu</button>
+    </div>
+
+    <div class="results">
+      <div class="stat hero">
+        <div class="lab">Stvarna neto zarada</div>
+        <div class="val" id="profit">€0</div>
+        <div class="note" id="profitNote"></div>
+      </div>
+
+      <div class="stat">
+        <div class="lab">Tvoj sveukupni trošak</div>
+        <div class="val" id="allin">€0</div>
+        <div class="note">dijelovi neto + dostava + rezerva</div>
+      </div>
+      <div class="stat">
+        <div class="lab">HR police (samo dijelovi)</div>
+        <div class="val" id="shelf">€0</div>
+        <div class="note">cijena kod popularne trgovine, nesloženo</div>
+      </div>
+      <div class="stat">
+        <div class="lab">Jeftiniji od police</div>
+        <div class="val" id="cheaper">€0</div>
+        <div class="note" id="cheaperNote"></div>
+      </div>
+      <div class="stat">
+        <div class="lab">PDV (ideš državi)</div>
+        <div class="val" id="vat">€0</div>
+        <div class="note" id="feeNote"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footnote">
+    * <b>Razlika</b> uspoređuje tvoj neto trošak s neto cijenom police (oba bez PDV-a) — pokazuje gdje se krije marža.<br>
+    Tvoj trošak = cijena dobavljača ÷ (1 + PDV dobavljača), jer kupuješ B2B (reverse charge) pa plaćaš neto.<br>
+    Zarada = (prodajna cijena ÷ 1.25) − sveukupni trošak − naknada kartice. Sve su procjene — za porez se uvijek osloni na knjigovođu.
+  </div>
+</div>
+
+<script>
+const SAMPLE = [
+  ["Ryzen 9 9950X3D", 589, 800],
+  ["ASUS ROG Crosshair X870E Hero", 595, 640],
+  ["64GB G.Skill Trident Z5 Neo DDR5", 915, 940],
+  ["RTX 5080 Astral OC", 1555, 2044],
+  ["Samsung 990 Pro 2TB", 342, 400],
+  ["Seagate Barracuda 4TB", 161, 210],
+  ["Fractal Meshify 3", 144, 230],
+  ["Corsair RM850x", 130, 190],
+  ["NZXT Kraken 360", 150, 223],
+];
+
+const $ = id => document.getElementById(id);
+const rowsEl = $("rows");
+const eur = n => "€" + (Math.round(n)).toLocaleString("de-DE");
+const eur2 = n => "€" + n.toLocaleString("de-DE",{minimumFractionDigits:0,maximumFractionDigits:0});
+const num = v => { const n = parseFloat(String(v).replace(",",".")); return isNaN(n)?0:n; };
+
+let userTouchedSell = false;
+
+function makeRow(name="", sup="", cro=""){
+  const tr = document.createElement("tr");
+  tr.innerHTML = `
+    <td><input class="name" type="text" placeholder="naziv" value="${name}"></td>
+    <td class="cellnum"><input class="num sup" type="number" step="1" placeholder="0" value="${sup}"></td>
+    <td class="cellnum"><input class="num cro" type="number" step="1" placeholder="0" value="${cro}"></td>
+    <td class="computed cost">€0</td>
+    <td class="computed spread">€0</td>
+    <td style="text-align:center"><button class="delbtn" title="Ukloni">✕</button></td>`;
+  tr.querySelector(".delbtn").onclick = () => { tr.remove(); recalc(); };
+  tr.querySelectorAll("input").forEach(i => i.addEventListener("input", recalc));
+  return tr;
+}
+
+function recalc(){
+  const supVat = num($("supVat").value)/100;
+  const sellVat = num($("sellVat").value)/100;
+  const ship = num($("ship").value);
+  const doa = num($("doa").value);
+  const fee = num($("fee").value)/100;
+  const undercut = num($("undercut").value)/100;
+  const floor = num($("floor").value);
+
+  let tSup=0, tCro=0, tCost=0, tSpreadNet=0;
+
+  rowsEl.querySelectorAll("tr").forEach(tr=>{
+    const sup = num(tr.querySelector(".sup").value);
+    const cro = num(tr.querySelector(".cro").value);
+    const cost = supVat>=0 ? sup/(1+supVat) : sup;
+    const croNet = sellVat>=0 ? cro/(1+sellVat) : cro;
+    const spread = croNet - cost;
+    tr.querySelector(".cost").innerHTML = "<b>"+eur(cost)+"</b>";
+    const sp = tr.querySelector(".spread");
+    sp.innerHTML = (spread>=0?"+":"−")+eur(Math.abs(spread));
+    sp.className = "computed spread " + (spread>=0?"spread-pos":"spread-neg");
+    tSup+=sup; tCro+=cro; tCost+=cost; tSpreadNet+=spread;
+  });
+
+  $("tSup").innerHTML = eur(tSup);
+  $("tCro").innerHTML = "<b>"+eur(tCro)+"</b>";
+  $("tCost").innerHTML = "<b>"+eur(tCost)+"</b>";
+  const tSpreadEl = $("tSpread");
+  tSpreadEl.innerHTML = (tSpreadNet>=0?"+":"−")+eur(Math.abs(tSpreadNet));
+  tSpreadEl.className = "computed " + (tSpreadNet>=0?"spread-pos":"spread-neg");
+
+  const allIn = tCost + ship + doa;
+  const shelf = tCro;
+  const suggested = shelf>0 ? shelf*(1-undercut) : 0;
+
+  $("allin").textContent = eur(allIn);
+  $("shelf").textContent = eur(shelf);
+
+  // suggested line
+  if(shelf>0){
+    $("suggestLine").innerHTML = "Preporučena prodajna cijena: <b>"+eur(suggested)+"</b> ("+($("undercut").value)+"% ispod police)";
+  } else {
+    $("suggestLine").textContent = "Preporučena prodajna cijena: —";
+  }
+
+  // auto-fill sell if user hasn't typed their own
+  if(!userTouchedSell && shelf>0){
+    $("sell").value = Math.round(suggested);
+  }
+  const sell = num($("sell").value);
+
+  const netRev = sellVat>=0 ? sell/(1+sellVat) : sell;
+  const vat = sell - netRev;
+  const cardFee = sell*fee;
+  const profit = netRev - allIn - cardFee;
+  const marginPct = netRev>0 ? (profit/netRev*100) : 0;
+  const cheaper = shelf - sell;
+  const cheaperPct = shelf>0 ? (cheaper/shelf*100) : 0;
+
+  const profitEl = $("profit");
+  profitEl.textContent = eur(profit);
+  profitEl.className = "val " + (profit>=floor?"green":(profit>=0?"":"red"));
+
+  const pass = profit>=floor;
+  $("profitNote").innerHTML =
+    "marža "+marginPct.toFixed(1)+"% &nbsp; "+
+    (sell>0 ? "<span class='badge "+(pass?"ok":"bad")+"'>"+(pass?"✓ iznad praga":"⚠ ispod praga "+eur(floor))+"</span>" : "");
+
+  $("vat").textContent = eur(vat);
+  $("feeNote").textContent = "naknada kartice: "+eur(cardFee);
+
+  const cheaperEl = $("cheaper");
+  cheaperEl.textContent = (cheaper>=0?"":"−")+eur(Math.abs(cheaper));
+  cheaperEl.className = "val " + (cheaper>=0?"green":"red");
+  $("cheaperNote").textContent = sell>0
+    ? (cheaper>=0 ? cheaperPct.toFixed(1)+"% jeftinije — i ti složiš PC" : "skuplji si od police!")
+    : "";
+}
+
+$("addRow").onclick = () => { rowsEl.appendChild(makeRow()); recalc(); };
+$("useSuggest").onclick = () => {
+  const shelf = num($("tCro").textContent.replace(/[^\d]/g,""));
+  const undercut = num($("undercut").value)/100;
+  $("sell").value = Math.round(shelf*(1-undercut));
+  userTouchedSell = false;
+  recalc();
+};
+$("sell").addEventListener("input", ()=>{ userTouchedSell = true; recalc(); });
+["supVat","sellVat","ship","doa","fee","undercut","floor"].forEach(id=>$(id).addEventListener("input",recalc));
+
+// init with sample build
+SAMPLE.forEach(r => rowsEl.appendChild(makeRow(r[0], r[1], r[2])));
+recalc();
+</script>
+</body>
+</html>
