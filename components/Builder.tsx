@@ -8,6 +8,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 type ProductNode = {
   id: string;
   title: string;
+  vendor?: string;
   tags: string[];
   featuredImage?: { url: string; altText?: string };
   variants: { 
@@ -215,7 +216,7 @@ function BuilderContent() {
             products(first: 250) {
               edges {
                 node {
-                  id title tags
+                  id title vendor tags
                   featuredImage { url altText }
                   variants(first: 50) { edges { node { id title price { amount } } } }
                   pcfType: metafield(namespace: "pcf", key: "type") { value }
