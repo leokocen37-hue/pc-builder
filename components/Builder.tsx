@@ -138,6 +138,7 @@ function BuilderContent() {
   const initialized = useRef(false);
   const movedRef = useRef(false);
   const suppressRef = useRef(false);
+  const capturedRef = useRef(false);
 
   // --- STATE ---
   const [stepIndex, setStepIndex] = useState(0);
@@ -531,11 +532,9 @@ function BuilderContent() {
 
   // --- INTERACTION & DRAG PHYSICS (content follows cursor, snaps to released card, eases in) ---
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    // capture this pointer so we keep getting move/up even if the cursor leaves the carousel
-    try {
-      e.currentTarget.setPointerCapture(e.pointerId);
-    } catch {}
+    // do NOT capture here — a plain tap must keep its normal click target so cards stay clickable
     movedRef.current = false;
+    capturedRef.current = false;
     setStartX(e.clientX);
     setDragOffset(0);
     setIsDragging(false);
@@ -543,12 +542,26 @@ function BuilderContent() {
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (startX === null) return;
     const diff = e.clientX - startX;
-    // sign is NOT inverted: positive drag -> exactOffset rises -> cards follow the cursor
-    if (Math.abs(diff) > 4) movedRef.current = true;
-    setDragOffset(diff);
-    setIsDragging(true);
+    // only treat it as a drag (and capture the pointer) once past the threshold
+    if (Math.abs(diff) > 4) {
+      movedRef.current = true;
+      if (!capturedRef.current) {
+        try {
+          e.currentTarget.setPointerCapture(e.pointerId);
+          capturedRef.current = true;
+        } catch {}
+      }
+      setDragOffset(diff);
+      setIsDragging(true);
+    }
   };
-  const handlePointerUp = () => {
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (capturedRef.current) {
+      try {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      } catch {}
+      capturedRef.current = false;
+    }
     if (startX === null) return;
     const N = currentProducts.length;
     // snap to whichever card you actually released on (can cross several at once)
