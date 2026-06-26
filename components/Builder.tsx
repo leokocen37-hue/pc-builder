@@ -196,7 +196,7 @@ function BuilderContent() {
   const powerNote =
     psuCapacity > 0
       ? psuOver
-        ? "Napajanje nedostatno — odaberite jači model"
+        ? "Napajanje je preslabo za odabrane komponente"
         : `Dovoljno snage · ${psuCapacity - estimatedDraw}W rezerve`
       : "Odaberite napajanje za izračun rezerve";
 
@@ -531,6 +531,10 @@ function BuilderContent() {
 
   // --- INTERACTION & DRAG PHYSICS (content follows cursor, snaps to released card, eases in) ---
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    // capture this pointer so we keep getting move/up even if the cursor leaves the carousel
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {}
     movedRef.current = false;
     setStartX(e.clientX);
     setDragOffset(0);
@@ -826,7 +830,17 @@ function BuilderContent() {
           }}
         >
           <div style={{ display: "flex", alignItems: "baseline", gap: "13px" }}>
-            <div style={{ fontWeight: 700, fontSize: isMobile ? "18px" : "21px", letterSpacing: ".4px" }}>
+            <div
+              onClick={resetBuild}
+              title="Početak"
+              style={{
+                fontWeight: 700,
+                fontSize: isMobile ? "18px" : "21px",
+                letterSpacing: ".4px",
+                cursor: "pointer",
+                userSelect: "none",
+              }}
+            >
               RAČUNALO<span style={{ color: COLORS.accent }}>.HR</span>
             </div>
             <div
@@ -974,6 +988,7 @@ function BuilderContent() {
                       onPointerUp={handlePointerUp}
                       onPointerLeave={handlePointerUp}
                       onPointerCancel={handlePointerUp}
+                      onDragStart={(e) => e.preventDefault()}
                       style={{
                         position: "relative",
                         height: isMobile ? "320px" : "440px",
@@ -982,8 +997,12 @@ function BuilderContent() {
                         alignItems: "center",
                         justifyContent: "center",
                         touchAction: "pan-y",
+                        userSelect: "none",
+                        WebkitUserSelect: "none",
+                        WebkitTouchCallout: "none",
+                        cursor: isDragging ? "grabbing" : "grab",
                         marginBottom: "4px",
-                      }}
+                      } as CSSProperties}
                     >
                       <button
                         onClick={() => setActiveIndex((activeIndex - 1 + currentProducts.length) % currentProducts.length)}
@@ -1471,11 +1490,6 @@ function BuilderContent() {
               <div style={{ fontSize: "42px", fontWeight: 700, letterSpacing: "-1.5px", marginTop: "6px" }}>
                 €{currentTotal().toFixed(2)}
               </div>
-              {isReviewStep && (
-                <div style={{ fontFamily: MONO, fontSize: "11px", color: COLORS.textFaint, marginTop: "3px" }}>
-                  uklj. sklapanje i testiranje +€{ASSEMBLY_FEE}
-                </div>
-              )}
 
               <div style={{ height: "1px", background: COLORS.border, margin: "22px 0" }} />
 
