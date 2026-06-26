@@ -419,6 +419,13 @@ function BuilderContent() {
     setStepIndex((prev) => prev + 1); setActiveIndex(0);
   };
 
+  const handleSkip = () => {
+    if (currentStep === "hdd") setHdd(null);
+    if (currentStep === "os") setOs(null);
+    setStepIndex((prev) => prev + 1); 
+    setActiveIndex(0);
+  };
+
   const resetBuild = () => {
     setStepIndex(0); setBrand(null); setCpu(null); setMb(null); setRam(null); setGpu(null); setGpu2(null); setSsd(null); setSsd2(null); setHdd(null); setHdd2(null); setPcCase(null); setPsu(null); setCooler(null); setOs(null); setAddingExtra(null);
     window.history.replaceState(null, '', window.location.pathname);
