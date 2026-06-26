@@ -198,7 +198,6 @@ function BuilderContent() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Osigurava da se "Obrađujem..." vrati na normalno stanje ako korisnik stisne Browser "Back" gumb
   useEffect(() => {
     const handlePageShow = (event: PageTransitionEvent) => {
       if (event.persisted) {
@@ -326,7 +325,7 @@ function BuilderContent() {
   useEffect(() => {
     setActiveIndex(0);
     setDragOffset(0);
-    setIsProcessing(false); // Osigurava da je gumb uvijek klikabilan kad god se mijenja korak
+    setIsProcessing(false); 
   }, [stepIndex]);
 
   // --- CAROUSEL LOGIC & FILTERING ---
@@ -343,11 +342,22 @@ function BuilderContent() {
     }
     if (currentStep === "ram") {
       if (type !== "ram") return false;
-      if (p.pcfRamType?.value !== mb?.pcfRamType?.value) return false;
 
-      // XMP i EXPO Pametno Filtriranje pomoću Tagova
+      // 1. FIX: Deduciramo RAM type iz socketa matične (jer ploče u CSV-u nemaju upisan ram_type polje)
+      const socket = (mb?.pcfSocket?.value || cpu?.pcfSocket?.value || "").toLowerCase();
+      let requiredRamType = "ddr5"; // Default za lga1851, am5 i moderne lga1700 ploče
+      if (socket === "am4") {
+        requiredRamType = "ddr4";
+      }
+
+      const productRamType = (p.pcfRamType?.value || "").toLowerCase();
+      if (productRamType && productRamType !== requiredRamType) {
+        return false;
+      }
+
+      // 2. Pametno XMP/EXPO filtriranje (čisti tagove od praznina)
       const pTags = p.tags || [];
-      const lowerTags = pTags.map((t: string) => t.toLowerCase());
+      const lowerTags = pTags.map((t: string) => t.toLowerCase().trim());
       const titleLower = p.title.toLowerCase();
       
       const isXMP = lowerTags.includes("intel-xmp") || titleLower.includes("xmp");
@@ -372,20 +382,25 @@ function BuilderContent() {
     }
     if (currentStep === "case") {
       if (type !== "case") return false;
+      
+      // 3. FIX: Ako MB nema form factor upisan u CSV, pretpostavi ATX kako se popis ne bi srušio
+      const mbFormFactor = (mb?.pcfFormFactor?.value || "atx").toLowerCase();
       const supported = p.pcfSupportedFormFactors?.value?.split(",").map(s => s.trim().toLowerCase()) || [];
-      const mbFits = supported.includes((mb?.pcfFormFactor?.value || "").toLowerCase());
+      
+      const mbFits = supported.length === 0 || supported.includes(mbFormFactor) || supported.includes("atx");
       
       const gpuLength1 = Number(gpu?.pcfGpuLength?.value || 0);
       const gpuLength2 = Number(gpu2?.pcfGpuLength?.value || 0);
       const maxGpuLength = Math.max(gpuLength1, gpuLength2);
       
-      const caseAllowsGpu = maxGpuLength <= Number(p.pcfMaxGpuLength?.value || 0);
+      const caseMaxGpuLength = Number(p.pcfMaxGpuLength?.value || 9999);
+      const caseAllowsGpu = maxGpuLength <= caseMaxGpuLength;
       
       return mbFits && caseAllowsGpu;
     }
     if (currentStep === "psu") {
       const requiredWattage = calculateSystemTDP() + 100;
-      return type === "psu" && Number(p.pcfWattage?.value || 0) >= requiredWattage;
+      return type === "psu" && Number(p.pcfWattage?.value || 9999) >= requiredWattage;
     }
     if (currentStep === "cooler") {
       if (type !== "cooler") return false;
