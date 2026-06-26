@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kalkulator cijene dijelova</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#07080c; --card:#11131b; --dark:#0b0d14; --border:rgba(255,255,255,.08);
+    --text:#f3f4f8; --muted:#888da3; --faint:#5a5f73; --accent:#d81fd8;
+    --green:#27c08a; --red:#ff5e7a; --amber:#ffb84d;
+    --font:'Space Grotesk',sans-serif; --mono:'IBM Plex Mono',monospace;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:radial-gradient(1100px 560px at 75% -16%,rgba(216,31,216,.10),transparent 62%),var(--bg);
+    color:var(--text);font-family:var(--font);padding:24px 16px 80px;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1160px;margin:0 auto;}
+  h1{font-size:24px;font-weight:700;letter-spacing:-.5px;margin:0 0 4px;}
+  .sub{color:var(--muted);font-size:14px;margin-bottom:8px;}
+  .kicker{font-family:var(--mono);font-size:11px;letter-spacing:2.5px;color:var(--accent);text-transform:uppercase;margin-bottom:8px;}
+  .legend{font-family:var(--mono);font-size:12px;color:var(--faint);margin-bottom:22px;line-height:1.7;}
+  .legend b{color:var(--muted);}
+  .pill{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600;}
+  .pill.cost{background:rgba(255,255,255,.06);color:var(--muted);}
+  .pill.price{background:rgba(216,31,216,.16);color:var(--accent);}
+
+  .panel{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:18px;}
+  .panel h2{font-size:13px;font-family:var(--mono);letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin:0 0 16px;font-weight:600;}
+
+  .settings{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;}
+  .field label{display:block;font-size:11px;color:var(--faint);font-family:var(--mono);letter-spacing:.5px;margin-bottom:6px;text-transform:uppercase;}
+  .field input{width:100%;padding:10px 12px;background:var(--dark);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--mono);font-size:14px;outline:none;}
+  .field input:focus{border-color:rgba(216,31,216,.6);}
+
+  .tablewrap{overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;min-width:880px;}
+  th{font-family:var(--mono);font-size:10px;letter-spacing:.5px;color:var(--faint);text-transform:uppercase;text-align:right;padding:0 8px 12px;font-weight:600;}
+  th:first-child{text-align:left;}
+  td{padding:6px 8px;vertical-align:middle;}
+  td:first-child{text-align:left;}
+  .cellnum{text-align:right;}
+  table input{width:100%;padding:9px 10px;background:var(--dark);border:1px solid var(--border);border-radius:9px;color:var(--text);font-size:14px;outline:none;font-family:var(--font);}
+  table input.num{font-family:var(--mono);text-align:right;}
+  table input:focus{border-color:rgba(216,31,216,.6);}
+  input.price{background:rgba(216,31,216,.08);border-color:rgba(216,31,216,.35);font-weight:700;font-family:var(--mono);text-align:right;}
+  input.price.edited{border-style:dashed;}
+  .computed{font-family:var(--mono);font-size:13px;text-align:right;white-space:nowrap;}
+  .cost-val{color:var(--text);font-weight:600;}
+  .margin{font-weight:700;}
+  .m-ok{color:var(--green);} .m-thin{color:var(--amber);} .m-bad{color:var(--red);}
+  .status{font-family:var(--mono);font-size:11px;white-space:nowrap;}
+  .badge{display:inline-block;padding:4px 9px;border-radius:7px;font-weight:600;letter-spacing:.3px;}
+  .badge.ok{background:rgba(39,192,138,.13);color:var(--green);}
+  .badge.thin{background:rgba(255,184,77,.13);color:var(--amber);}
+  .badge.bad{background:rgba(255,94,122,.13);color:var(--red);}
+  .substatus{color:var(--faint);font-size:10px;margin-top:3px;}
+  .delbtn{background:none;border:none;color:var(--faint);cursor:pointer;font-size:15px;padding:4px 7px;border-radius:8px;line-height:1;}
+  .delbtn:hover{color:var(--red);background:rgba(255,94,122,.08);}
+  .resetbtn{background:none;border:none;color:var(--faint);cursor:pointer;font-size:13px;padding:4px 6px;border-radius:6px;}
+  .resetbtn:hover{color:var(--accent);}
+
+  .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;}
+  .addbtn{padding:10px 16px;background:transparent;border:1px dashed rgba(255,255,255,.18);color:var(--muted);border-radius:10px;cursor:pointer;font-family:var(--font);font-weight:600;font-size:13px;}
+  .addbtn:hover{border-color:rgba(216,31,216,.5);color:var(--text);}
+  .snapbtn{padding:10px 16px;background:transparent;border:1px solid var(--border);color:var(--text);border-radius:10px;cursor:pointer;font-family:var(--font);font-weight:600;font-size:13px;}
+  .snapbtn:hover{border-color:rgba(216,31,216,.5);}
+
+  .footnote{color:var(--faint);font-size:12px;line-height:1.7;margin-top:6px;}
+  .footnote b{color:var(--muted);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="kicker">RAČUNALO.HR · interni alat</div>
+  <h1>Kalkulator cijene dijelova</h1>
+  <div class="sub">Cijenu računaš <b>prema dolje od hrvatske police</b> — nikad ne prelaziš konkurenta, a trošak samo provjerava ima li dovoljno mesa.</div>
+  <div class="legend">
+    Upiši <b>HR cijenu</b> (konkurent, s PDV-om) i <b>cijenu dobavljača</b> (Caseking/Alternate, s njem. PDV-om). Alat predloži cijenu malo ispod police i pokaže maržu.<br>
+    Što kopiraš u Shopify: <span class="pill price">Cijena za Shopify</span> → polje <b>Price</b> &nbsp;·&nbsp; <span class="pill cost">Trošak</span> → polje <b>Cost per item</b>.
+  </div>
+
+  <div class="panel">
+    <h2>Postavke</h2>
+    <div class="settings">
+      <div class="field"><label>PDV dobavljača %</label><input id="supVat" class="num" type="number" value="19" step="0.1"></div>
+      <div class="field"><label>Tvoj PDV %</label><input id="sellVat" class="num" type="number" value="25" step="0.1"></div>
+      <div class="field"><label>Ispod police %</label><input id="undercut" class="num" type="number" value="5" step="0.5"></div>
+      <div class="field"><label>Naknada kartice %</label><input id="fee" class="num" type="number" value="1.8" step="0.1"></div>
+      <div class="field"><label>Zdrava marža (prag) %</label><input id="floor" class="num" type="number" value="8" step="1"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Dijelovi</h2>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:22%">Komponenta</th>
+            <th>HR cijena €</th>
+            <th>Dobavljač €</th>
+            <th><span class="pill cost">Trošak</span></th>
+            <th><span class="pill price">Cijena za Shopify</span></th>
+            <th>Marža</th>
+            <th>Zarada €</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <div class="actions">
+      <button class="addbtn" id="addRow">+ Dodaj dio</button>
+      <button class="snapbtn" id="snapAll">↺ Vrati sve na preporučeno</button>
+    </div>
+  </div>
+
+  <div class="footnote">
+    Trošak = cijena dobavljača ÷ (1 + PDV dobavljača) — jer kupuješ B2B (reverse charge), plaćaš neto.<br>
+    Preporučena cijena = HR cijena − (% ispod police). Polje cijene možeš <b>ručno prepisati</b> (npr. tanke kartice gurni bliže polici) — marža se odmah preračuna.<br>
+    <span class="badge ok" style="font-size:10px">✓ ok</span> zdrava marža &nbsp;
+    <span class="badge thin" style="font-size:10px">⚠ tanko</span> ispod praga, ali pozitivno &nbsp;
+    <span class="badge bad" style="font-size:10px">✗ gubitak</span> ne možeš pobijediti policu — preskoči ili nađi jeftiniji izvor.<br>
+    Procjene za pomoć pri odluci — za porez se osloni na knjigovođu.
+  </div>
+</div>
+
+<script>
+const SAMPLE = [
+  ["RTX 5080 — model A", 1400, 1000],
+  ["RTX 5080 — model B (skuplji)", 1700, 1500],
+  ["Fractal Meshify 3", 230, 144],
+  ["64GB G.Skill Trident Z5", 940, 915],
+];
+
+const $ = id => document.getElementById(id);
+const rowsEl = $("rows");
+const eur = n => "€" + Math.round(n).toLocaleString("de-DE");
+const num = v => { const n = parseFloat(String(v).replace(",",".")); return isNaN(n)?0:n; };
+
+function makeRow(name="", cro="", sup=""){
+  const tr = document.createElement("tr");
+  tr.innerHTML = `
+    <td><input class="name" type="text" placeholder="naziv" value="${name}"></td>
+    <td class="cellnum"><input class="num cro" type="number" step="1" placeholder="0" value="${cro}"></td>
+    <td class="cellnum"><input class="num sup" type="number" step="1" placeholder="0" value="${sup}"></td>
+    <td class="computed cost"><span class="cost-val">€0</span></td>
+    <td class="cellnum"><input class="num price" type="number" step="1" placeholder="0"></td>
+    <td class="computed marginCell">—</td>
+    <td class="computed profitCell">—</td>
+    <td class="status statusCell">—</td>
+    <td style="text-align:center;white-space:nowrap">
+      <button class="resetbtn" title="Vrati na preporučeno">↺</button>
+      <button class="delbtn" title="Ukloni">✕</button>
+    </td>`;
+  const priceInput = tr.querySelector(".price");
+  priceInput.dataset.edited = "0";
+  priceInput.addEventListener("input", ()=>{ priceInput.dataset.edited="1"; priceInput.classList.add("edited"); recalc(); });
+  tr.querySelector(".resetbtn").onclick = ()=>{ priceInput.dataset.edited="0"; priceInput.classList.remove("edited"); recalc(); };
+  tr.querySelector(".delbtn").onclick = ()=>{ tr.remove(); };
+  tr.querySelectorAll(".name,.cro,.sup").forEach(i=>i.addEventListener("input", recalc));
+  return tr;
+}
+
+function recalc(){
+  const supVat = num($("supVat").value)/100;
+  const sellVat = num($("sellVat").value)/100;
+  const undercut = num($("undercut").value)/100;
+  const fee = num($("fee").value)/100;
+  const floor = num($("floor").value);
+
+  rowsEl.querySelectorAll("tr").forEach(tr=>{
+    const cro = num(tr.querySelector(".cro").value);
+    const sup = num(tr.querySelector(".sup").value);
+    const priceInput = tr.querySelector(".price");
+
+    const cost = sup>0 ? sup/(1+supVat) : 0;
+    tr.querySelector(".cost .cost-val").textContent = eur(cost);
+
+    const suggested = cro>0 ? Math.round(cro*(1-undercut)) : 0;
+    if(priceInput.dataset.edited==="0"){
+      priceInput.value = suggested>0 ? suggested : "";
+    }
+    const price = num(priceInput.value);
+
+    const marginCell = tr.querySelector(".marginCell");
+    const profitCell = tr.querySelector(".profitCell");
+    const statusCell = tr.querySelector(".statusCell");
+
+    if(price<=0 || cost<=0){
+      marginCell.textContent="—"; profitCell.textContent="—"; statusCell.textContent="—";
+      return;
+    }
+
+    const netRev = price/(1+sellVat);
+    const cardFee = price*fee;
+    const profit = netRev - cost - cardFee;
+    const marginPct = netRev>0 ? (profit/netRev*100) : 0;
+    const underBy = cro - price;
+    const underPct = cro>0 ? (underBy/cro*100) : 0;
+
+    marginCell.innerHTML = "<span class='margin "+(marginPct<0?"m-bad":(marginPct<floor?"m-thin":"m-ok"))+"'>"+marginPct.toFixed(1)+"%</span>";
+    profitCell.innerHTML = "<span class='"+(profit<0?"m-bad":(profit<0.0001?"":""))+"'>"+(profit<0?"−":"")+eur(Math.abs(profit))+"</span>";
+
+    let badge, sub;
+    if(price>=cro){ badge="<span class='badge bad'>✗ iznad police</span>"; }
+    else if(profit<0 || marginPct<0){ badge="<span class='badge bad'>✗ gubitak</span>"; }
+    else if(marginPct<floor){ badge="<span class='badge thin'>⚠ tanko</span>"; }
+    else { badge="<span class='badge ok'>✓ ok</span>"; }
+    sub = cro>0 ? "<div class='substatus'>"+(underBy>=0?underPct.toFixed(1)+"% ispod police":"iznad police!")+"</div>" : "";
+    statusCell.innerHTML = badge + sub;
+  });
+}
+
+$("addRow").onclick = ()=>{ rowsEl.appendChild(makeRow()); recalc(); };
+$("snapAll").onclick = ()=>{
+  rowsEl.querySelectorAll(".price").forEach(p=>{ p.dataset.edited="0"; p.classList.remove("edited"); });
+  recalc();
+};
+["supVat","sellVat","undercut","fee","floor"].forEach(id=>$(id).addEventListener("input",recalc));
+
+SAMPLE.forEach(r=>rowsEl.appendChild(makeRow(r[0], r[1], r[2])));
+recalc();
+</script>
+</body>
+</html>
