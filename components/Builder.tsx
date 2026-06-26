@@ -136,6 +136,8 @@ function BuilderContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const initialized = useRef(false);
+  const movedRef = useRef(false);
+  const suppressRef = useRef(false);
 
   // --- STATE ---
   const [stepIndex, setStepIndex] = useState(0);
@@ -318,6 +320,7 @@ function BuilderContent() {
                   pcfRamType: metafield(namespace: "pcf", key: "ram_type") { value }
                   pcfFormFactor: metafield(namespace: "pcf", key: "form_factor") { value }
                   pcfSupportedFormFactors: metafield(namespace: "pcf", key: "supported_form_factors") { value }
+                  pcfGpuLength: metafield(namespace: "pcf", key: "gpu_length") { value }
                   pcfMaxGpuLength: metafield(namespace: "pcf", key: "max_gpu_length") { value }
                   pcfWattage: metafield(namespace: "pcf", key: "wattage") { value }
                   pcfQuality: metafield(namespace: "pcf", key: "quality") { value }
@@ -526,8 +529,9 @@ function BuilderContent() {
     };
   };
 
-  // --- INTERACTION & DRAG PHYSICS (navigation only; selection is explicit) ---
+  // --- INTERACTION & DRAG PHYSICS (content follows cursor, snaps to released card, eases in) ---
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    movedRef.current = false;
     setStartX(e.clientX);
     setDragOffset(0);
     setIsDragging(false);
@@ -535,37 +539,28 @@ function BuilderContent() {
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (startX === null) return;
     const diff = e.clientX - startX;
-
-    const jumps = Math.trunc(diff / SLIDE);
-    if (jumps !== 0) {
-      setActiveIndex((prev) => {
-        let next = prev - jumps;
-        while (next < 0) next += currentProducts.length;
-        return next % currentProducts.length;
-      });
-      setStartX((prev) => (prev !== null ? prev + jumps * SLIDE : e.clientX));
-      setDragOffset(diff - jumps * SLIDE);
-    } else {
-      setDragOffset(diff);
-    }
-    if (Math.abs(diff) > 15) {
-      setIsDragging(true);
-    }
+    // sign is NOT inverted: positive drag -> exactOffset rises -> cards follow the cursor
+    if (Math.abs(diff) > 4) movedRef.current = true;
+    setDragOffset(diff);
+    setIsDragging(true);
   };
   const handlePointerUp = () => {
-    if (startX !== null) {
-      let newActiveIndex = activeIndex;
-
-      if (dragOffset > SLIDE / 3) {
-        newActiveIndex = (activeIndex - 1 + currentProducts.length) % currentProducts.length;
-      } else if (dragOffset < -SLIDE / 3) {
-        newActiveIndex = (activeIndex + 1) % currentProducts.length;
-      }
-      setActiveIndex(newActiveIndex);
+    if (startX === null) return;
+    const N = currentProducts.length;
+    // snap to whichever card you actually released on (can cross several at once)
+    const steps = Math.round(dragOffset / SLIDE);
+    // suppress the synthetic click that fires right after a real drag
+    if (movedRef.current) {
+      suppressRef.current = true;
+      setTimeout(() => {
+        suppressRef.current = false;
+      }, 100);
     }
+    // reset drag + re-enable transition in the SAME update so the settle animates (no hard jump)
+    if (N > 0) setActiveIndex((prev) => (((prev - steps) % N) + N) % N);
     setDragOffset(0);
     setStartX(null);
-    setTimeout(() => setIsDragging(false), 50);
+    setIsDragging(false);
   };
 
   const handleSelection = (type: string, p: ProductNode) => {
@@ -1001,9 +996,11 @@ function BuilderContent() {
                         const baseOffset = getOffset(idx);
                         const exactOffset = baseOffset + dragOffset / SLIDE;
                         const cs = getCardStyle(exactOffset, isMobile);
-                        const isVisible = cs.opacity > 0;
                         const isActive = Math.abs(exactOffset) < 0.5;
-                        if (!isVisible && !isDragging) return <div key={p.id} style={{ display: "none" }} />;
+                        // keep cards near both the resting and the dragged-to center mounted,
+                        // so the settle animation always has neighbors to ease in
+                        const nearest = Math.min(Math.abs(baseOffset), Math.abs(exactOffset));
+                        if (nearest > 3.2) return <div key={p.id} style={{ display: "none" }} />;
 
                         const badgeStyle = p.pcfBadge?.value ? getBadgeStyle(p.pcfBadge.value) : null;
                         const cardW = isMobile ? 196 : 284;
@@ -1013,7 +1010,7 @@ function BuilderContent() {
                           <div
                             key={p.id}
                             onClick={() => {
-                              if (isDragging) return;
+                              if (suppressRef.current) return;
                               if (baseOffset === 0) handleSelection(currentStep, p);
                               else setActiveIndex(idx);
                             }}
