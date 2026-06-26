@@ -8,6 +8,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 type ProductNode = {
   id: string;
   title: string;
+  tags: string[];
   featuredImage?: { url: string; altText?: string };
   variants: { 
     edges: { 
@@ -242,6 +243,7 @@ function BuilderContent() {
                 node {
                   id
                   title
+                  tags
                   featuredImage { url altText }
                   variants(first: 50) { 
                     edges { 
@@ -340,7 +342,24 @@ function BuilderContent() {
       return type === "motherboard" && p.pcfSocket?.value === cpu?.pcfSocket?.value;
     }
     if (currentStep === "ram") {
-      return type === "ram" && p.pcfRamType?.value === mb?.pcfRamType?.value;
+      if (type !== "ram") return false;
+      if (p.pcfRamType?.value !== mb?.pcfRamType?.value) return false;
+
+      // XMP i EXPO Pametno Filtriranje pomoću Tagova
+      const pTags = p.tags || [];
+      const lowerTags = pTags.map((t: string) => t.toLowerCase());
+      const titleLower = p.title.toLowerCase();
+      
+      const isXMP = lowerTags.includes("intel-xmp") || titleLower.includes("xmp");
+      const isEXPO = lowerTags.includes("amd-expo") || titleLower.includes("expo");
+
+      // Sakrij AMD-specifičan RAM ako je odabran Intel
+      if (brand === "intel" && isEXPO && !isXMP) return false;
+      
+      // Sakrij Intel-specifičan RAM ako je odabran AMD
+      if (brand === "amd" && isXMP && !isEXPO) return false;
+
+      return true;
     }
     if (currentStep === "gpu") {
       return type === "gpu";
