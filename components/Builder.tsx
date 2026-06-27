@@ -118,13 +118,13 @@ const ASSEMBLY_FEE = 200;
 
 // Plain-language guidance so non-technical buyers can choose a variant with confidence.
 const STEP_HELP: Record<string, string> = {
-  ram: "Najvažnije je koliko GB ima: više GB znači da računalo lakše radi više stvari odjednom (igre, preglednik i programi istovremeno). 16 GB je dovoljno za većinu, 32 GB za igre i posao, 64 GB+ za profesionalni rad. Brojevi poput 6000 MHz i CL30 označavaju brzinu memorije — važni su naprednim korisnicima. Sve opcije koje nudimo su provjereno kompatibilne, pa slobodno birajte prema GB-ima.",
-  ssd: "Birate kapacitet — koliko prostora imate za igre, programe i datoteke. Što je veći broj (TB), to više stane. Svi su brzi (NVMe); razlika je samo u količini prostora.",
-  hdd: "Tvrdi disk je jeftin prostor za pohranu (filmovi, slike, sigurnosne kopije). Veći broj TB = više prostora. Sporiji je od SSD-a, pa služi za arhivu, ne za igre.",
-  cpu: "Varijante se uglavnom razlikuju po broju jezgri i brzini — više znači brže u zahtjevnim zadacima. Sve su kompatibilne s odabranom platformom.",
-  gpu: "Varijante dijele isti čip, a razlikuju se po proizvođaču i hlađenju. Ako niste sigurni, prva (preporučena) je odličan izbor.",
-  psu: "Veći broj W (vati) znači više snage u rezervi. Konfigurator već pazi da napajanje bude dovoljno za vaše komponente.",
-  cooler: "Hladnjak drži procesor na sigurnoj temperaturi. Sve ponuđene opcije pristaju na vaš procesor i kućište.",
+  ram: "RAM je radna memorija — kratkoročni prostor u kojem računalo drži ono na čemu trenutno radi. Najvažnije je koliko GB ima: više GB znači da lakše radi više stvari odjednom (npr. igra + preglednik + Discord). 16 GB je dovoljno za većinu, 32 GB za igre i posao, a 64 GB+ za profesionalni rad poput montaže ili 3D-a. Brojevi uz to govore o brzini: MHz (npr. 6000) — što veći broj, to brže; i CL (npr. CL30) — kod njega je obrnuto, manji broj je bolji. Bržu memoriju računalo malo brže koristi. Sve opcije koje nudimo su provjereno kompatibilne s vašom pločom, a prvi odabir je naša preporuka.",
+  ssd: "SSD je glavni disk — tu se instaliraju Windows, igre i programi, i on čini računalo brzim pri pokretanju. Birate kapacitet: što je veći broj (TB), to više stane. Svi su brzi (NVMe), razlika je samo u količini prostora. Prvi odabir je naša preporuka.",
+  hdd: "Tvrdi disk (HDD) je jeftin dodatni prostor za pohranu — filmovi, slike, sigurnosne kopije. Veći broj TB = više prostora. Sporiji je od SSD-a pa služi za arhivu, ne za igre. Prvi odabir je naša preporuka.",
+  cpu: "Procesor je 'mozak' računala. Varijante se uglavnom razlikuju po broju jezgri i brzini — više znači brže u zahtjevnim zadacima i igrama. Sve su kompatibilne s odabranom platformom, a prvi odabir je naša preporuka.",
+  gpu: "Grafička kartica crta sliku i najviše utječe na igre. Varijante dijele isti čip, a razlikuju se po proizvođaču i hlađenju. Prvi odabir je naša preporuka.",
+  psu: "Napajanje opskrbljuje cijelo računalo strujom. Veći broj W (vati) znači više snage u rezervi; konfigurator već pazi da bude dovoljno za vaše komponente. Prvi odabir je naša preporuka.",
+  cooler: "Hladnjak drži procesor na sigurnoj temperaturi da radi mirno i tiho. Sve ponuđene opcije pristaju na vaš procesor i kućište. Prvi odabir je naša preporuka.",
 };
 
 // --- FONTS ---
@@ -725,6 +725,25 @@ function BuilderContent() {
   const missingParts = requiredParts.filter((r) => !r.item).map((r) => r.label);
   const buildComplete = missingParts.length === 0;
 
+  // Step for each required part, in build order, with its current selection.
+  const stepSelections: { step: Step; item: ProductNode | null }[] = [
+    { step: "cpu", item: cpu },
+    { step: "motherboard", item: mb },
+    { step: "ram", item: ram },
+    { step: "gpu", item: gpu },
+    { step: "ssd", item: ssd },
+    { step: "case", item: pcCase },
+    { step: "psu", item: psu },
+    { step: "cooler", item: cooler },
+  ];
+  // When leaving the review screen, drop the user on the first part they haven't picked yet
+  // (not the last step). If everything is chosen, go back one step from review.
+  const goEditConfig = () => {
+    const firstMissing = stepSelections.find((s) => !s.item);
+    if (firstMissing) setStepIndex(STEPS.indexOf(firstMissing.step));
+    else setStepIndex(stepIndex - 1);
+  };
+
   const selectedPartsList = [
     { key: "cpu", label: "PROCESOR", item: cpu },
     { key: "gpu", label: "GRAFIČKA KARTICA", item: gpu },
@@ -1031,27 +1050,39 @@ function BuilderContent() {
                     >
                       <button
                         onClick={() => setViewMode("coverflow")}
-                        title="Listanje (jedan po jedan)"
-                        style={{ ...segBtnStyle(viewMode === "coverflow"), display: "flex", alignItems: "center", gap: "7px" }}
+                        title="Listanje"
+                        aria-label="Listanje"
+                        style={{
+                          ...segBtnStyle(viewMode === "coverflow"),
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          padding: "9px 11px",
+                        }}
                       >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <rect x="8" y="5" width="8" height="14" rx="1.5" />
                           <path d="M5 8v8M19 8v8" opacity="0.55" />
                         </svg>
-                        Listanje
                       </button>
                       <button
                         onClick={() => setViewMode("grid")}
-                        title="Sve odjednom (pregled svih)"
-                        style={{ ...segBtnStyle(viewMode === "grid"), display: "flex", alignItems: "center", gap: "7px" }}
+                        title="Sve odjednom"
+                        aria-label="Sve odjednom"
+                        style={{
+                          ...segBtnStyle(viewMode === "grid"),
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          padding: "9px 11px",
+                        }}
                       >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <rect x="4" y="4" width="7" height="7" rx="1.5" />
                           <rect x="13" y="4" width="7" height="7" rx="1.5" />
                           <rect x="4" y="13" width="7" height="7" rx="1.5" />
                           <rect x="13" y="13" width="7" height="7" rx="1.5" />
                         </svg>
-                        Sve odjednom
                       </button>
                     </div>
                   </div>
@@ -1438,7 +1469,7 @@ function BuilderContent() {
             {isReviewStep && (
               <div>
                 <div style={{ display: "flex", gap: "10px", marginBottom: "24px", flexWrap: "wrap" }}>
-                  <button onClick={() => setStepIndex(stepIndex - 1)} style={navBtnStyle}>
+                  <button onClick={goEditConfig} style={navBtnStyle}>
                     ← Uredi konfiguraciju
                   </button>
                   <button onClick={resetBuild} style={navBtnDangerStyle}>
