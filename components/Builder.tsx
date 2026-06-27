@@ -116,6 +116,17 @@ const STEP_GLYPH: Record<string, string> = {
 
 const ASSEMBLY_FEE = 200;
 
+// Plain-language guidance so non-technical buyers can choose a variant with confidence.
+const STEP_HELP: Record<string, string> = {
+  ram: "Najvažnije je koliko GB ima: više GB znači da računalo lakše radi više stvari odjednom (igre, preglednik i programi istovremeno). 16 GB je dovoljno za većinu, 32 GB za igre i posao, 64 GB+ za profesionalni rad. Brojevi poput 6000 MHz i CL30 označavaju brzinu memorije — važni su naprednim korisnicima. Sve opcije koje nudimo su provjereno kompatibilne, pa slobodno birajte prema GB-ima.",
+  ssd: "Birate kapacitet — koliko prostora imate za igre, programe i datoteke. Što je veći broj (TB), to više stane. Svi su brzi (NVMe); razlika je samo u količini prostora.",
+  hdd: "Tvrdi disk je jeftin prostor za pohranu (filmovi, slike, sigurnosne kopije). Veći broj TB = više prostora. Sporiji je od SSD-a, pa služi za arhivu, ne za igre.",
+  cpu: "Varijante se uglavnom razlikuju po broju jezgri i brzini — više znači brže u zahtjevnim zadacima. Sve su kompatibilne s odabranom platformom.",
+  gpu: "Varijante dijele isti čip, a razlikuju se po proizvođaču i hlađenju. Ako niste sigurni, prva (preporučena) je odličan izbor.",
+  psu: "Veći broj W (vati) znači više snage u rezervi. Konfigurator već pazi da napajanje bude dovoljno za vaše komponente.",
+  cooler: "Hladnjak drži procesor na sigurnoj temperaturi. Sve ponuđene opcije pristaju na vaš procesor i kućište.",
+};
+
 // --- FONTS ---
 const FONT = "'Space Grotesk', sans-serif";
 const MONO = "'IBM Plex Mono', monospace";
@@ -138,8 +149,8 @@ function BuilderContent() {
   const router = useRouter();
   const initialized = useRef(false);
   const movedRef = useRef(false);
-  const suppressRef = useRef(false);
   const capturedRef = useRef(false);
+  const downIdxRef = useRef<number | null>(null);
 
   // --- STATE ---
   const [stepIndex, setStepIndex] = useState(0);
@@ -155,6 +166,7 @@ function BuilderContent() {
   const [isDragging, setIsDragging] = useState(false);
   const [viewMode, setViewMode] = useState<"coverflow" | "grid">("coverflow");
   const [shareCopied, setShareCopied] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   const [brand, setBrand] = useState<string | null>(null);
   const [cpu, setCpu] = useState<ProductNode | null>(null);
@@ -387,6 +399,7 @@ function BuilderContent() {
     setActiveIndex(0);
     setDragOffset(0);
     setIsProcessing(false);
+    setHelpOpen(false);
   }, [stepIndex]);
 
   // --- FILTERING (unchanged business logic) ---
@@ -544,11 +557,19 @@ function BuilderContent() {
     };
   };
 
-  // --- INTERACTION & DRAG PHYSICS (content follows cursor, snaps to released card, eases in) ---
+  // --- INTERACTION & DRAG PHYSICS (robust on touch + mouse) ---
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    // do NOT capture here — a plain tap must keep its normal click target so cards stay clickable
+    // let the arrow buttons work normally
+    if ((e.target as HTMLElement).closest("button")) return;
+    // remember which card the press started on (for tap-to-select / tap-to-center)
+    const cardEl = (e.target as HTMLElement).closest("[data-cardidx]") as HTMLElement | null;
+    downIdxRef.current = cardEl ? Number(cardEl.dataset.cardidx) : null;
     movedRef.current = false;
-    capturedRef.current = false;
+    // capture immediately so the browser can never steal the gesture for scrolling (fixes mobile)
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+      capturedRef.current = true;
+    } catch {}
     setStartX(e.clientX);
     setDragOffset(0);
     setIsDragging(false);
@@ -556,17 +577,10 @@ function BuilderContent() {
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (startX === null) return;
     const diff = e.clientX - startX;
-    // only treat it as a drag (and capture the pointer) once past the threshold
     if (Math.abs(diff) > 4) {
       movedRef.current = true;
-      if (!capturedRef.current) {
-        try {
-          e.currentTarget.setPointerCapture(e.pointerId);
-          capturedRef.current = true;
-        } catch {}
-      }
-      setDragOffset(diff);
       setIsDragging(true);
+      setDragOffset(diff);
     }
   };
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -578,17 +592,18 @@ function BuilderContent() {
     }
     if (startX === null) return;
     const N = currentProducts.length;
-    // snap to whichever card you actually released on (can cross several at once)
-    const steps = Math.round(dragOffset / SLIDE);
-    // suppress the synthetic click that fires right after a real drag
     if (movedRef.current) {
-      suppressRef.current = true;
-      setTimeout(() => {
-        suppressRef.current = false;
-      }, 100);
+      // dragged: snap to whichever card you released on (can cross several)
+      const steps = Math.round(dragOffset / SLIDE);
+      if (N > 0) setActiveIndex((prev) => (((prev - steps) % N) + N) % N);
+    } else {
+      // tapped (no real movement): center card selects, side card comes to center
+      const i = downIdxRef.current;
+      if (i != null && currentProducts[i]) {
+        if (i === activeIndex) handleSelection(currentStep, currentProducts[i]);
+        else setActiveIndex(i);
+      }
     }
-    // reset drag + re-enable transition in the SAME update so the settle animates (no hard jump)
-    if (N > 0) setActiveIndex((prev) => (((prev - steps) % N) + N) % N);
     setDragOffset(0);
     setStartX(null);
     setIsDragging(false);
@@ -658,6 +673,7 @@ function BuilderContent() {
   };
 
   const handleCheckout = async () => {
+    if (!buildComplete) return;
     setIsProcessing(true);
 
     const parts = [cpu, mb, ram, gpu, gpu2, ssd, ssd2, hdd, hdd2, pcCase, psu, cooler, os];
@@ -693,6 +709,21 @@ function BuilderContent() {
       setIsProcessing(false);
     }
   };
+
+  // A PC is only orderable when every required part is chosen.
+  // HDD and OS are optional; gpu2/ssd2/hdd2 are upsells — none gate checkout.
+  const requiredParts = [
+    { label: "Procesor", item: cpu },
+    { label: "Matična ploča", item: mb },
+    { label: "Radna memorija", item: ram },
+    { label: "Grafička kartica", item: gpu },
+    { label: "Glavni SSD", item: ssd },
+    { label: "Kućište", item: pcCase },
+    { label: "Napajanje", item: psu },
+    { label: "Hladnjak", item: cooler },
+  ];
+  const missingParts = requiredParts.filter((r) => !r.item).map((r) => r.label);
+  const buildComplete = missingParts.length === 0;
 
   const selectedPartsList = [
     { key: "cpu", label: "PROCESOR", item: cpu },
@@ -998,11 +1029,29 @@ function BuilderContent() {
                         padding: "4px",
                       }}
                     >
-                      <button onClick={() => setViewMode("coverflow")} style={segBtnStyle(viewMode === "coverflow")}>
-                        Coverflow
+                      <button
+                        onClick={() => setViewMode("coverflow")}
+                        title="Listanje (jedan po jedan)"
+                        style={{ ...segBtnStyle(viewMode === "coverflow"), display: "flex", alignItems: "center", gap: "7px" }}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="8" y="5" width="8" height="14" rx="1.5" />
+                          <path d="M5 8v8M19 8v8" opacity="0.55" />
+                        </svg>
+                        Listanje
                       </button>
-                      <button onClick={() => setViewMode("grid")} style={segBtnStyle(viewMode === "grid")}>
-                        Mreža
+                      <button
+                        onClick={() => setViewMode("grid")}
+                        title="Sve odjednom (pregled svih)"
+                        style={{ ...segBtnStyle(viewMode === "grid"), display: "flex", alignItems: "center", gap: "7px" }}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="4" y="4" width="7" height="7" rx="1.5" />
+                          <rect x="13" y="4" width="7" height="7" rx="1.5" />
+                          <rect x="4" y="13" width="7" height="7" rx="1.5" />
+                          <rect x="13" y="13" width="7" height="7" rx="1.5" />
+                        </svg>
+                        Sve odjednom
                       </button>
                     </div>
                   </div>
@@ -1023,7 +1072,7 @@ function BuilderContent() {
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        touchAction: "pan-y",
+                        touchAction: "none",
                         userSelect: "none",
                         WebkitUserSelect: "none",
                         WebkitTouchCallout: "none",
@@ -1056,11 +1105,7 @@ function BuilderContent() {
                         return (
                           <div
                             key={p.id}
-                            onClick={() => {
-                              if (suppressRef.current) return;
-                              if (baseOffset === 0) handleSelection(currentStep, p);
-                              else setActiveIndex(idx);
-                            }}
+                            data-cardidx={idx}
                             style={{
                               position: "absolute",
                               left: "50%",
@@ -1301,6 +1346,60 @@ function BuilderContent() {
                             </button>
                           );
                         })}
+
+                        {STEP_HELP[currentStep] && (
+                          <div style={{ width: "100%", marginTop: "4px" }}>
+                            <button
+                              onClick={() => setHelpOpen((o) => !o)}
+                              style={{
+                                background: "none",
+                                border: "none",
+                                padding: "4px 0",
+                                cursor: "pointer",
+                                fontFamily: FONT,
+                                fontSize: "13px",
+                                fontWeight: 600,
+                                color: COLORS.accent,
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "6px",
+                              }}
+                            >
+                              <span
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  width: "16px",
+                                  height: "16px",
+                                  borderRadius: "50%",
+                                  border: `1px solid ${COLORS.accent}`,
+                                  fontSize: "10px",
+                                  fontFamily: MONO,
+                                }}
+                              >
+                                ?
+                              </span>
+                              {helpOpen ? "Sakrij pomoć" : "Niste sigurni što odabrati?"}
+                            </button>
+                            {helpOpen && (
+                              <div
+                                style={{
+                                  marginTop: "8px",
+                                  padding: "13px 15px",
+                                  background: COLORS.bgDark,
+                                  border: `1px solid ${COLORS.border}`,
+                                  borderRadius: "11px",
+                                  fontSize: "13px",
+                                  lineHeight: 1.6,
+                                  color: COLORS.textMuted,
+                                }}
+                              >
+                                {STEP_HELP[currentStep]}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -1595,9 +1694,40 @@ function BuilderContent() {
 
               {isReviewStep ? (
                 <>
-                  <button disabled={isProcessing} onClick={handleCheckout} style={checkoutBtnStyle}>
+                  <button
+                    disabled={isProcessing || !buildComplete}
+                    onClick={handleCheckout}
+                    style={{
+                      ...checkoutBtnStyle,
+                      ...(buildComplete
+                        ? {}
+                        : {
+                            background: "rgba(255,255,255,.06)",
+                            color: COLORS.textFaint,
+                            boxShadow: "none",
+                            cursor: "not-allowed",
+                          }),
+                    }}
+                  >
                     🛒 {isProcessing ? "Obrađujem…" : "Dodaj u košaricu"}
                   </button>
+                  {!buildComplete && (
+                    <div
+                      style={{
+                        marginTop: "10px",
+                        padding: "11px 13px",
+                        background: "rgba(255,184,77,.08)",
+                        border: "1px solid rgba(255,184,77,.25)",
+                        borderRadius: "10px",
+                        fontSize: "12px",
+                        color: "#ffb84d",
+                        lineHeight: 1.5,
+                      }}
+                    >
+                      Da biste naručili, konfiguracija mora biti potpuna. Nedostaje:{" "}
+                      <b>{missingParts.join(", ")}</b>.
+                    </div>
+                  )}
                   <button onClick={shareBuild} style={ghostBtnStyle}>
                     {shareCopied ? "✓ Link kopiran" : "🔗 Podijeli konfiguraciju"}
                   </button>
