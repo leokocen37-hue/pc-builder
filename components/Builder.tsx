@@ -337,6 +337,8 @@ function BuilderContent() {
                   pcfSupportedFormFactors: metafield(namespace: "pcf", key: "supported_form_factors") { value }
                   pcfGpuLength: metafield(namespace: "pcf", key: "gpu_length") { value }
                   pcfMaxGpuLength: metafield(namespace: "pcf", key: "max_gpu_length") { value }
+                  pcfCoolerHeight: metafield(namespace: "pcf", key: "cooler_height") { value }
+                  pcfMaxCoolerHeight: metafield(namespace: "pcf", key: "max_cooler_height") { value }
                   pcfWattage: metafield(namespace: "pcf", key: "wattage") { value }
                   pcfQuality: metafield(namespace: "pcf", key: "quality") { value }
                   pcfBadge: metafield(namespace: "pcf", key: "badge") { value }
@@ -466,7 +468,15 @@ function BuilderContent() {
       if (currentStep === "cooler") {
         if (type !== "cooler") return false;
         const sockets = p.pcfSocket?.value?.split(",").map((s) => s.trim().toLowerCase()) || [];
-        return sockets.includes((cpu?.pcfSocket?.value || "").toLowerCase());
+        if (!sockets.includes((cpu?.pcfSocket?.value || "").toLowerCase())) return false;
+
+        // must physically fit inside the chosen case (skip if either value is missing)
+        const coolerHeight = Number(p.pcfCoolerHeight?.value || 0);
+        const caseMaxCoolerHeight = Number(pcCase?.pcfMaxCoolerHeight?.value || 0);
+        if (coolerHeight > 0 && caseMaxCoolerHeight > 0 && coolerHeight > caseMaxCoolerHeight) {
+          return false;
+        }
+        return true;
       }
       if (currentStep === "os") {
         return type === "os";
