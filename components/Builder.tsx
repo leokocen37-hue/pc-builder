@@ -15,6 +15,7 @@ type ProductNode = {
         id: string;
         title: string;
         price: { amount: string };
+        image?: { url: string; altText?: string };
       };
     }[];
   };
@@ -311,6 +312,7 @@ function BuilderContent() {
                         id
                         title
                         price { amount }
+                        image { url altText }
                       }
                     }
                   }
@@ -482,6 +484,18 @@ function BuilderContent() {
       activeProduct?.variants.edges[0]?.node.price.amount ||
       0
   );
+
+  // which variant a given product card should reflect:
+  // the actively-selected one for the centered product, otherwise its first variant
+  const displayVariant = (p: ProductNode, isActiveProduct: boolean) => {
+    const node =
+      (isActiveProduct && p.variants.edges.find((v: any) => v.node.id === selectedVarId)?.node) ||
+      p.variants.edges[0].node;
+    return {
+      price: Number(node.price.amount),
+      img: node.image?.url || p.featuredImage?.url,
+    };
+  };
 
   // --- COVERFLOW GEOMETRY ---
   const SLIDE = isMobile ? 150 : 300;
@@ -791,13 +805,13 @@ function BuilderContent() {
     </div>
   );
 
-  // image placeholder block
-  const ImageBlock = ({ p, h }: { p?: ProductNode | null; h: string }) =>
-    p?.featuredImage?.url ? (
+  // image placeholder block — pass an explicit src (variant image or product image)
+  const ImageBlock = ({ src, h }: { src?: string; h: string }) =>
+    src ? (
       <img
         draggable="false"
-        src={p.featuredImage.url}
-        alt={p.title}
+        src={src}
+        alt=""
         style={{ width: "100%", height: h, objectFit: "contain", pointerEvents: "none" }}
       />
     ) : (
@@ -1035,6 +1049,7 @@ function BuilderContent() {
                         if (nearest > 3.2) return <div key={p.id} style={{ display: "none" }} />;
 
                         const badgeStyle = p.pcfBadge?.value ? getBadgeStyle(p.pcfBadge.value) : null;
+                        const dv = displayVariant(p, idx === activeIndex);
                         const cardW = isMobile ? 196 : 284;
                         const cardH = isMobile ? 256 : 360;
 
@@ -1084,17 +1099,12 @@ function BuilderContent() {
                               </span>
                             )}
                             <div style={{ width: "100%", height: "54%" }}>
-                              <ImageBlock p={p} h="100%" />
+                              <ImageBlock src={dv.img} h="100%" />
                             </div>
                             <div style={{ marginTop: "auto", paddingTop: "13px", pointerEvents: "none" }}>
                               <div style={{ fontWeight: 600, fontSize: "16px", lineHeight: 1.25 }}>{p.title}</div>
-                              {p.pcfQuality?.value && (
-                                <div style={{ fontFamily: MONO, fontSize: "11px", color: COLORS.textMuted, marginTop: "5px" }}>
-                                  {p.pcfQuality.value}
-                                </div>
-                              )}
                               <div style={{ fontWeight: 700, fontSize: "22px", color: "#fff", marginTop: "10px", letterSpacing: "-.3px" }}>
-                                €{Number(p.variants.edges[0].node.price.amount).toFixed(2)}
+                                €{dv.price.toFixed(2)}
                               </div>
                             </div>
                             {isActive && (
@@ -1141,6 +1151,7 @@ function BuilderContent() {
                       {currentProducts.map((p, idx) => {
                         const selected = idx === activeIndex;
                         const badgeStyle = p.pcfBadge?.value ? getBadgeStyle(p.pcfBadge.value) : null;
+                        const dv = displayVariant(p, selected);
                         return (
                           <div
                             key={p.id}
@@ -1161,7 +1172,7 @@ function BuilderContent() {
                             }}
                           >
                             <div style={{ position: "relative", width: "100%", aspectRatio: "4/3", marginBottom: "14px" }}>
-                              <ImageBlock p={p} h="100%" />
+                              <ImageBlock src={dv.img} h="100%" />
                               {p.pcfBadge?.value && badgeStyle && (
                                 <span
                                   style={{
@@ -1195,13 +1206,8 @@ function BuilderContent() {
                               )}
                             </div>
                             <div style={{ fontWeight: 600, fontSize: "14px", lineHeight: 1.25 }}>{p.title}</div>
-                            {p.pcfQuality?.value && (
-                              <div style={{ fontFamily: MONO, fontSize: "10.5px", color: COLORS.textMuted, marginTop: "6px" }}>
-                                {p.pcfQuality.value}
-                              </div>
-                            )}
                             <div style={{ fontWeight: 700, fontSize: "18px", marginTop: "10px", letterSpacing: "-.3px" }}>
-                              €{Number(p.variants.edges[0].node.price.amount).toFixed(2)}
+                              €{dv.price.toFixed(2)}
                             </div>
                           </div>
                         );
@@ -1213,9 +1219,7 @@ function BuilderContent() {
                   <div
                     style={{
                       display: "flex",
-                      flexWrap: "wrap",
-                      alignItems: "center",
-                      justifyContent: "space-between",
+                      flexDirection: "column",
                       gap: "16px",
                       marginTop: "22px",
                       padding: "18px 22px",
@@ -1224,46 +1228,81 @@ function BuilderContent() {
                       borderRadius: "16px",
                     }}
                   >
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontFamily: MONO, fontSize: "10px", color: COLORS.textMuted, letterSpacing: "2px" }}>
-                        ODABRANO
+                    <div
+                      style={{
+                        display: "flex",
+                        flexWrap: "wrap",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: "16px",
+                      }}
+                    >
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontFamily: MONO, fontSize: "10px", color: COLORS.textMuted, letterSpacing: "2px" }}>
+                          ODABRANO
+                        </div>
+                        <div style={{ fontWeight: 600, fontSize: "17px", marginTop: "4px" }}>{activeProduct?.title}</div>
                       </div>
-                      <div style={{ fontWeight: 600, fontSize: "17px", marginTop: "4px" }}>{activeProduct?.title}</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
+                        <div style={{ fontWeight: 700, fontSize: "24px", letterSpacing: "-.5px" }}>
+                          €{activePrice.toFixed(2)}
+                        </div>
+                        <button
+                          onClick={() => activeProduct && handleSelection(currentStep, activeProduct)}
+                          style={primaryBtnStyle}
+                        >
+                          Odaberi i nastavi →
+                        </button>
+                      </div>
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
-                      {activeProduct && activeProduct.variants.edges.length > 1 && (
-                        <select
-                          value={selectedVarId}
-                          onChange={(e) => setSelectedVarId(e.target.value)}
+
+                    {activeProduct && activeProduct.variants.edges.length > 1 && (
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          flexWrap: "wrap",
+                          gap: "8px",
+                          paddingTop: "14px",
+                          borderTop: `1px solid ${COLORS.border}`,
+                        }}
+                      >
+                        <span
                           style={{
-                            padding: "11px 14px",
-                            borderRadius: "10px",
-                            border: `1px solid ${COLORS.border}`,
-                            background: COLORS.bgDark,
-                            color: "#fff",
-                            fontSize: "14px",
-                            outline: "none",
-                            cursor: "pointer",
-                            fontFamily: FONT,
+                            fontFamily: MONO,
+                            fontSize: "10px",
+                            letterSpacing: "1.5px",
+                            color: COLORS.textMuted,
+                            marginRight: "4px",
                           }}
                         >
-                          {activeProduct.variants.edges.map((v: any) => (
-                            <option key={v.node.id} value={v.node.id}>
+                          VARIJANTA
+                        </span>
+                        {activeProduct.variants.edges.map((v: any) => {
+                          const on = v.node.id === selectedVarId;
+                          return (
+                            <button
+                              key={v.node.id}
+                              onClick={() => setSelectedVarId(v.node.id)}
+                              style={{
+                                padding: "8px 14px",
+                                borderRadius: "10px",
+                                cursor: "pointer",
+                                fontFamily: FONT,
+                                fontWeight: 600,
+                                fontSize: "13px",
+                                transition: "all .15s",
+                                background: on ? "rgba(216,31,216,.14)" : COLORS.bgDark,
+                                border: on ? "1px solid rgba(216,31,216,.7)" : `1px solid ${COLORS.border}`,
+                                color: on ? "#fff" : COLORS.textMuted,
+                              }}
+                            >
                               {v.node.title !== "Default Title" ? v.node.title : "Standard"}
-                            </option>
-                          ))}
-                        </select>
-                      )}
-                      <div style={{ fontWeight: 700, fontSize: "24px", letterSpacing: "-.5px" }}>
-                        €{activePrice.toFixed(2)}
+                            </button>
+                          );
+                        })}
                       </div>
-                      <button
-                        onClick={() => activeProduct && handleSelection(currentStep, activeProduct)}
-                        style={primaryBtnStyle}
-                      >
-                        Odaberi i nastavi →
-                      </button>
-                    </div>
+                    )}
                   </div>
                 </div>
               ) : (
