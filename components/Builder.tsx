@@ -30,6 +30,8 @@ type ProductNode = {
   pcfSupportedFormFactors?: { value: string };
   pcfMaxGpuLength?: { value: string };
   pcfMaxCoolerHeight?: { value: string };
+  pcfRadiatorSize?: { value: string };
+  pcfSupportedRadiators?: { value: string };
   pcfWattage?: { value: string };
   pcfCoolerHeight?: { value: string };
   pcfMaxTdp?: { value: string };
@@ -339,6 +341,8 @@ function BuilderContent() {
                   pcfMaxGpuLength: metafield(namespace: "pcf", key: "max_gpu_length") { value }
                   pcfCoolerHeight: metafield(namespace: "pcf", key: "cooler_height") { value }
                   pcfMaxCoolerHeight: metafield(namespace: "pcf", key: "max_cooler_height") { value }
+                  pcfRadiatorSize: metafield(namespace: "pcf", key: "radiator_size") { value }
+                  pcfSupportedRadiators: metafield(namespace: "pcf", key: "supported_radiators") { value }
                   pcfWattage: metafield(namespace: "pcf", key: "wattage") { value }
                   pcfQuality: metafield(namespace: "pcf", key: "quality") { value }
                   pcfBadge: metafield(namespace: "pcf", key: "badge") { value }
@@ -474,6 +478,16 @@ function BuilderContent() {
         const coolerHeight = Number(p.pcfCoolerHeight?.value || 0);
         const caseMaxCoolerHeight = Number(pcCase?.pcfMaxCoolerHeight?.value || 0);
         if (coolerHeight > 0 && caseMaxCoolerHeight > 0 && coolerHeight > caseMaxCoolerHeight) {
+          return false;
+        }
+
+        // AIO radiator must be one the case can mount (skip if either value is missing)
+        const radSize = (p.pcfRadiatorSize?.value || "").trim();
+        const caseRads = (pcCase?.pcfSupportedRadiators?.value || "")
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
+        if (radSize && caseRads.length > 0 && !caseRads.includes(radSize)) {
           return false;
         }
         return true;
