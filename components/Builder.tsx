@@ -173,7 +173,8 @@ function BuilderContent() {
   const [helpOpen, setHelpOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
   const [contactForm, setContactForm] = useState({ name: "", email: "", phone: "", budget: "", message: "" });
-  const [contactState, setContactState] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [contactState, setContactState] = useState<"idle" | "sending" | "sent" | "invalid" | "error">("idle");
+  const [contactError, setContactError] = useState("");
 
   const [brand, setBrand] = useState<string | null>(null);
   const [cpu, setCpu] = useState<ProductNode | null>(null);
@@ -717,10 +718,11 @@ function BuilderContent() {
 
   const handleContactSubmit = async () => {
     if (!contactForm.name.trim() || !contactForm.email.trim() || !contactForm.message.trim()) {
-      setContactState("error");
+      setContactState("invalid");
       return;
     }
     setContactState("sending");
+    setContactError("");
 
     // include the current build so the email has context about what they were looking at
     const parts = [cpu, mb, ram, gpu, gpu2, ssd, ssd2, hdd, hdd2, pcCase, psu, cooler, os];
@@ -744,9 +746,19 @@ function BuilderContent() {
         setContactState("sent");
         setContactForm({ name: "", email: "", phone: "", budget: "", message: "" });
       } else {
+        // surface the real reason (status + any message the route returned)
+        let detail = `HTTP ${res.status}`;
+        try {
+          const body = await res.json();
+          if (body?.error) detail += ` — ${body.error}`;
+        } catch {
+          /* response wasn't JSON (e.g. 404 HTML page = route not found) */
+        }
+        setContactError(detail);
         setContactState("error");
       }
-    } catch {
+    } catch (err: any) {
+      setContactError(err?.message || "Network error (poslužitelj nedostupan)");
       setContactState("error");
     }
   };
@@ -2015,9 +2027,19 @@ function BuilderContent() {
                   />
                 </div>
 
-                {contactState === "error" && (
+                {contactState === "invalid" && (
                   <div style={{ marginTop: "12px", color: "#ff6a82", fontSize: "13px" }}>
-                    Molimo ispunite ime, e-mail i poruku, te pokušajte ponovno.
+                    Molimo ispunite ime, e-mail i poruku.
+                  </div>
+                )}
+                {contactState === "error" && (
+                  <div style={{ marginTop: "12px", color: "#ff6a82", fontSize: "13px", lineHeight: 1.5 }}>
+                    Slanje nije uspjelo — pokušajte ponovno kasnije ili nam pišite izravno na info@racunalo.hr.
+                    {contactError && (
+                      <span style={{ display: "block", marginTop: "4px", color: COLORS.textFaint, fontSize: "11px", fontFamily: MONO }}>
+                        ({contactError})
+                      </span>
+                    )}
                   </div>
                 )}
 
