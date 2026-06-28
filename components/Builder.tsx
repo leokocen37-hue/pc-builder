@@ -37,6 +37,7 @@ type ProductNode = {
   pcfMaxTdp?: { value: string };
   pcfQuality?: { value: string };
   pcfBadge?: { value: string };
+  pcfBadgeColor?: { value: string };
 };
 
 type Step =
@@ -225,21 +226,34 @@ function BuilderContent() {
     return 0;
   };
 
-  const getBadgeStyle = (badgeText: string) => {
-    const t = badgeText.toLowerCase();
-    if (t.includes("ultimativni") || t.includes("apsolutni") || t.includes("vrh")) {
-      return { bg: "linear-gradient(135deg,#d81fd8,#7b2ff7)", color: "#fff", glow: "rgba(216,31,216,.5)" };
-    }
-    if (t.includes("best buy") || t.includes("kralj")) {
-      return { bg: "linear-gradient(135deg,#ff9a3d,#ff5e00)", color: "#1a0d00", glow: "rgba(255,110,0,.4)" };
-    }
-    if (t.includes("standard") || t.includes("zlatna")) {
-      return { bg: "linear-gradient(135deg,#ffd24a,#e0a400)", color: "#1a1400", glow: "rgba(224,164,0,.35)" };
-    }
-    if (t.includes("premium") || t.includes("zvijer")) {
-      return { bg: "linear-gradient(135deg,#9aa3b5,#5b6678)", color: "#fff", glow: "rgba(120,130,150,.35)" };
-    }
-    return { bg: "linear-gradient(135deg,#3da5ff,#1f6fe0)", color: "#fff", glow: "rgba(31,111,224,.4)" };
+  // Badge colors are chosen per-product via the pcf.badge_color metafield (a number).
+  // Map a number -> gradient. Add more entries here if you add more colors.
+  const BADGE_COLORS: Record<string, { bg: string; color: string; glow: string }> = {
+    "1": { bg: "linear-gradient(135deg,#d81fd8,#7b2ff7)", color: "#fff", glow: "rgba(216,31,216,.5)" }, // purple/magenta
+    "2": { bg: "linear-gradient(135deg,#ff9a3d,#ff5e00)", color: "#1a0d00", glow: "rgba(255,110,0,.4)" }, // orange
+    "3": { bg: "linear-gradient(135deg,#ffd24a,#e0a400)", color: "#1a1400", glow: "rgba(224,164,0,.35)" }, // gold
+    "4": { bg: "linear-gradient(135deg,#9aa3b5,#5b6678)", color: "#fff", glow: "rgba(120,130,150,.35)" }, // silver/grey
+    "5": { bg: "linear-gradient(135deg,#3da5ff,#1f6fe0)", color: "#fff", glow: "rgba(31,111,224,.4)" }, // blue
+    "6": { bg: "linear-gradient(135deg,#27c08a,#0e8f63)", color: "#fff", glow: "rgba(39,192,138,.4)" }, // green
+    "7": { bg: "linear-gradient(135deg,#ff5e7a,#d61f45)", color: "#fff", glow: "rgba(255,94,122,.4)" }, // red/pink
+    "8": { bg: "linear-gradient(135deg,#22d3ee,#0891b2)", color: "#06222a", glow: "rgba(34,211,238,.4)" }, // teal/cyan
+  };
+  const DEFAULT_BADGE = BADGE_COLORS["5"]; // blue
+
+  // Keyword fallback, used only when a product has no badge_color number set.
+  const badgeStyleFromText = (badgeText: string) => {
+    const t = (badgeText || "").toLowerCase();
+    if (t.includes("ultimativni") || t.includes("apsolutni") || t.includes("vrh")) return BADGE_COLORS["1"];
+    if (t.includes("best buy") || t.includes("kralj")) return BADGE_COLORS["2"];
+    if (t.includes("standard") || t.includes("zlatna")) return BADGE_COLORS["3"];
+    if (t.includes("premium") || t.includes("zvijer")) return BADGE_COLORS["4"];
+    return DEFAULT_BADGE;
+  };
+
+  const getBadgeStyle = (badgeText: string, colorNum?: string) => {
+    const key = (colorNum || "").trim();
+    if (key && BADGE_COLORS[key]) return BADGE_COLORS[key];
+    return badgeStyleFromText(badgeText);
   };
 
   const checkBottleneck = () => {
@@ -346,6 +360,7 @@ function BuilderContent() {
                   pcfWattage: metafield(namespace: "pcf", key: "wattage") { value }
                   pcfQuality: metafield(namespace: "pcf", key: "quality") { value }
                   pcfBadge: metafield(namespace: "pcf", key: "badge") { value }
+                  pcfBadgeColor: metafield(namespace: "pcf", key: "badge_color") { value }
                 }
               }
             }
@@ -1152,7 +1167,7 @@ function BuilderContent() {
                         const nearest = Math.min(Math.abs(baseOffset), Math.abs(exactOffset));
                         if (nearest > 3.2) return <div key={p.id} style={{ display: "none" }} />;
 
-                        const badgeStyle = p.pcfBadge?.value ? getBadgeStyle(p.pcfBadge.value) : null;
+                        const badgeStyle = p.pcfBadge?.value ? getBadgeStyle(p.pcfBadge.value, p.pcfBadgeColor?.value) : null;
                         const dv = displayVariant(p, idx === activeIndex);
                         const cardW = isMobile ? 196 : 284;
                         const cardH = isMobile ? 256 : 360;
@@ -1250,7 +1265,7 @@ function BuilderContent() {
                     >
                       {currentProducts.map((p, idx) => {
                         const selected = idx === activeIndex;
-                        const badgeStyle = p.pcfBadge?.value ? getBadgeStyle(p.pcfBadge.value) : null;
+                        const badgeStyle = p.pcfBadge?.value ? getBadgeStyle(p.pcfBadge.value, p.pcfBadgeColor?.value) : null;
                         const dv = displayVariant(p, selected);
                         return (
                           <div
