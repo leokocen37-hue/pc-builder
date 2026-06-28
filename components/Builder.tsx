@@ -128,6 +128,7 @@ const STEP_HELP: Record<string, string> = {
   gpu: "Grafička kartica crta sliku i najviše utječe na igre. Varijante dijele isti čip, a razlikuju se po proizvođaču i hlađenju. Prvi odabir je naša preporuka.",
   psu: "Napajanje opskrbljuje cijelo računalo strujom. Veći broj W (vati) znači više snage u rezervi; konfigurator već pazi da bude dovoljno za vaše komponente. Prvi odabir je naša preporuka.",
   cooler: "Hladnjak drži procesor na sigurnoj temperaturi da radi mirno i tiho. Sve ponuđene opcije pristaju na vaš procesor i kućište. Prvi odabir je naša preporuka.",
+  os: "Svako računalo isporučujemo sa instaliranim i temeljito testiranim sustavom Windows. Windows 11 Home/Pro dolaze s aktivnom licencom. Ako odaberete „Bez operativnog sustava\u201d, i dalje instaliramo Windows kako bismo računalo provjerili i testirali, ali bez aktivirane licence — aktivirate ga vlastitim ključem. Računalo nikada ne šaljemo neispravno ili neprovjereno.",
 };
 
 // --- FONTS ---
@@ -170,6 +171,9 @@ function BuilderContent() {
   const [viewMode, setViewMode] = useState<"coverflow" | "grid">("coverflow");
   const [shareCopied, setShareCopied] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
+  const [contactForm, setContactForm] = useState({ name: "", email: "", phone: "", budget: "", message: "" });
+  const [contactState, setContactState] = useState<"idle" | "sending" | "sent" | "error">("idle");
 
   const [brand, setBrand] = useState<string | null>(null);
   const [cpu, setCpu] = useState<ProductNode | null>(null);
@@ -711,6 +715,42 @@ function BuilderContent() {
     return isReviewStep ? compPrice + ASSEMBLY_FEE : compPrice;
   };
 
+  const handleContactSubmit = async () => {
+    if (!contactForm.name.trim() || !contactForm.email.trim() || !contactForm.message.trim()) {
+      setContactState("error");
+      return;
+    }
+    setContactState("sending");
+
+    // include the current build so the email has context about what they were looking at
+    const parts = [cpu, mb, ram, gpu, gpu2, ssd, ssd2, hdd, hdd2, pcCase, psu, cooler, os];
+    const buildSummary = parts
+      .filter(Boolean)
+      .map((p) => p?.title)
+      .join(", ");
+
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...contactForm,
+          currentBuild: buildSummary || "(nije započeta konfiguracija)",
+          buildTotal: currentTotal().toFixed(2),
+          pageUrl: typeof window !== "undefined" ? window.location.href : "",
+        }),
+      });
+      if (res.ok) {
+        setContactState("sent");
+        setContactForm({ name: "", email: "", phone: "", budget: "", message: "" });
+      } else {
+        setContactState("error");
+      }
+    } catch {
+      setContactState("error");
+    }
+  };
+
   const handleCheckout = async () => {
     if (!buildComplete) return;
     setIsProcessing(true);
@@ -1125,6 +1165,26 @@ function BuilderContent() {
                       </button>
                     </div>
                   </div>
+
+                  {currentStep === "os" && (
+                    <div
+                      style={{
+                        marginBottom: "22px",
+                        padding: "14px 16px",
+                        background: "rgba(216,31,216,.06)",
+                        border: "1px solid rgba(216,31,216,.22)",
+                        borderRadius: "12px",
+                        fontSize: "13px",
+                        lineHeight: 1.6,
+                        color: COLORS.textMuted,
+                      }}
+                    >
+                      <strong style={{ color: COLORS.textMain }}>Napomena:</strong> svako računalo isporučujemo s
+                      instaliranim i testiranim sustavom Windows. „Bez operativnog sustava&#8221; znači da Windows
+                      instaliramo radi provjere i testiranja, ali <strong style={{ color: COLORS.textMain }}>bez aktivirane
+                      licence</strong> — aktivirate ga vlastitim ključem. Računalo nikada ne šaljemo neprovjereno.
+                    </div>
+                  )}
 
                   {/* COVERFLOW */}
                   {viewMode === "coverflow" && (
@@ -1815,29 +1875,164 @@ function BuilderContent() {
                 style={{
                   marginTop: "22px",
                   textAlign: "center",
-                  fontSize: "12px",
-                  color: COLORS.textFaint,
+                  fontSize: "12.5px",
+                  color: COLORS.textMuted,
                   lineHeight: 1.6,
-                  padding: "15px",
+                  padding: "16px",
                   background: "rgba(255,255,255,.02)",
                   borderRadius: "11px",
                 }}
               >
-                Želite još prilagođenije računalo?
+                <div style={{ fontWeight: 700, color: COLORS.textMain, fontSize: "14px", marginBottom: "4px" }}>
+                  Trebate nešto izvan ovih komponenti?
+                </div>
+                Custom vodeno hlađenje, radne stanice, server, tihi build, poseban dizajn ili savjet pri odabiru —
+                recite nam svoju ideju i sastavit ćemo je baš po vašoj mjeri.
                 <br />
-                <a
-                  href="https://racunalo.hr/pages/contact"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ color: COLORS.accent, fontWeight: 600, textDecoration: "none", display: "inline-block", marginTop: "4px" }}
+                <button
+                  onClick={() => {
+                    setContactState("idle");
+                    setContactOpen(true);
+                  }}
+                  style={{
+                    color: COLORS.accent,
+                    fontWeight: 700,
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    fontFamily: FONT,
+                    fontSize: "13px",
+                    marginTop: "8px",
+                    padding: 0,
+                  }}
                 >
                   Kontaktirajte nas →
-                </a>
+                </button>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* === CONTACT FORM MODAL === */}
+      {contactOpen && (
+        <div
+          onClick={() => setContactOpen(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 1000,
+            background: "rgba(2,3,6,.72)",
+            backdropFilter: "blur(4px)",
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "center",
+            padding: isMobile ? "16px" : "48px 16px",
+            overflowY: "auto",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "100%",
+              maxWidth: "520px",
+              background: COLORS.bgCard,
+              border: `1px solid ${COLORS.border}`,
+              borderRadius: "18px",
+              padding: isMobile ? "22px" : "30px",
+              boxShadow: "0 30px 80px -20px rgba(0,0,0,.8)",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "16px", marginBottom: "6px" }}>
+              <div>
+                <div style={{ fontFamily: MONO, fontSize: "11px", letterSpacing: "2.5px", color: COLORS.accent, marginBottom: "8px" }}>
+                  UPIT ZA PRILAGODBU
+                </div>
+                <h2 style={{ margin: 0, fontSize: "24px", fontWeight: 700, letterSpacing: "-.5px" }}>Recite nam svoju ideju</h2>
+              </div>
+              <button
+                onClick={() => setContactOpen(false)}
+                style={{ background: "none", border: "none", color: COLORS.textMuted, fontSize: "24px", cursor: "pointer", lineHeight: 1, padding: "2px 6px" }}
+                aria-label="Zatvori"
+              >
+                ✕
+              </button>
+            </div>
+
+            {contactState === "sent" ? (
+              <div style={{ padding: "26px 6px", textAlign: "center" }}>
+                <div style={{ fontSize: "40px", marginBottom: "10px" }}>✓</div>
+                <div style={{ fontSize: "18px", fontWeight: 700, marginBottom: "6px" }}>Poruka poslana!</div>
+                <div style={{ color: COLORS.textMuted, fontSize: "14px", lineHeight: 1.6 }}>
+                  Javit ćemo vam se na e-mail u najkraćem mogućem roku.
+                </div>
+                <button onClick={() => setContactOpen(false)} style={{ ...primaryBtnStyle, marginTop: "20px" }}>
+                  U redu
+                </button>
+              </div>
+            ) : (
+              <>
+                <p style={{ color: COLORS.textMuted, fontSize: "13.5px", lineHeight: 1.6, marginTop: "10px", marginBottom: "20px" }}>
+                  Opišite što trebate — namjenu, željeni proračun, posebne želje (vodeno hlađenje, tišina, boje, radna
+                  stanica…). Ako ste već nešto složili u konfiguratoru, automatski to šaljemo uz poruku.
+                </p>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+                    <input
+                      style={{ ...contactInput, flex: "1 1 180px" }}
+                      placeholder="Ime i prezime *"
+                      value={contactForm.name}
+                      onChange={(e) => setContactForm((f) => ({ ...f, name: e.target.value }))}
+                    />
+                    <input
+                      style={{ ...contactInput, flex: "1 1 180px" }}
+                      type="email"
+                      placeholder="E-mail *"
+                      value={contactForm.email}
+                      onChange={(e) => setContactForm((f) => ({ ...f, email: e.target.value }))}
+                    />
+                  </div>
+                  <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+                    <input
+                      style={{ ...contactInput, flex: "1 1 180px" }}
+                      placeholder="Telefon (nije obavezno)"
+                      value={contactForm.phone}
+                      onChange={(e) => setContactForm((f) => ({ ...f, phone: e.target.value }))}
+                    />
+                    <input
+                      style={{ ...contactInput, flex: "1 1 180px" }}
+                      placeholder="Okvirni proračun €"
+                      value={contactForm.budget}
+                      onChange={(e) => setContactForm((f) => ({ ...f, budget: e.target.value }))}
+                    />
+                  </div>
+                  <textarea
+                    style={{ ...contactInput, minHeight: "120px", resize: "vertical" }}
+                    placeholder="Vaše potrebe i želje *"
+                    value={contactForm.message}
+                    onChange={(e) => setContactForm((f) => ({ ...f, message: e.target.value }))}
+                  />
+                </div>
+
+                {contactState === "error" && (
+                  <div style={{ marginTop: "12px", color: "#ff6a82", fontSize: "13px" }}>
+                    Molimo ispunite ime, e-mail i poruku, te pokušajte ponovno.
+                  </div>
+                )}
+
+                <button
+                  onClick={handleContactSubmit}
+                  disabled={contactState === "sending"}
+                  style={{ ...checkoutBtnStyle, marginTop: "18px", opacity: contactState === "sending" ? 0.7 : 1 }}
+                >
+                  {contactState === "sending" ? "Šaljem…" : "Pošalji upit"}
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -2091,8 +2286,20 @@ const warningStyle: CSSProperties = {
   lineHeight: 1.4,
 };
 
-const checkoutBtnStyle: CSSProperties = {
+const contactInput: CSSProperties = {
   width: "100%",
+  padding: "12px 14px",
+  background: "#0b0d14",
+  border: "1px solid rgba(255,255,255,.10)",
+  borderRadius: "10px",
+  color: "#f3f4f8",
+  fontFamily: "'Space Grotesk', sans-serif",
+  fontSize: "14px",
+  outline: "none",
+  boxSizing: "border-box",
+};
+
+const checkoutBtnStyle: CSSProperties = {  width: "100%",
   padding: "17px",
   marginTop: "22px",
   borderRadius: "12px",
