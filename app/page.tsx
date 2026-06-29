@@ -121,21 +121,21 @@ export default function HomePage() {
         <div className="rs-wrap">
           <div className="rs-head">
             <div className="rs-kicker">Trgovina</div>
-            <h2>Sve za tvoje računalo</h2>
-            <p>Periferija, monitori i konzole — uskoro u ponudi.</p>
+            <h2>Sve za tvoj setup</h2>
+            <p>Periferija i PlayStation — uz tvoje računalo.</p>
           </div>
           <div className="rs-cats">
             {[
-              { label: "Konzole", sub: "PlayStation, Xbox", handle: "konzole", g: "linear-gradient(135deg,#3a1f7a,#7b2ff7)" },
-              { label: "Monitori", sub: "Gaming & uredski", handle: "monitori", g: "linear-gradient(135deg,#0e5a8a,#22a3d8)" },
-              { label: "Tipkovnice", sub: "Mehaničke & RGB", handle: "tipkovnice", g: "linear-gradient(135deg,#8a0e6a,#d81fd8)" },
-              { label: "Miševi", sub: "Gaming & precizni", handle: "misevi", g: "linear-gradient(135deg,#0e7a52,#27c08a)" },
+              { label: "PlayStation", sub: "Konzole i dodaci", href: "/playstation", g: "linear-gradient(135deg,#1f3a8a,#2f6ff7)" },
+              { label: "Monitori", sub: "Gaming & uredski", href: "/monitori", g: "linear-gradient(135deg,#0e5a8a,#22a3d8)" },
+              { label: "Tipkovnice", sub: "Mehaničke & RGB", href: "/tipkovnice", g: "linear-gradient(135deg,#8a0e6a,#d81fd8)" },
+              { label: "Miševi", sub: "Gaming & precizni", href: "/misevi", g: "linear-gradient(135deg,#0e7a52,#27c08a)" },
             ].map((c) => (
-              <a key={c.handle} href={`https://racunalo.hr/collections/${c.handle}`} className="rs-cat" style={{ background: c.g }}>
+              <Link key={c.href} href={c.href} className="rs-cat" style={{ background: c.g }}>
                 <span className="rs-cat-label">{c.label}</span>
                 <span className="rs-cat-sub">{c.sub}</span>
                 <span className="rs-cat-link">Pogledaj →</span>
-              </a>
+              </Link>
             ))}
           </div>
         </div>

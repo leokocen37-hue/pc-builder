@@ -28,21 +28,27 @@ const QUERY = `
   }
 `;
 
-// route -> Shopify collection handle(s). Edit if your collection handles differ.
-const TABS = [
+// default tab set (prebuilt PCs). Pass your own `tabs` for other sections (e.g. Periferija).
+const PC_TABS = [
   { label: "Sva računala", href: "/gotova-racunala" },
   { label: "Gaming računala", href: "/gaming-racunala" },
   { label: "Radne stanice", href: "/radne-stanice" },
 ];
 
+type Tab = { label: string; href: string };
+
 export default function CollectionView({
   heading,
   activeHref,
   collectionHandles,
+  kicker = "Gotova računala",
+  tabs = PC_TABS,
 }: {
   heading: string;
   activeHref: string;
   collectionHandles: string[]; // one or more Shopify collection handles to merge
+  kicker?: string;
+  tabs?: Tab[];
 }) {
   const [products, setProducts] = useState<ProductNode[]>([]);
   const [loading, setLoading] = useState(true);
@@ -78,12 +84,12 @@ export default function CollectionView({
       <section className="rs-coll">
         <div className="rs-wrap">
           <div className="rs-coll-head">
-            <div className="rs-kicker">Gotova računala</div>
+            <div className="rs-kicker">{kicker}</div>
             <h1>{heading}</h1>
           </div>
 
           <div className="rs-tabs">
-            {TABS.map((t) => (
+            {tabs.map((t) => (
               <Link key={t.href} href={t.href} className={`rs-tab ${t.href === activeHref ? "active" : ""}`}>
                 {t.label}
               </Link>

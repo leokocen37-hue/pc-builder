@@ -6,6 +6,7 @@ import { useCart } from "@/lib/cart";
 
 export default function SiteHeader() {
   const { count, setOpen } = useCart();
+
   return (
     <>
       <div className="rs-announce">
@@ -18,7 +19,8 @@ export default function SiteHeader() {
             <Link href="/">Početna</Link>
             <Link href="/konfigurator">Konfigurator</Link>
             <Link href="/gotova-racunala">Gotova računala</Link>
-            <a href="/#kategorije">Periferija</a>
+            <Link href="/periferija">Periferija</Link>
+            <Link href="/playstation">PlayStation</Link>
             <a href="/#kontakt">Kontakt</a>
           </nav>
           <div className="rs-nav-right">
