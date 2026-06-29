@@ -42,7 +42,7 @@ const QUERY = `
 export default function ProductPage() {
   const params = useParams();
   const handle = Array.isArray(params.handle) ? params.handle[0] : params.handle;
-  const { addItem, busy } = useCart();
+  const { addProduct } = useCart();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
@@ -148,10 +148,20 @@ export default function ProductPage() {
             <button
               className="rs-btn"
               style={{ width: "100%", justifyContent: "center" }}
-              disabled={busy || !selected?.availableForSale}
-              onClick={() => selected && addItem(selected.id, qty)}
+              disabled={!selected?.availableForSale}
+              onClick={() =>
+                selected &&
+                addProduct({
+                  variantId: selected.id,
+                  title: product.title,
+                  price: Number(selected.price.amount),
+                  image: selected.image?.url || product.featuredImage?.url || undefined,
+                  variantTitle: selected.title !== "Default Title" ? selected.title : undefined,
+                  quantity: qty,
+                })
+              }
             >
-              {busy ? "Dodajem…" : selected?.availableForSale ? "Dodaj u košaricu" : "Nedostupno"}
+              {selected?.availableForSale ? "Dodaj u košaricu" : "Nedostupno"}
             </button>
 
             {product.descriptionHtml && (

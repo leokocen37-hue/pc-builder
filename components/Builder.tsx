@@ -1,6 +1,7 @@
 "use client";
 import { CSSProperties, useEffect, useState, Suspense, useRef } from "react";
 import { shopifyFetch } from "@/lib/shopify";
+import { useCart } from "@/lib/cart";
 import { useSearchParams, useRouter } from "next/navigation";
 
 // --- TYPES ---
@@ -160,7 +161,7 @@ function BuilderContent() {
   const [stepIndex, setStepIndex] = useState(0);
   const [products, setProducts] = useState<ProductNode[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const { addCustomBuild } = useCart();
   const [isMobile, setIsMobile] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -765,8 +766,8 @@ function BuilderContent() {
 
   const handleCheckout = async () => {
     if (!buildComplete) return;
-    setIsProcessing(true);
 
+    // one clean custom line at the configurator's exact price (assembly already included)
     const parts = [cpu, mb, ram, gpu, gpu2, ssd, ssd2, hdd, hdd2, pcCase, psu, cooler, os];
     const summary = parts
       .filter(Boolean)
@@ -777,28 +778,7 @@ function BuilderContent() {
       })
       .join(", ");
 
-    try {
-      const res = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          totalPrice: currentTotal(),
-          summary: summary,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (data.draftOrder?.invoiceUrl) {
-        window.location.href = data.draftOrder.invoiceUrl;
-      } else {
-        alert("Dogodila se greška pri kreiranju narudžbe.");
-        setIsProcessing(false);
-      }
-    } catch (error) {
-      alert("Serverska greška.");
-      setIsProcessing(false);
-    }
+    addCustomBuild({ title: "Custom PC Konfiguracija", price: currentTotal(), summary });
   };
 
   // A PC is only orderable when every required part is chosen.
@@ -987,47 +967,6 @@ function BuilderContent() {
   return (
     <div style={containerStyle}>
       <div style={{ maxWidth: "1340px", margin: "0 auto" }}>
-        {/* === TOP BRAND BAR === */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: "20px",
-            marginBottom: "22px",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "baseline", gap: "13px" }}>
-            <div
-              onClick={resetBuild}
-              title="Početak"
-              style={{
-                fontWeight: 700,
-                fontSize: isMobile ? "18px" : "21px",
-                letterSpacing: ".4px",
-                cursor: "pointer",
-                userSelect: "none",
-              }}
-            >
-              RAČUNALO<span style={{ color: COLORS.accent }}>.HR</span>
-            </div>
-            <div
-              style={{
-                fontFamily: MONO,
-                fontSize: "10px",
-                letterSpacing: "2.5px",
-                color: COLORS.textFaint,
-                textTransform: "uppercase",
-              }}
-            >
-              PC Builder
-            </div>
-          </div>
-          <div style={{ fontFamily: MONO, fontSize: "11px", color: COLORS.textMuted, letterSpacing: "2px" }}>
-            KONFIGURATOR
-          </div>
-        </div>
-
         {/* === STEP RAIL === */}
         {renderRail()}
 
@@ -1837,7 +1776,7 @@ function BuilderContent() {
               {isReviewStep ? (
                 <>
                   <button
-                    disabled={isProcessing || !buildComplete}
+                    disabled={!buildComplete}
                     onClick={handleCheckout}
                     style={{
                       ...checkoutBtnStyle,
@@ -1851,7 +1790,7 @@ function BuilderContent() {
                           }),
                     }}
                   >
-                    🛒 {isProcessing ? "Obrađujem…" : "Dodaj u košaricu"}
+                    🛒 Dodaj u košaricu
                   </button>
                   {!buildComplete && (
                     <div

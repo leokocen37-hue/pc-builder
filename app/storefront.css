@@ -203,3 +203,16 @@
 .rs-cart-sub b{font-size:20px}
 .rs-cart-empty{text-align:center;color:var(--faint);padding:60px 20px;font-size:14px}
 .rs-cart-note{text-align:center;font-size:11px;color:var(--faint);margin-top:10px}
+
+/* ===== cross-sell strip (in cart drawer) ===== */
+.rs-xsell{margin-top:20px;padding-top:18px;border-top:1px dashed var(--line2)}
+.rs-xsell-head{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:12px}
+.rs-xsell-row{display:flex;gap:10px;overflow-x:auto;padding-bottom:6px}
+.rs-xsell-card{flex:0 0 120px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px}
+.rs-xsell-img{aspect-ratio:1/1;background:#0a0c12;border-radius:8px;overflow:hidden;margin-bottom:8px}
+.rs-xsell-img img{width:100%;height:100%;object-fit:cover}
+.rs-xsell-title{font-size:11.5px;line-height:1.3;height:30px;overflow:hidden;margin-bottom:4px}
+.rs-xsell-price{font-size:13px;font-weight:700;margin-bottom:8px}
+.rs-xsell-add{width:100%;background:rgba(216,31,216,.15);border:1px solid var(--accent);color:#fff;border-radius:8px;padding:6px;font-size:12px;cursor:pointer;font-family:'Space Grotesk',sans-serif}
+.rs-xsell-add:hover{background:var(--accent)}
+.rs-xsell-add:disabled{opacity:.4;cursor:not-allowed}

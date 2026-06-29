@@ -1,69 +1,29 @@
-// → put this at:  lib/cart.tsx
+// → put this at:  lib/cart.tsx   (draft-order cart: custom builds + real products together)
 "use client";
 
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
-import { shopifyFetch } from "@/lib/shopify";
 
-/* ---- types ---- */
-type Money = { amount: string; currencyCode: string };
-export type CartLine = {
-  id: string;
-  quantity: number;
-  merchandise: {
-    id: string;
-    title: string;
-    price: Money;
-    product: { title: string; handle: string; featuredImage?: { url: string; altText?: string | null } | null };
-    selectedOptions: { name: string; value: string }[];
-  };
-};
-export type Cart = {
-  id: string;
-  checkoutUrl: string;
-  totalQuantity: number;
-  cost: { subtotalAmount: Money };
-  lines: { edges: { node: CartLine }[] };
-};
+/* ---- item types ---- */
+type CustomItem = { kind: "custom"; lineId: string; title: string; price: number; summary: string; quantity: number };
+type ProductItem = { kind: "product"; lineId: string; variantId: string; title: string; price: number; image?: string; variantTitle?: string; quantity: number };
+export type CartItem = CustomItem | ProductItem;
 
-const CART_FIELDS = `
-  id
-  checkoutUrl
-  totalQuantity
-  cost { subtotalAmount { amount currencyCode } }
-  lines(first: 50) {
-    edges { node {
-      id
-      quantity
-      merchandise {
-        ... on ProductVariant {
-          id
-          title
-          price { amount currencyCode }
-          product { title handle featuredImage { url altText } }
-          selectedOptions { name value }
-        }
-      }
-    }}
-  }
-`;
-
-const Q_GET = `query Cart($id: ID!) { cart(id: $id) { ${CART_FIELDS} } }`;
-const M_CREATE = `mutation Create($lines:[CartLineInput!]) { cartCreate(input:{lines:$lines}) { cart { ${CART_FIELDS} } userErrors { message } } }`;
-const M_ADD = `mutation Add($cartId:ID!,$lines:[CartLineInput!]!){ cartLinesAdd(cartId:$cartId,lines:$lines){ cart { ${CART_FIELDS} } userErrors { message } } }`;
-const M_UPDATE = `mutation Upd($cartId:ID!,$lines:[CartLineUpdateInput!]!){ cartLinesUpdate(cartId:$cartId,lines:$lines){ cart { ${CART_FIELDS} } userErrors { message } } }`;
-const M_REMOVE = `mutation Rem($cartId:ID!,$lineIds:[ID!]!){ cartLinesRemove(cartId:$cartId,lineIds:$lineIds){ cart { ${CART_FIELDS} } userErrors { message } } }`;
-
-const LS_KEY = "rs_cart_id";
+const LS = "rs_cart_v2";
+const uid = () => Math.random().toString(36).slice(2, 10);
 
 type Ctx = {
-  cart: Cart | null;
+  items: CartItem[];
   open: boolean;
-  busy: boolean;
-  setOpen: (o: boolean) => void;
-  addItem: (variantId: string, quantity?: number) => Promise<void>;
-  updateItem: (lineId: string, quantity: number) => Promise<void>;
-  removeItem: (lineId: string) => Promise<void>;
   count: number;
+  subtotal: number;
+  checkoutBusy: boolean;
+  setOpen: (o: boolean) => void;
+  addCustomBuild: (b: { title?: string; price: number; summary: string }) => void;
+  addProduct: (p: { variantId: string; title: string; price: number; image?: string; variantTitle?: string; quantity?: number }) => void;
+  updateQty: (lineId: string, quantity: number) => void;
+  removeItem: (lineId: string) => void;
+  clear: () => void;
+  checkout: () => Promise<void>;
 };
 
 const CartContext = createContext<Ctx | null>(null);
@@ -74,101 +34,83 @@ export const useCart = () => {
 };
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [cart, setCart] = useState<Cart | null>(null);
+  const [items, setItems] = useState<CartItem[]>([]);
   const [open, setOpen] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const [checkoutBusy, setCheckoutBusy] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
 
-  // load existing cart from localStorage on first mount
+  // load + persist
   useEffect(() => {
-    const id = typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null;
-    if (!id) return;
-    (async () => {
-      try {
-        const d = await shopifyFetch<{ cart: Cart | null }>(Q_GET, { id });
-        if (d.cart) setCart(d.cart);
-        else localStorage.removeItem(LS_KEY); // expired/invalid
-      } catch {
-        /* ignore */
-      }
-    })();
+    try { const raw = localStorage.getItem(LS); if (raw) setItems(JSON.parse(raw)); } catch {}
+    setHydrated(true);
+  }, []);
+  useEffect(() => {
+    if (hydrated) { try { localStorage.setItem(LS, JSON.stringify(items)); } catch {} }
+  }, [items, hydrated]);
+
+  const addCustomBuild = useCallback((b: { title?: string; price: number; summary: string }) => {
+    setItems((p) => [...p, { kind: "custom", lineId: uid(), title: b.title || "Custom PC Konfiguracija", price: b.price, summary: b.summary, quantity: 1 }]);
+    setOpen(true);
   }, []);
 
-  const persist = useCallback((c: Cart | null) => {
-    setCart(c);
-    if (typeof window !== "undefined") {
-      if (c?.id) localStorage.setItem(LS_KEY, c.id);
-      else localStorage.removeItem(LS_KEY);
+  const addProduct = useCallback(
+    (pr: { variantId: string; title: string; price: number; image?: string; variantTitle?: string; quantity?: number }) => {
+      const qty = pr.quantity ?? 1;
+      setItems((p) => {
+        const i = p.findIndex((x) => x.kind === "product" && x.variantId === pr.variantId);
+        if (i >= 0) { const c = [...p]; (c[i] as ProductItem).quantity += qty; return c; }
+        return [...p, { kind: "product", lineId: uid(), variantId: pr.variantId, title: pr.title, price: pr.price, image: pr.image, variantTitle: pr.variantTitle, quantity: qty }];
+      });
+      setOpen(true);
+    },
+    []
+  );
+
+  const updateQty = useCallback((lineId: string, quantity: number) => {
+    setItems((p) => (quantity <= 0 ? p.filter((x) => x.lineId !== lineId) : p.map((x) => (x.lineId === lineId ? { ...x, quantity } : x))));
+  }, []);
+  const removeItem = useCallback((lineId: string) => setItems((p) => p.filter((x) => x.lineId !== lineId)), []);
+  const clear = useCallback(() => setItems([]), []);
+
+  const count = items.reduce((s, i) => s + i.quantity, 0);
+  const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
+
+  const checkout = useCallback(async () => {
+    if (items.length === 0) return;
+    setCheckoutBusy(true);
+    try {
+      const payload = {
+        items: items.map((i) =>
+          i.kind === "custom"
+            ? { kind: "custom", title: i.title, price: i.price, summary: i.summary, quantity: i.quantity }
+            : { kind: "product", variantId: i.variantId, quantity: i.quantity }
+        ),
+      };
+      const res = await fetch("/api/checkout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      const data = await res.json();
+      if (data.draftOrder?.invoiceUrl) {
+        window.location.href = data.draftOrder.invoiceUrl;
+      } else {
+        alert("Greška pri kreiranju narudžbe: " + (data.error || data.userErrors?.[0]?.message || "nepoznato"));
+        setCheckoutBusy(false);
+      }
+    } catch (e) {
+      console.error("checkout failed", e);
+      alert("Serverska greška pri naplati.");
+      setCheckoutBusy(false);
     }
-  }, []);
-
-  const addItem = useCallback(
-    async (variantId: string, quantity = 1) => {
-      setBusy(true);
-      try {
-        const line = { merchandiseId: variantId, quantity };
-        if (!cart) {
-          const d = await shopifyFetch<{ cartCreate: { cart: Cart } }>(M_CREATE, { lines: [line] });
-          persist(d.cartCreate.cart);
-        } else {
-          const d = await shopifyFetch<{ cartLinesAdd: { cart: Cart } }>(M_ADD, { cartId: cart.id, lines: [line] });
-          persist(d.cartLinesAdd.cart);
-        }
-        setOpen(true);
-      } catch (e) {
-        console.error("addItem failed", e);
-        alert("Greška pri dodavanju u košaricu. Pokušajte ponovno.");
-      } finally {
-        setBusy(false);
-      }
-    },
-    [cart, persist]
-  );
-
-  const updateItem = useCallback(
-    async (lineId: string, quantity: number) => {
-      if (!cart) return;
-      setBusy(true);
-      try {
-        const d = await shopifyFetch<{ cartLinesUpdate: { cart: Cart } }>(M_UPDATE, {
-          cartId: cart.id,
-          lines: [{ id: lineId, quantity }],
-        });
-        persist(d.cartLinesUpdate.cart);
-      } catch (e) {
-        console.error("updateItem failed", e);
-      } finally {
-        setBusy(false);
-      }
-    },
-    [cart, persist]
-  );
-
-  const removeItem = useCallback(
-    async (lineId: string) => {
-      if (!cart) return;
-      setBusy(true);
-      try {
-        const d = await shopifyFetch<{ cartLinesRemove: { cart: Cart } }>(M_REMOVE, { cartId: cart.id, lineIds: [lineId] });
-        persist(d.cartLinesRemove.cart);
-      } catch (e) {
-        console.error("removeItem failed", e);
-      } finally {
-        setBusy(false);
-      }
-    },
-    [cart, persist]
-  );
+  }, [items]);
 
   return (
-    <CartContext.Provider
-      value={{ cart, open, busy, setOpen, addItem, updateItem, removeItem, count: cart?.totalQuantity ?? 0 }}
-    >
+    <CartContext.Provider value={{ items, open, count, subtotal, checkoutBusy, setOpen, addCustomBuild, addProduct, updateQty, removeItem, clear, checkout }}>
       {children}
     </CartContext.Provider>
   );
 }
 
-export function formatMoney(m?: Money) {
+/* money helpers */
+export const formatEUR = (n: number) => new Intl.NumberFormat("hr-HR", { style: "currency", currency: "EUR" }).format(n || 0);
+export function formatMoney(m?: { amount: string; currencyCode: string }) {
   if (!m) return "Na upit";
   const n = Number(m.amount);
   if (!n || n <= 0) return "Na upit";
