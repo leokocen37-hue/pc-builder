@@ -295,16 +295,6 @@ function BuilderContent() {
   }, []);
 
   useEffect(() => {
-    const handlePageShow = (event: PageTransitionEvent) => {
-      if (event.persisted) {
-        setIsProcessing(false);
-      }
-    };
-    window.addEventListener("pageshow", handlePageShow);
-    return () => window.removeEventListener("pageshow", handlePageShow);
-  }, []);
-
-  useEffect(() => {
     if (isReviewStep) {
       const params = new URLSearchParams();
       if (brand) params.set("brand", brand);
@@ -425,7 +415,6 @@ function BuilderContent() {
   useEffect(() => {
     setActiveIndex(0);
     setDragOffset(0);
-    setIsProcessing(false);
     setHelpOpen(false);
   }, [stepIndex]);
 
