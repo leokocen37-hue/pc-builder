@@ -1,20 +1,23 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import "./storefront.css";                 // ← add: storefront styles
+import { CartProvider } from "@/lib/cart";  // ← add
+import SiteHeader from "@/components/SiteHeader"; // ← add
+import CartDrawer from "@/components/CartDrawer"; // ← add
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
 });
-
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "Konfigurator - RACUNALO.hr",
-  description: "KRENI U STVARANJE SVOJE SAVRŠENE KONFIGURACIJE",
+  title: "RACUNALO.hr — Custom PC po mjeri",
+  description: "Ručno sastavljena i testirana računala po mjeri. Složi svoje u konfiguratoru ili odaberi gotovu konfiguraciju.",
 };
 
 export default function RootLayout({
@@ -23,9 +26,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="hr">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
-        {children}
+        <CartProvider>
+          <SiteHeader />
+          {children}
+          <CartDrawer />
+        </CartProvider>
       </body>
     </html>
   );

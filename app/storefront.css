@@ -1,0 +1,205 @@
+/* → put this at:  app/storefront.css   and import it once in app/layout.tsx
+   import "./storefront.css";
+   Holds ALL storefront styling (homepage, header, product, collection, cart). */
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+:root{
+  --bg:#07080c;--bg2:#0b0d14;--card:#11131b;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.16);
+  --text:#f3f4f8;--muted:#9aa0b0;--faint:#5f6473;--accent:#d81fd8;--accent2:#7b2ff7;
+}
+.rs-root,body{background:var(--bg);color:var(--text);font-family:'Space Grotesk',sans-serif;-webkit-font-smoothing:antialiased}
+.rs-root *{box-sizing:border-box}
+.rs-root a{text-decoration:none;color:inherit}
+.rs-root img{display:block;max-width:100%}
+.rs-wrap{max-width:1240px;margin:0 auto;padding:0 28px}
+.rs-kicker{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:3px;color:var(--accent);text-transform:uppercase}
+
+.rs-announce{background:linear-gradient(90deg,#15101c,#1a0f1f);border-bottom:1px solid var(--line);text-align:center;font-size:12.5px;color:var(--muted);padding:9px}
+.rs-announce b{color:var(--text)}
+
+/* header */
+.rs-nav{position:sticky;top:0;z-index:50;background:rgba(7,8,12,.82);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.rs-nav-inner{display:flex;align-items:center;justify-content:space-between;height:68px;max-width:1240px;margin:0 auto;padding:0 28px}
+.rs-logo{font-weight:700;font-size:21px;letter-spacing:-.5px;color:var(--text)}
+.rs-logo span{color:var(--accent)}
+.rs-links{display:flex;gap:30px;font-size:14px;font-weight:500}
+.rs-links a{color:var(--muted);transition:.2s}
+.rs-links a:hover{color:var(--text)}
+.rs-nav-right{display:flex;align-items:center;gap:18px}
+.rs-cart-btn{position:relative;background:none;border:none;color:var(--text);cursor:pointer;display:flex;align-items:center;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:13px}
+.rs-cart-btn svg{width:21px;height:21px}
+.rs-cart-count{position:absolute;top:-7px;right:-10px;background:var(--accent);color:#fff;font-size:10px;font-weight:700;min-width:17px;height:17px;border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 4px}
+@media(max-width:860px){.rs-links{display:none}}
+
+/* buttons */
+.rs-btn{display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-weight:700;font-size:15px;padding:15px 30px;border-radius:13px;border:none;cursor:pointer;box-shadow:0 12px 34px -8px rgba(216,31,216,.6);transition:.2s;font-family:'Space Grotesk',sans-serif}
+.rs-btn:hover{transform:translateY(-2px);box-shadow:0 18px 44px -8px rgba(216,31,216,.75)}
+.rs-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.rs-btn.ghost{background:rgba(10,8,16,.4);border:1px solid rgba(255,255,255,.28);box-shadow:none;backdrop-filter:blur(6px)}
+.rs-btn.ghost:hover{border-color:var(--accent);background:rgba(216,31,216,.15)}
+
+/* hero */
+.rs-hero{position:relative;min-height:92vh;display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden;background:#0a0816 center/cover no-repeat;background-image:url('https://racunalo.hr/cdn/shop/files/Custom_PC_website_-_web_banner.jpg?width=2400')}
+.rs-hero::before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(58% 60% at 50% 50%,rgba(7,8,12,.66),rgba(7,8,12,.28) 55%,transparent 80%),linear-gradient(180deg,rgba(7,8,12,.5) 0%,transparent 20%,transparent 64%,rgba(7,8,12,.95) 100%)}
+.rs-hero-inner{position:relative;z-index:2;max-width:780px;padding:0 24px}
+.rs-hero-inner h1{font-size:clamp(46px,8.5vw,104px);line-height:.9;font-weight:700;letter-spacing:-2.5px;text-transform:uppercase;margin:16px 0 0;text-shadow:0 8px 50px rgba(0,0,0,.6)}
+.rs-hero-inner h1 em{font-style:normal;display:block;color:transparent;-webkit-text-stroke:1.6px #fff}
+.rs-hero-inner p{margin:24px auto 32px;color:#ece8f3;font-size:17px;line-height:1.6;max-width:470px;text-shadow:0 2px 16px rgba(0,0,0,.65)}
+.rs-hero-cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.rs-stats{display:flex;gap:42px;margin-top:44px;justify-content:center}
+.rs-stats div{font-family:'IBM Plex Mono',monospace}
+.rs-stats b{display:block;font-size:24px;color:#fff;text-shadow:0 2px 14px rgba(0,0,0,.6)}
+.rs-stats span{font-size:11px;letter-spacing:1.5px;color:#cbb3d6;text-transform:uppercase}
+@media(max-width:600px){.rs-stats{gap:24px}}
+
+/* sections */
+.rs-section{padding:88px 0}
+.rs-section-alt{background:var(--bg2);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.rs-head{text-align:center;margin-bottom:46px}
+.rs-head h2{font-size:clamp(28px,4vw,40px);font-weight:700;letter-spacing:-1px;margin-top:12px;text-transform:uppercase}
+.rs-head p{color:var(--muted);margin-top:10px;font-size:15px}
+
+/* configurator centerpiece */
+.rs-config{padding:96px 0;background:radial-gradient(80% 120% at 70% 0%,#170f26,var(--bg))}
+.rs-config-grid{display:grid;grid-template-columns:1fr 1fr;gap:54px;align-items:center}
+.rs-config-grid h2{font-size:clamp(28px,4vw,44px);font-weight:700;letter-spacing:-1px;line-height:1.05;margin:14px 0 16px;text-transform:uppercase}
+.rs-config-grid p{color:var(--muted);font-size:15.5px;line-height:1.65;max-width:460px}
+.rs-check{list-style:none;margin:20px 0 0;padding:0}
+.rs-check li{position:relative;padding-left:26px;margin-bottom:11px;color:var(--text);font-size:14.5px}
+.rs-check li::before{content:"✓";position:absolute;left:0;color:var(--accent);font-weight:700}
+.rs-config-visual{position:relative;background:var(--card);border:1px solid var(--line2);border-radius:20px;padding:26px;min-height:300px;display:flex;flex-direction:column;justify-content:center;overflow:hidden;transition:.25s}
+.rs-config-visual:hover{transform:translateY(-4px);border-color:var(--accent)}
+.rs-config-glow{position:absolute;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(216,31,216,.35),transparent 70%);top:-80px;right:-60px}
+.rs-config-badge{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:3px;color:var(--accent);margin-bottom:18px;position:relative}
+.rs-config-rows{display:flex;flex-direction:column;gap:10px;position:relative}
+.rs-config-row{display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:10px;padding:13px 16px;font-size:14px}
+.rs-config-tick{color:#27c08a;font-weight:700}
+@media(max-width:840px){.rs-config-grid{grid-template-columns:1fr;gap:36px}}
+
+/* product grid + cards */
+.rs-row-block{margin-bottom:48px}
+.rs-row-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:20px}
+.rs-row-head h3{font-size:20px;font-weight:600}
+.rs-row-all{font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--accent)}
+.rs-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+@media(max-width:980px){.rs-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:520px){.rs-grid{grid-template-columns:1fr}}
+.rs-card{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;transition:.25s;display:block}
+.rs-card:hover{transform:translateY(-4px);border-color:var(--line2);box-shadow:0 24px 50px -24px rgba(0,0,0,.8)}
+.rs-ph{aspect-ratio:1/1;background:#0a0c12;position:relative;overflow:hidden}
+.rs-ph img{width:100%;height:100%;object-fit:cover;transition:.4s}
+.rs-card:hover .rs-ph img{transform:scale(1.05)}
+.rs-ph-fallback{width:100%;height:100%;background:linear-gradient(135deg,#1a1230,#0a0c12)}
+.rs-badge{position:absolute;top:12px;left:12px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;padding:5px 10px;border-radius:7px;color:#fff;font-weight:600;background:rgba(0,0,0,.55);backdrop-filter:blur(4px)}
+.rs-card-body{padding:15px 16px 17px}
+.rs-card-body h4{font-size:16px;font-weight:600;margin-bottom:10px}
+.rs-price-row{display:flex;align-items:baseline;justify-content:space-between}
+.rs-price{font-size:18px;font-weight:700}
+.rs-buy{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent)}
+.rs-skel{height:300px;border-radius:16px;background:linear-gradient(100deg,#11131b 30%,#171a24 50%,#11131b 70%);background-size:200% 100%;animation:rs-sh 1.3s infinite}
+@keyframes rs-sh{to{background-position:-200% 0}}
+.rs-empty{grid-column:1/-1;text-align:center;color:var(--faint);padding:40px;font-size:14px}
+
+/* category tiles */
+.rs-cats{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+@media(max-width:860px){.rs-cats{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:480px){.rs-cats{grid-template-columns:1fr}}
+.rs-cat{position:relative;border-radius:16px;padding:26px;min-height:150px;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden;transition:.25s;border:1px solid rgba(255,255,255,.1)}
+.rs-cat::after{content:"";position:absolute;inset:0;background:rgba(7,8,12,.45);transition:.25s}
+.rs-cat:hover{transform:translateY(-4px)}
+.rs-cat:hover::after{background:rgba(7,8,12,.25)}
+.rs-cat span{position:relative;z-index:2}
+.rs-cat-label{font-size:21px;font-weight:700}
+.rs-cat-sub{font-size:12.5px;color:rgba(255,255,255,.8);margin-top:2px}
+.rs-cat-link{font-family:'IBM Plex Mono',monospace;font-size:12px;margin-top:14px;color:#fff}
+
+/* why */
+.rs-why{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+@media(max-width:860px){.rs-why{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:480px){.rs-why{grid-template-columns:1fr}}
+.rs-why-item{padding:26px 22px;background:var(--card);border:1px solid var(--line);border-radius:14px}
+.rs-why-ic{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:rgba(216,31,216,.12);color:var(--accent);margin-bottom:14px;font-size:16px}
+.rs-why-item h4{font-size:15px;font-weight:600;margin-bottom:6px}
+.rs-why-item p{font-size:13px;color:var(--muted);line-height:1.55}
+
+/* cta band */
+.rs-band{text-align:center;padding:96px 0;background:radial-gradient(80% 140% at 50% 0%,#1a1030,var(--bg));border-top:1px solid var(--line)}
+.rs-band h2{font-size:clamp(30px,4.5vw,52px);font-weight:700;text-transform:uppercase;letter-spacing:-1.5px;line-height:1}
+.rs-band p{color:var(--muted);margin:18px auto 30px;max-width:480px;font-size:16px;line-height:1.6}
+
+/* footer */
+.rs-footer{background:var(--bg2);border-top:1px solid var(--line);padding:60px 0 28px;color:var(--muted)}
+.rs-foot-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1.3fr;gap:40px;margin-bottom:42px}
+@media(max-width:760px){.rs-foot-grid{grid-template-columns:1fr 1fr}}
+.rs-foot-grid h5{color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:15px}
+.rs-foot-grid a,.rs-foot-grid p{display:block;font-size:13.5px;margin-bottom:9px;color:var(--muted);transition:.2s}
+.rs-foot-grid a:hover{color:var(--accent)}
+.rs-foot-blurb{max-width:260px;line-height:1.6}
+.rs-faint{color:var(--faint)}
+.rs-foot-bottom{border-top:1px solid var(--line);padding-top:22px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--faint);max-width:1240px;margin:0 auto;padding-left:28px;padding-right:28px}
+
+/* ===== collection page ===== */
+.rs-coll{padding:56px 0 88px;min-height:70vh}
+.rs-coll-head{margin-bottom:8px}
+.rs-coll-head h1{font-size:clamp(30px,5vw,46px);font-weight:700;letter-spacing:-1px;text-transform:uppercase}
+.rs-tabs{display:flex;gap:10px;margin:26px 0 36px;flex-wrap:wrap}
+.rs-tab{font-size:14px;font-weight:600;padding:10px 18px;border-radius:30px;border:1px solid var(--line2);color:var(--muted);transition:.2s}
+.rs-tab:hover{color:var(--text);border-color:var(--accent)}
+.rs-tab.active{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border-color:transparent}
+
+/* ===== product page ===== */
+.rs-pdp{padding:48px 0 88px}
+.rs-pdp-grid{display:grid;grid-template-columns:1fr 1fr;gap:54px}
+@media(max-width:880px){.rs-pdp-grid{grid-template-columns:1fr;gap:32px}}
+.rs-gallery-main{background:#0a0c12;border:1px solid var(--line);border-radius:18px;overflow:hidden;aspect-ratio:1/1}
+.rs-gallery-main img{width:100%;height:100%;object-fit:cover}
+.rs-thumbs{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+.rs-thumb{width:72px;height:72px;border-radius:10px;overflow:hidden;border:1px solid var(--line);cursor:pointer;opacity:.6;transition:.2s}
+.rs-thumb.active,.rs-thumb:hover{opacity:1;border-color:var(--accent)}
+.rs-thumb img{width:100%;height:100%;object-fit:cover}
+.rs-pdp-info h1{font-size:clamp(26px,4vw,38px);font-weight:700;letter-spacing:-.5px;line-height:1.1;margin-bottom:14px}
+.rs-pdp-price{font-size:28px;font-weight:700;margin-bottom:22px}
+.rs-opt{margin-bottom:18px}
+.rs-opt-label{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:9px}
+.rs-opt-vals{display:flex;gap:9px;flex-wrap:wrap}
+.rs-chip{padding:9px 16px;border-radius:10px;border:1px solid var(--line2);background:var(--card);color:var(--text);font-size:13.5px;cursor:pointer;transition:.2s}
+.rs-chip:hover{border-color:var(--accent)}
+.rs-chip.active{background:rgba(216,31,216,.15);border-color:var(--accent)}
+.rs-chip:disabled{opacity:.35;cursor:not-allowed;text-decoration:line-through}
+.rs-qty{display:flex;align-items:center;gap:0;border:1px solid var(--line2);border-radius:10px;width:fit-content;margin-bottom:22px;overflow:hidden}
+.rs-qty button{background:var(--card);border:none;color:var(--text);width:40px;height:42px;font-size:18px;cursor:pointer}
+.rs-qty button:hover{background:rgba(255,255,255,.06)}
+.rs-qty span{min-width:46px;text-align:center;font-family:'IBM Plex Mono',monospace}
+.rs-pdp-desc{margin-top:30px;padding-top:26px;border-top:1px solid var(--line);color:var(--muted);font-size:14.5px;line-height:1.7}
+.rs-pdp-desc h1,.rs-pdp-desc h2,.rs-pdp-desc h3{color:var(--text);margin:18px 0 8px}
+.rs-pdp-desc ul{padding-left:20px}
+.rs-pdp-desc a{color:var(--accent)}
+.rs-soldout{color:#ff6a82;font-family:'IBM Plex Mono',monospace;font-size:13px;margin-bottom:18px}
+
+/* ===== cart drawer ===== */
+.rs-cart-overlay{position:fixed;inset:0;z-index:200;background:rgba(2,3,6,.6);backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:.25s}
+.rs-cart-overlay.open{opacity:1;pointer-events:auto}
+.rs-cart-panel{position:fixed;top:0;right:0;height:100%;width:420px;max-width:90vw;z-index:201;background:var(--bg2);border-left:1px solid var(--line);transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column}
+.rs-cart-panel.open{transform:translateX(0)}
+.rs-cart-top{display:flex;align-items:center;justify-content:space-between;padding:22px 24px;border-bottom:1px solid var(--line)}
+.rs-cart-top h3{font-size:18px;font-weight:700}
+.rs-cart-x{background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer}
+.rs-cart-lines{flex:1;overflow-y:auto;padding:16px 24px}
+.rs-line{display:flex;gap:14px;padding:16px 0;border-bottom:1px solid var(--line)}
+.rs-line-img{width:64px;height:64px;border-radius:10px;overflow:hidden;background:#0a0c12;flex-shrink:0}
+.rs-line-img img{width:100%;height:100%;object-fit:cover}
+.rs-line-info{flex:1;min-width:0}
+.rs-line-title{font-size:14px;font-weight:600;margin-bottom:3px}
+.rs-line-variant{font-size:11.5px;color:var(--faint);margin-bottom:8px}
+.rs-line-bottom{display:flex;align-items:center;justify-content:space-between}
+.rs-line-qty{display:flex;align-items:center;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:13px}
+.rs-line-qty button{background:var(--card);border:1px solid var(--line);color:var(--text);width:26px;height:26px;border-radius:7px;cursor:pointer;font-size:14px}
+.rs-line-price{font-weight:700;font-size:14px}
+.rs-line-rm{background:none;border:none;color:var(--faint);font-size:11px;cursor:pointer;margin-top:6px}
+.rs-line-rm:hover{color:#ff6a82}
+.rs-cart-foot{padding:20px 24px;border-top:1px solid var(--line)}
+.rs-cart-sub{display:flex;justify-content:space-between;margin-bottom:14px;font-size:15px}
+.rs-cart-sub b{font-size:20px}
+.rs-cart-empty{text-align:center;color:var(--faint);padding:60px 20px;font-size:14px}
+.rs-cart-note{text-align:center;font-size:11px;color:var(--faint);margin-top:10px}
