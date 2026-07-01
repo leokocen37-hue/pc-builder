@@ -14,12 +14,14 @@ type Variant = {
   selectedOptions: { name: string; value: string }[];
   image?: { url: string; altText?: string | null } | null;
 };
+type Metafield = { key: string; value: string } | null;
 type Product = {
   id: string; title: string; descriptionHtml: string;
   featuredImage?: { url: string; altText?: string | null } | null;
   images: { edges: { node: { url: string; altText?: string | null } }[] };
   options: { name: string; values: string[] }[];
   variants: { edges: { node: Variant }[] };
+  metafields: Metafield[];
 };
 
 const QUERY = `
@@ -35,6 +37,13 @@ const QUERY = `
         selectedOptions { name value }
         image { url altText }
       }}}
+      metafields(identifiers: [
+        { namespace: "specs", key: "cpu" },
+        { namespace: "specs", key: "gpu" },
+        { namespace: "specs", key: "ram" },
+        { namespace: "specs", key: "storage" },
+        { namespace: "specs", key: "full" }
+      ]) { key value }
     }
   }
 `;
@@ -74,6 +83,24 @@ export default function ProductPage() {
   const selected = useMemo(() => variants.find((v) => v.id === variantId) ?? null, [variants, variantId]);
   const images = product?.images.edges.map((e) => e.node) ?? (product?.featuredImage ? [product.featuredImage] : []);
   const hasRealOptions = (product?.options ?? []).some((o) => !(o.values.length === 1 && o.values[0] === "Default Title"));
+
+  // --- specs from Shopify metafields (namespace "specs") ---
+  const mf = (key: string) => product?.metafields?.find((m) => m && m.key === key)?.value || "";
+  const highlights = [
+    { label: "Procesor", value: mf("cpu") },
+    { label: "Grafička", value: mf("gpu") },
+    { label: "Memorija", value: mf("ram") },
+    { label: "Pohrana", value: mf("storage") },
+  ].filter((h) => h.value);
+  // full spec: one "Label: Value" per line
+  const specRows = mf("full")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const idx = line.indexOf(":");
+      return idx === -1 ? { label: "", value: line } : { label: line.slice(0, idx).trim(), value: line.slice(idx + 1).trim() };
+    });
 
   if (loading) {
     return (
@@ -119,6 +146,17 @@ export default function ProductPage() {
             <h1>{product.title}</h1>
             <div className="rs-pdp-price">{formatMoney(selected?.price)}</div>
 
+            {highlights.length > 0 && (
+              <div className="rs-spec-highlights">
+                {highlights.map((h) => (
+                  <div key={h.label} className="rs-spec-hl">
+                    <div className="rs-spec-hl-label">{h.label}</div>
+                    <div className="rs-spec-hl-value">{h.value}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {hasRealOptions && (
               <div className="rs-opt">
                 <div className="rs-opt-label">Varijanta</div>
@@ -163,12 +201,34 @@ export default function ProductPage() {
             >
               {selected?.availableForSale ? "Dodaj u košaricu" : "Nedostupno"}
             </button>
-
-            {product.descriptionHtml && (
-              <div className="rs-pdp-desc" dangerouslySetInnerHTML={{ __html: product.descriptionHtml }} />
-            )}
           </div>
         </div>
+
+        {/* --- description + full specification (from Shopify) --- */}
+        {(product.descriptionHtml || specRows.length > 0) && (
+          <div className="rs-wrap rs-pdp-detail">
+            {product.descriptionHtml && (
+              <div className="rs-pdp-detail-desc">
+                <h2 className="rs-detail-h">Opis</h2>
+                <div className="rs-pdp-desc" dangerouslySetInnerHTML={{ __html: product.descriptionHtml }} />
+              </div>
+            )}
+            {specRows.length > 0 && (
+              <div className="rs-pdp-detail-spec">
+                <h2 className="rs-detail-h">Specifikacije</h2>
+                <table className="rs-spec-table">
+                  <tbody>
+                    {specRows.map((r, i) => (
+                      <tr key={i}>
+                        {r.label ? <><th>{r.label}</th><td>{r.value}</td></> : <td colSpan={2}>{r.value}</td>}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
       </section>
     </div>
   );
