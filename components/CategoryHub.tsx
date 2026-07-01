@@ -13,7 +13,7 @@ type ProductNode = {
   priceRange: { minVariantPrice: Money };
 };
 type GridResp = { collection: { products: { edges: { node: ProductNode }[] } } | null };
-type BoxResp = { collection: { products: { edges: { node: { featuredImage?: { url: string } | null } }[] } } | null };
+type BoxResp = { collection: { image?: { url: string } | null; products: { edges: { node: { featuredImage?: { url: string } | null } }[] } } | null };
 
 export type HubBox = {
   label: string;
@@ -36,7 +36,7 @@ const GRID_Q = `
     }
   }
 `;
-const IMG_Q = `query Img($handle: String!){ collection(handle:$handle){ products(first:1){ edges{ node{ featuredImage{ url } } } } } }`;
+const IMG_Q = `query Img($handle: String!){ collection(handle:$handle){ image{ url } products(first:1){ edges{ node{ featuredImage{ url } } } } } }`;
 
 export default function CategoryHub({
   kicker, title, subtitle, gradient, accent = "#d81fd8",
@@ -66,7 +66,7 @@ export default function CategoryHub({
           if (!alive) return;
           const map: Record<string, string> = {};
           res.forEach((r, i) => {
-            const url = r.collection?.products.edges[0]?.node.featuredImage?.url;
+            const url = r.collection?.image?.url || r.collection?.products.edges[0]?.node.featuredImage?.url;
             if (url) map[withColl[i].href] = url;
           });
           setBoxImgs(map);

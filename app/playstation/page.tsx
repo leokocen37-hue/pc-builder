@@ -1,47 +1,34 @@
-/* ================================================================
-   PLAYSTATION — single custom landing page (Option A)
-
-   FILE → app/playstation/page.tsx   (this whole file)
-
-   Each box = ONE product, pulled from its collection, linking straight
-   to that product's /[handle] page (no grid in between).
-
-   Shopify collections to create (one product each):
-     playstation-slim   → the Slim (or Slim bundle)
-     playstation-pro    → the Pro
-
-   NOTE: delete the old grid sub-pages if you created them:
-     app/playstation/slim/   and   app/playstation/pro/
-   ================================================================ */
 "use client";
-
+ 
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { shopifyFetch } from "@/lib/shopify";
 import { formatMoney } from "@/lib/cart";
-
+ 
 type Money = { amount: string; currencyCode: string };
 type BoxData = { handle?: string; img?: string; price?: Money };
 type Resp = {
   collection: {
+    image?: { url: string } | null;
     products: { edges: { node: { handle: string; featuredImage?: { url: string } | null; priceRange: { minVariantPrice: Money } } }[] };
   } | null;
 };
-
+ 
 const Q = `
   query Box($handle: String!) {
     collection(handle: $handle) {
+      image { url }
       products(first: 1) {
         edges { node { handle featuredImage { url } priceRange { minVariantPrice { amount currencyCode } } } }
       }
     }
   }
 `;
-
+ 
 export default function PlayStationPage() {
   const [slim, setSlim] = useState<BoxData>({});
   const [pro, setPro] = useState<BoxData>({});
-
+ 
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -53,15 +40,15 @@ export default function PlayStationPage() {
         if (!alive) return;
         const sn = s.collection?.products.edges[0]?.node;
         const pn = p.collection?.products.edges[0]?.node;
-        if (sn) setSlim({ handle: sn.handle, img: sn.featuredImage?.url, price: sn.priceRange.minVariantPrice });
-        if (pn) setPro({ handle: pn.handle, img: pn.featuredImage?.url, price: pn.priceRange.minVariantPrice });
+        if (sn) setSlim({ handle: sn.handle, img: s.collection?.image?.url || sn.featuredImage?.url, price: sn.priceRange.minVariantPrice });
+        if (pn) setPro({ handle: pn.handle, img: p.collection?.image?.url || pn.featuredImage?.url, price: pn.priceRange.minVariantPrice });
       } catch {
         /* collections may not exist yet */
       }
     })();
     return () => { alive = false; };
   }, []);
-
+ 
   const Box = ({ data, tag, title, spec }: { data: BoxData; tag: string; title: string; spec: string }) => {
     const href = data.handle ? `/${data.handle}` : "#";
     return (
@@ -79,7 +66,7 @@ export default function PlayStationPage() {
       </Link>
     );
   };
-
+ 
   return (
     <div className="rs-root">
       <section className="ps-hero">
@@ -87,7 +74,7 @@ export default function PlayStationPage() {
         <h1>PlayStation 5</h1>
         <p>Nova generacija igranja — odaberi svoj model. Novo, službeno i s jamstvom, isporuka diljem Hrvatske.</p>
       </section>
-
+ 
       <div className="ps-boxes">
         <Box data={slim} tag="MODEL" title="PS5 Slim" spec="Kompaktan dizajn · vrhunske performanse" />
         <Box data={pro} tag="MODEL" title="PS5 Pro" spec="Maksimalna snaga · za zahtjevne igrače" />
