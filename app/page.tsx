@@ -122,10 +122,11 @@ export default function HomePage() {
           <div className="rs-head">
             <div className="rs-kicker">Trgovina</div>
             <h2>Sve za tvoj setup</h2>
-            <p>Periferija i PlayStation — uz tvoje računalo.</p>
+            <p>Laptopi, periferija i PlayStation — uz tvoje računalo.</p>
           </div>
           <div className="rs-cats">
             {[
+              { label: "Laptopi", sub: "Apple & Windows", href: "/laptopi", g: "linear-gradient(135deg,#3a1f7a,#a020f0)" },
               { label: "PlayStation", sub: "Konzole i dodaci", href: "/playstation", g: "linear-gradient(135deg,#1f3a8a,#2f6ff7)" },
               { label: "Monitori", sub: "Gaming & uredski", href: "/monitori", g: "linear-gradient(135deg,#0e5a8a,#22a3d8)" },
               { label: "Tipkovnice", sub: "Mehaničke & RGB", href: "/tipkovnice", g: "linear-gradient(135deg,#8a0e6a,#d81fd8)" },
