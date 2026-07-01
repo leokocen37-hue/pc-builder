@@ -21,7 +21,7 @@ export default function SiteHeader() {
             <Link href="/laptopi">Laptopi</Link>
             <Link href="/periferija">Periferija</Link>
             <Link href="/playstation">PlayStation</Link>
-            <a href="/#kontakt">Kontakt</a>
+            <Link href="/kontakt">Kontakt</Link>
           </nav>
           <div className="rs-nav-right">
             <button className="rs-cart-btn" onClick={() => setOpen(true)} aria-label="Košarica">
