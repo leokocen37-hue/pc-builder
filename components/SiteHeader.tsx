@@ -10,7 +10,7 @@ export default function SiteHeader() {
   return (
     <>
       <div className="rs-announce">
-        ⚡ Ručno sastavljamo i testiramo svako računalo u Hrvatskoj — <b>besplatna dostava iznad 1.000 €</b>
+        ⚡ Ručno sastavljena i testirana računala u Hrvatskoj · <b>24 mjeseca jamstva</b>
       </div>
       <header className="rs-nav">
         <div className="rs-nav-inner">
