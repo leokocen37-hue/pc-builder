@@ -476,7 +476,9 @@ function BuilderContent() {
         return mbFits && caseAllowsGpu;
       }
       if (currentStep === "psu") {
-        const requiredWattage = calculateSystemTDP() + 100;
+        // Use the SAME figure shown on screen (estimatedDraw already includes +150 overhead),
+        // so the filter never contradicts the "dovoljno snage" readout.
+        const requiredWattage = calculateSystemTDP();
         return type === "psu" && Number(p.pcfWattage?.value || 9999) >= requiredWattage;
       }
       if (currentStep === "cooler") {
@@ -648,8 +650,19 @@ function BuilderContent() {
 
     const variantNode = p.variants.edges.find((v: any) => v.node.id === selectedVarId)?.node || p.variants.edges[0].node;
     const productWithVariant = { ...p, selectedVariant: variantNode };
-    if (type === "cpu") setCpu(productWithVariant);
-    else if (type === "motherboard") setMb(productWithVariant);
+    if (type === "cpu") {
+      // If the new CPU uses a different socket than the currently selected board,
+      // the platform changed (e.g. Intel↔AMD, or LGA1700↔LGA1851) — clear the parts
+      // that depend on socket/platform so an incompatible combo can't survive.
+      const newSocket = (p.pcfSocket?.value || "").toLowerCase();
+      const curMbSocket = (mb?.pcfSocket?.value || "").toLowerCase();
+      if (mb && curMbSocket && newSocket && curMbSocket !== newSocket) {
+        setMb(null);
+        setCooler(null);
+        setRam(null);
+      }
+      setCpu(productWithVariant);
+    } else if (type === "motherboard") setMb(productWithVariant);
     else if (type === "ram") setRam(productWithVariant);
     else if (type === "gpu") setGpu(productWithVariant);
     else if (type === "ssd") setSsd(productWithVariant);
@@ -783,7 +796,13 @@ function BuilderContent() {
     { label: "Hladnjak", item: cooler },
   ];
   const missingParts = requiredParts.filter((r) => !r.item).map((r) => r.label);
-  const buildComplete = missingParts.length === 0;
+  // Safety net: CPU and motherboard sockets must match (belt-and-suspenders vs any
+  // navigation path that could leave a stale, incompatible board selected).
+  const socketMismatch = !!(
+    cpu && mb &&
+    (cpu.pcfSocket?.value || "").toLowerCase() !== (mb.pcfSocket?.value || "").toLowerCase()
+  );
+  const buildComplete = missingParts.length === 0 && !socketMismatch;
 
   // Step for each required part, in build order, with its current selection.
   const stepSelections: { step: Step; item: ProductNode | null }[] = [
@@ -1794,8 +1813,12 @@ function BuilderContent() {
                         lineHeight: 1.5,
                       }}
                     >
-                      Da biste naručili, konfiguracija mora biti potpuna. Nedostaje:{" "}
-                      <b>{missingParts.join(", ")}</b>.
+                      {socketMismatch ? (
+                        <>Procesor i matična ploča nisu kompatibilni (različit socket). Vratite se na korak <b>Matična ploča</b> i odaberite kompatibilnu.</>
+                      ) : (
+                        <>Da biste naručili, konfiguracija mora biti potpuna. Nedostaje:{" "}
+                        <b>{missingParts.join(", ")}</b>.</>
+                      )}
                     </div>
                   )}
                   <button onClick={shareBuild} style={ghostBtnStyle}>
