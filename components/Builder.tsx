@@ -39,6 +39,7 @@ type ProductNode = {
   pcfQuality?: { value: string };
   pcfBadge?: { value: string };
   pcfBadgeColor?: { value: string };
+  pcfRecommended?: { value: string };
 };
 
 type Step =
@@ -357,6 +358,7 @@ function BuilderContent() {
                   pcfQuality: metafield(namespace: "pcf", key: "quality") { value }
                   pcfBadge: metafield(namespace: "pcf", key: "badge") { value }
                   pcfBadgeColor: metafield(namespace: "pcf", key: "badge_color") { value }
+                  pcfRecommended: metafield(namespace: "pcf", key: "recommended") { value }
                 }
               }
             }
@@ -511,6 +513,11 @@ function BuilderContent() {
       return false;
     })
     .sort((a, b) => {
+      // recommended picks float to the front (shown first)
+      const recA = (a.pcfRecommended?.value || "").toLowerCase() === "true" ? 1 : 0;
+      const recB = (b.pcfRecommended?.value || "").toLowerCase() === "true" ? 1 : 0;
+      if (recB !== recA) return recB - recA;
+
       const wA = getQualityScore(a.pcfQuality?.value);
       const wB = getQualityScore(b.pcfQuality?.value);
       if (wB !== wA) return wB - wA;
@@ -1362,135 +1369,99 @@ function BuilderContent() {
                       borderRadius: "16px",
                     }}
                   >
-                    <div
-                      style={{
-                        display: "flex",
-                        flexWrap: "wrap",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        gap: "16px",
-                      }}
-                    >
+                    {/* selected + tier + recommended */}
+                    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: "16px" }}>
                       <div style={{ minWidth: 0 }}>
                         <div style={{ fontFamily: MONO, fontSize: "10px", color: COLORS.textMuted, letterSpacing: "2px" }}>
                           ODABRANO
                         </div>
                         <div style={{ fontWeight: 600, fontSize: "17px", marginTop: "4px" }}>{activeProduct?.title}</div>
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
-                        <div style={{ fontWeight: 700, fontSize: "24px", letterSpacing: "-.5px" }}>
-                          €{activePrice.toFixed(2)}
+                        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginTop: "9px", flexWrap: "wrap" }}>
+                          {(() => {
+                            const q = getQualityScore(activeProduct?.pcfQuality?.value);
+                            const label = ["—", "Osnovna", "Dobra", "Vrlo dobra", "Vrhunska"][q] || "—";
+                            return (
+                              <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
+                                <div style={{ display: "flex", gap: "3px" }}>
+                                  {[1, 2, 3, 4].map((i) => (
+                                    <span key={i} style={{ width: "18px", height: "5px", borderRadius: "3px", background: i <= q ? COLORS.accent : "rgba(255,255,255,.14)" }} />
+                                  ))}
+                                </div>
+                                <span style={{ fontFamily: MONO, fontSize: "11px", color: COLORS.textMuted, letterSpacing: ".5px" }}>Razina: {label}</span>
+                              </div>
+                            );
+                          })()}
+                          {(activeProduct?.pcfRecommended?.value || "").toLowerCase() === "true" && (
+                            <span style={{ fontFamily: MONO, fontSize: "10px", fontWeight: 700, letterSpacing: "1px", color: "#0a0a0a", background: "linear-gradient(90deg,#ffd36b,#ffb84d)", padding: "4px 9px", borderRadius: "20px" }}>
+                              ★ NAŠA PREPORUKA
+                            </span>
+                          )}
                         </div>
-                        <button
-                          onClick={() => activeProduct && handleSelection(currentStep, activeProduct)}
-                          style={primaryBtnStyle}
-                        >
-                          Odaberi i nastavi →
-                        </button>
+                      </div>
+                      <div style={{ fontWeight: 700, fontSize: "24px", letterSpacing: "-.5px" }}>
+                        €{activePrice.toFixed(2)}
                       </div>
                     </div>
 
+                    {/* variant selector (moved above the button, clearer) */}
                     {activeProduct && activeProduct.variants.edges.length > 1 && (
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          flexWrap: "wrap",
-                          gap: "8px",
-                          paddingTop: "14px",
-                          borderTop: `1px solid ${COLORS.border}`,
-                        }}
-                      >
-                        <span
-                          style={{
-                            fontFamily: MONO,
-                            fontSize: "10px",
-                            letterSpacing: "1.5px",
-                            color: COLORS.textMuted,
-                            marginRight: "4px",
-                          }}
-                        >
-                          VARIJANTA
-                        </span>
-                        {activeProduct.variants.edges.map((v: any) => {
-                          const on = v.node.id === selectedVarId;
-                          return (
-                            <button
-                              key={v.node.id}
-                              onClick={() => setSelectedVarId(v.node.id)}
-                              style={{
-                                padding: "8px 14px",
-                                borderRadius: "10px",
-                                cursor: "pointer",
-                                fontFamily: FONT,
-                                fontWeight: 600,
-                                fontSize: "13px",
-                                transition: "all .15s",
-                                background: on ? "rgba(216,31,216,.14)" : COLORS.bgDark,
-                                border: on ? "1px solid rgba(216,31,216,.7)" : `1px solid ${COLORS.border}`,
-                                color: on ? "#fff" : COLORS.textMuted,
-                              }}
-                            >
-                              {v.node.title !== "Default Title" ? v.node.title : "Standard"}
-                            </button>
-                          );
-                        })}
-
-                        {STEP_HELP[currentStep] && (
-                          <div style={{ width: "100%", marginTop: "4px" }}>
-                            <button
-                              onClick={() => setHelpOpen((o) => !o)}
-                              style={{
-                                background: "none",
-                                border: "none",
-                                padding: "4px 0",
-                                cursor: "pointer",
-                                fontFamily: FONT,
-                                fontSize: "13px",
-                                fontWeight: 600,
-                                color: COLORS.accent,
-                                display: "inline-flex",
-                                alignItems: "center",
-                                gap: "6px",
-                              }}
-                            >
-                              <span
+                      <div style={{ paddingTop: "14px", borderTop: `1px solid ${COLORS.border}` }}>
+                        <div style={{ fontFamily: MONO, fontSize: "10px", letterSpacing: "1.5px", color: COLORS.accent, marginBottom: "8px" }}>
+                          ODABERITE VARIJANTU ↓
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
+                          {activeProduct.variants.edges.map((v: any) => {
+                            const on = v.node.id === selectedVarId;
+                            return (
+                              <button
+                                key={v.node.id}
+                                onClick={() => setSelectedVarId(v.node.id)}
                                 style={{
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  width: "16px",
-                                  height: "16px",
-                                  borderRadius: "50%",
-                                  border: `1px solid ${COLORS.accent}`,
-                                  fontSize: "10px",
-                                  fontFamily: MONO,
-                                }}
-                              >
-                                ?
-                              </span>
-                              {helpOpen ? "Sakrij pomoć" : "Niste sigurni što odabrati?"}
-                            </button>
-                            {helpOpen && (
-                              <div
-                                style={{
-                                  marginTop: "8px",
-                                  padding: "13px 15px",
-                                  background: COLORS.bgDark,
-                                  border: `1px solid ${COLORS.border}`,
-                                  borderRadius: "11px",
+                                  padding: "9px 15px",
+                                  borderRadius: "10px",
+                                  cursor: "pointer",
+                                  fontFamily: FONT,
+                                  fontWeight: 600,
                                   fontSize: "13px",
-                                  lineHeight: 1.6,
-                                  color: COLORS.textMuted,
+                                  transition: "all .15s",
+                                  background: on ? "rgba(216,31,216,.14)" : COLORS.bgDark,
+                                  border: on ? "1px solid rgba(216,31,216,.7)" : `1px solid ${COLORS.border}`,
+                                  color: on ? "#fff" : COLORS.textMuted,
                                 }}
                               >
-                                {STEP_HELP[currentStep]}
-                              </div>
-                            )}
+                                {v.node.title !== "Default Title" ? v.node.title : "Standard"}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* help — ALWAYS visible, above the button */}
+                    {STEP_HELP[currentStep] && (
+                      <div style={{ width: "100%" }}>
+                        <button
+                          onClick={() => setHelpOpen((o) => !o)}
+                          style={{ background: "none", border: "none", padding: "4px 0", cursor: "pointer", fontFamily: FONT, fontSize: "13px", fontWeight: 600, color: COLORS.accent, display: "inline-flex", alignItems: "center", gap: "6px" }}
+                        >
+                          <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "16px", height: "16px", borderRadius: "50%", border: `1px solid ${COLORS.accent}`, fontSize: "10px", fontFamily: MONO }}>?</span>
+                          {helpOpen ? "Sakrij pomoć" : "Niste sigurni što odabrati?"}
+                        </button>
+                        {helpOpen && (
+                          <div style={{ marginTop: "8px", padding: "13px 15px", background: COLORS.bgDark, border: `1px solid ${COLORS.border}`, borderRadius: "11px", fontSize: "13px", lineHeight: 1.6, color: COLORS.textMuted }}>
+                            {STEP_HELP[currentStep]}
                           </div>
                         )}
                       </div>
                     )}
+
+                    {/* select button — full width, at the bottom */}
+                    <button
+                      onClick={() => activeProduct && handleSelection(currentStep, activeProduct)}
+                      style={{ ...primaryBtnStyle, width: "100%", justifyContent: "center", fontSize: "16px", padding: "15px" }}
+                    >
+                      Odaberi i nastavi →
+                    </button>
                   </div>
                 </div>
               ) : (
