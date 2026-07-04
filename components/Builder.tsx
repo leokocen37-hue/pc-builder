@@ -1058,46 +1058,50 @@ function BuilderContent() {
                   }}
                 >
                   <button
-                    onClick={() => {
-                      setBrand("intel");
-                      setStepIndex(1);
-                    }}
-                    style={{ ...brandBtnStyle, borderTop: "3px solid #0099ff", alignItems: "center", gap: "14px" }}
+                    onClick={() => { setBrand("intel"); setStepIndex(1); }}
+                    style={{ ...brandBtnStyle, position: "relative", overflow: "hidden", borderTop: "3px solid #0099ff", padding: "0", minHeight: "250px", gap: "0" }}
                   >
-                    <span style={{ fontFamily: MONO, fontSize: "11px", letterSpacing: "2.5px", color: COLORS.textMuted }}>
-                      PLATFORMA
-                    </span>
-                    <div style={{ height: "58px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <img
-                        src="/intel.svg"
-                        alt="Intel"
-                        style={{ maxHeight: "58px", maxWidth: "150px", objectFit: "contain" }}
-                        onError={(e) => { const t = e.currentTarget; t.style.display = "none"; const f = t.nextElementSibling as HTMLElement; if (f) f.style.display = "inline"; }}
-                      />
-                      <span style={{ display: "none", fontSize: "34px", fontWeight: 700, letterSpacing: "-.5px", color: "#3da5ff" }}>intel</span>
+                    <div style={{ position: "absolute", top: "-70px", left: "50%", transform: "translateX(-50%)", width: "260px", height: "260px", borderRadius: "50%", background: "radial-gradient(circle, rgba(0,153,255,.28), transparent 68%)", pointerEvents: "none" }} />
+                    <div style={{ position: "relative", zIndex: 2, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "space-between", width: "100%", height: "100%", padding: "26px 24px", gap: "18px" }}>
+                      <span style={{ fontFamily: MONO, fontSize: "10px", letterSpacing: "3px", color: "#5f7fa8" }}>PLATFORMA · 01</span>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1 }}>
+                        <img
+                          src="/intel.svg"
+                          alt="Intel"
+                          style={{ maxHeight: "62px", maxWidth: "160px", objectFit: "contain" }}
+                          onError={(e) => { const t = e.currentTarget; t.style.display = "none"; const f = t.nextElementSibling as HTMLElement; if (f) f.style.display = "inline"; }}
+                        />
+                        <span style={{ display: "none", fontSize: "38px", fontWeight: 700, letterSpacing: "-.5px", color: "#3da5ff" }}>intel</span>
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", width: "100%" }}>
+                        <div style={{ fontWeight: 600, fontSize: "15px", color: COLORS.textMain }}>Core &amp; Core Ultra</div>
+                        <div style={{ fontSize: "12.5px", color: COLORS.textMuted, textAlign: "center", lineHeight: 1.4 }}>Pouzdane performanse za igre i svakodnevni rad</div>
+                        <span style={{ marginTop: "4px", fontFamily: MONO, fontSize: "12px", fontWeight: 600, color: "#fff", background: "rgba(0,153,255,.16)", border: "1px solid rgba(0,153,255,.5)", borderRadius: "20px", padding: "8px 20px" }}>Odaberi →</span>
+                      </div>
                     </div>
-                    <span style={{ fontFamily: MONO, fontSize: "11px", color: COLORS.textMuted, letterSpacing: "1px" }}>Core &amp; Core Ultra</span>
                   </button>
                   <button
-                    onClick={() => {
-                      setBrand("amd");
-                      setStepIndex(1);
-                    }}
-                    style={{ ...brandBtnStyle, borderTop: "3px solid #ff5e00", alignItems: "center", gap: "14px" }}
+                    onClick={() => { setBrand("amd"); setStepIndex(1); }}
+                    style={{ ...brandBtnStyle, position: "relative", overflow: "hidden", borderTop: "3px solid #ff5e00", padding: "0", minHeight: "250px", gap: "0" }}
                   >
-                    <span style={{ fontFamily: MONO, fontSize: "11px", letterSpacing: "2.5px", color: COLORS.textMuted }}>
-                      PLATFORMA
-                    </span>
-                    <div style={{ height: "58px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <img
-                        src="/amd.svg"
-                        alt="AMD"
-                        style={{ maxHeight: "52px", maxWidth: "150px", objectFit: "contain" }}
-                        onError={(e) => { const t = e.currentTarget; t.style.display = "none"; const f = t.nextElementSibling as HTMLElement; if (f) f.style.display = "inline"; }}
-                      />
-                      <span style={{ display: "none", fontSize: "34px", fontWeight: 800, color: "#ff7a33" }}>AMD</span>
+                    <div style={{ position: "absolute", top: "-70px", left: "50%", transform: "translateX(-50%)", width: "260px", height: "260px", borderRadius: "50%", background: "radial-gradient(circle, rgba(255,94,0,.26), transparent 68%)", pointerEvents: "none" }} />
+                    <div style={{ position: "relative", zIndex: 2, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "space-between", width: "100%", height: "100%", padding: "26px 24px", gap: "18px" }}>
+                      <span style={{ fontFamily: MONO, fontSize: "10px", letterSpacing: "3px", color: "#a8785f" }}>PLATFORMA · 02</span>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1 }}>
+                        <img
+                          src="/amd.svg"
+                          alt="AMD"
+                          style={{ maxHeight: "54px", maxWidth: "160px", objectFit: "contain" }}
+                          onError={(e) => { const t = e.currentTarget; t.style.display = "none"; const f = t.nextElementSibling as HTMLElement; if (f) f.style.display = "inline"; }}
+                        />
+                        <span style={{ display: "none", fontSize: "38px", fontWeight: 800, color: "#ff7a33" }}>AMD</span>
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", width: "100%" }}>
+                        <div style={{ fontWeight: 600, fontSize: "15px", color: COLORS.textMain }}>Ryzen</div>
+                        <div style={{ fontSize: "12.5px", color: COLORS.textMuted, textAlign: "center", lineHeight: 1.4 }}>X3D čipovi — vrhunska klasa za gaming</div>
+                        <span style={{ marginTop: "4px", fontFamily: MONO, fontSize: "12px", fontWeight: 600, color: "#fff", background: "rgba(255,94,0,.16)", border: "1px solid rgba(255,94,0,.5)", borderRadius: "20px", padding: "8px 20px" }}>Odaberi →</span>
+                      </div>
                     </div>
-                    <span style={{ fontFamily: MONO, fontSize: "11px", color: COLORS.textMuted, letterSpacing: "1px" }}>Ryzen</span>
                   </button>
                 </div>
               </div>
