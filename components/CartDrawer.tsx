@@ -71,7 +71,7 @@ export default function CartDrawer() {
 
             <div className="rs-cart-foot">
               <div className="rs-cart-sub">
-                <span>Ukupno</span>
+                <span>Ukupno <span style={{ color: "var(--faint)", fontSize: 12, fontWeight: 400 }}>(s PDV-om)</span></span>
                 <b>{formatEUR(subtotal)}</b>
               </div>
               <button
@@ -82,7 +82,7 @@ export default function CartDrawer() {
               >
                 {checkoutBusy ? "Otvaram blagajnu…" : "Na blagajnu →"}
               </button>
-              <div className="rs-cart-note">Sigurno plaćanje · dostava i PDV obračunavaju se na blagajni</div>
+              <div className="rs-cart-note">Sve cijene uključuju PDV · dostava se izračunava na blagajni</div>
             </div>
           </>
         )}

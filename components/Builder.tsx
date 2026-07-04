@@ -40,6 +40,7 @@ type ProductNode = {
   pcfBadge?: { value: string };
   pcfBadgeColor?: { value: string };
   pcfRecommended?: { value: string };
+  pcfSpecs?: { value: string };
 };
 
 type Step =
@@ -175,6 +176,8 @@ function BuilderContent() {
   const [isDragging, setIsDragging] = useState(false);
   const [viewMode, setViewMode] = useState<"coverflow" | "grid">("coverflow");
   const [shareCopied, setShareCopied] = useState(false);
+  const [hoverBrand, setHoverBrand] = useState<string | null>(null);
+  const [specsOpen, setSpecsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
   const [contactForm, setContactForm] = useState({ name: "", email: "", phone: "", budget: "", message: "" });
@@ -363,6 +366,7 @@ function BuilderContent() {
                   pcfBadge: metafield(namespace: "pcf", key: "badge") { value }
                   pcfBadgeColor: metafield(namespace: "pcf", key: "badge_color") { value }
                   pcfRecommended: metafield(namespace: "pcf", key: "recommended") { value }
+                  pcfSpecs: metafield(namespace: "pcf", key: "specs") { value }
                 }
               }
             }
@@ -1059,48 +1063,52 @@ function BuilderContent() {
                 >
                   <button
                     onClick={() => { setBrand("intel"); setStepIndex(1); }}
-                    style={{ ...brandBtnStyle, position: "relative", overflow: "hidden", borderTop: "3px solid #0099ff", padding: "0", minHeight: "250px", gap: "0" }}
+                    onMouseEnter={() => setHoverBrand("intel")}
+                    onMouseLeave={() => setHoverBrand(null)}
+                    style={{
+                      ...brandBtnStyle, position: "relative", overflow: "hidden", padding: "0", minHeight: "230px", gap: "0",
+                      alignItems: "center", justifyContent: "center",
+                      border: hoverBrand === "intel" ? "1px solid #0099ff" : `1px solid ${COLORS.border}`,
+                      borderTop: "3px solid #0099ff",
+                      transform: hoverBrand === "intel" ? "translateY(-6px)" : "none",
+                      boxShadow: hoverBrand === "intel" ? "0 26px 60px -26px rgba(0,153,255,.6)" : "none",
+                    }}
                   >
-                    <div style={{ position: "absolute", top: "-70px", left: "50%", transform: "translateX(-50%)", width: "260px", height: "260px", borderRadius: "50%", background: "radial-gradient(circle, rgba(0,153,255,.28), transparent 68%)", pointerEvents: "none" }} />
-                    <div style={{ position: "relative", zIndex: 2, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "space-between", width: "100%", height: "100%", padding: "26px 24px", gap: "18px" }}>
-                      <span style={{ fontFamily: MONO, fontSize: "10px", letterSpacing: "3px", color: "#5f7fa8" }}>PLATFORMA · 01</span>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1 }}>
-                        <img
-                          src="/intel.svg"
-                          alt="Intel"
-                          style={{ maxHeight: "62px", maxWidth: "160px", objectFit: "contain" }}
-                          onError={(e) => { const t = e.currentTarget; t.style.display = "none"; const f = t.nextElementSibling as HTMLElement; if (f) f.style.display = "inline"; }}
-                        />
-                        <span style={{ display: "none", fontSize: "38px", fontWeight: 700, letterSpacing: "-.5px", color: "#3da5ff" }}>intel</span>
-                      </div>
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", width: "100%" }}>
-                        <div style={{ fontWeight: 600, fontSize: "15px", color: COLORS.textMain }}>Core &amp; Core Ultra</div>
-                        <div style={{ fontSize: "12.5px", color: COLORS.textMuted, textAlign: "center", lineHeight: 1.4 }}>Pouzdane performanse za igre i svakodnevni rad</div>
-                        <span style={{ marginTop: "4px", fontFamily: MONO, fontSize: "12px", fontWeight: 600, color: "#fff", background: "rgba(0,153,255,.16)", border: "1px solid rgba(0,153,255,.5)", borderRadius: "20px", padding: "8px 20px" }}>Odaberi →</span>
-                      </div>
+                    <div style={{ position: "absolute", top: "-70px", left: "50%", transform: "translateX(-50%)", width: "280px", height: "280px", borderRadius: "50%", background: "radial-gradient(circle, rgba(0,153,255,.24), transparent 68%)", pointerEvents: "none", transition: "opacity .2s", opacity: hoverBrand === "intel" ? 1 : 0.7 }} />
+                    <div style={{ position: "relative", zIndex: 2, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "20px", width: "100%", height: "100%", padding: "32px 24px" }}>
+                      <img
+                        src="/intel.svg"
+                        alt="Intel"
+                        style={{ maxHeight: "64px", maxWidth: "170px", objectFit: "contain" }}
+                        onError={(e) => { const t = e.currentTarget; t.style.display = "none"; const f = t.nextElementSibling as HTMLElement; if (f) f.style.display = "inline"; }}
+                      />
+                      <span style={{ display: "none", fontSize: "40px", fontWeight: 700, letterSpacing: "-.5px", color: "#3da5ff" }}>intel</span>
+                      <span style={{ fontFamily: MONO, fontSize: "12px", letterSpacing: "1.5px", color: COLORS.textMuted }}>CORE &amp; CORE ULTRA</span>
                     </div>
                   </button>
                   <button
                     onClick={() => { setBrand("amd"); setStepIndex(1); }}
-                    style={{ ...brandBtnStyle, position: "relative", overflow: "hidden", borderTop: "3px solid #ff5e00", padding: "0", minHeight: "250px", gap: "0" }}
+                    onMouseEnter={() => setHoverBrand("amd")}
+                    onMouseLeave={() => setHoverBrand(null)}
+                    style={{
+                      ...brandBtnStyle, position: "relative", overflow: "hidden", padding: "0", minHeight: "230px", gap: "0",
+                      alignItems: "center", justifyContent: "center",
+                      border: hoverBrand === "amd" ? "1px solid #ff5e00" : `1px solid ${COLORS.border}`,
+                      borderTop: "3px solid #ff5e00",
+                      transform: hoverBrand === "amd" ? "translateY(-6px)" : "none",
+                      boxShadow: hoverBrand === "amd" ? "0 26px 60px -26px rgba(255,94,0,.55)" : "none",
+                    }}
                   >
-                    <div style={{ position: "absolute", top: "-70px", left: "50%", transform: "translateX(-50%)", width: "260px", height: "260px", borderRadius: "50%", background: "radial-gradient(circle, rgba(255,94,0,.26), transparent 68%)", pointerEvents: "none" }} />
-                    <div style={{ position: "relative", zIndex: 2, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "space-between", width: "100%", height: "100%", padding: "26px 24px", gap: "18px" }}>
-                      <span style={{ fontFamily: MONO, fontSize: "10px", letterSpacing: "3px", color: "#a8785f" }}>PLATFORMA · 02</span>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1 }}>
-                        <img
-                          src="/amd.svg"
-                          alt="AMD"
-                          style={{ maxHeight: "54px", maxWidth: "160px", objectFit: "contain" }}
-                          onError={(e) => { const t = e.currentTarget; t.style.display = "none"; const f = t.nextElementSibling as HTMLElement; if (f) f.style.display = "inline"; }}
-                        />
-                        <span style={{ display: "none", fontSize: "38px", fontWeight: 800, color: "#ff7a33" }}>AMD</span>
-                      </div>
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", width: "100%" }}>
-                        <div style={{ fontWeight: 600, fontSize: "15px", color: COLORS.textMain }}>Ryzen</div>
-                        <div style={{ fontSize: "12.5px", color: COLORS.textMuted, textAlign: "center", lineHeight: 1.4 }}>X3D čipovi — vrhunska klasa za gaming</div>
-                        <span style={{ marginTop: "4px", fontFamily: MONO, fontSize: "12px", fontWeight: 600, color: "#fff", background: "rgba(255,94,0,.16)", border: "1px solid rgba(255,94,0,.5)", borderRadius: "20px", padding: "8px 20px" }}>Odaberi →</span>
-                      </div>
+                    <div style={{ position: "absolute", top: "-70px", left: "50%", transform: "translateX(-50%)", width: "280px", height: "280px", borderRadius: "50%", background: "radial-gradient(circle, rgba(255,94,0,.22), transparent 68%)", pointerEvents: "none", transition: "opacity .2s", opacity: hoverBrand === "amd" ? 1 : 0.7 }} />
+                    <div style={{ position: "relative", zIndex: 2, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "20px", width: "100%", height: "100%", padding: "32px 24px" }}>
+                      <img
+                        src="/amd.svg"
+                        alt="AMD"
+                        style={{ maxHeight: "56px", maxWidth: "170px", objectFit: "contain" }}
+                        onError={(e) => { const t = e.currentTarget; t.style.display = "none"; const f = t.nextElementSibling as HTMLElement; if (f) f.style.display = "inline"; }}
+                      />
+                      <span style={{ display: "none", fontSize: "40px", fontWeight: 800, color: "#ff7a33" }}>AMD</span>
+                      <span style={{ fontFamily: MONO, fontSize: "12px", letterSpacing: "1.5px", color: COLORS.textMuted }}>RYZEN</span>
                     </div>
                   </button>
                 </div>
@@ -1430,7 +1438,40 @@ function BuilderContent() {
                         <div style={{ fontFamily: MONO, fontSize: "10px", color: COLORS.textMuted, letterSpacing: "2px" }}>
                           ODABRANO
                         </div>
-                        <div style={{ fontWeight: 600, fontSize: "17px", marginTop: "4px" }}>{activeProduct?.title}</div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "4px", position: "relative" }}>
+                          <span style={{ fontWeight: 600, fontSize: "17px" }}>{activeProduct?.title}</span>
+                          {activeProduct?.pcfSpecs?.value && (
+                            <span
+                              style={{ position: "relative", display: "inline-flex" }}
+                              onMouseEnter={() => setSpecsOpen(true)}
+                              onMouseLeave={() => setSpecsOpen(false)}
+                            >
+                              <button
+                                onClick={() => setSpecsOpen((o) => !o)}
+                                aria-label="Specifikacije"
+                                style={{ width: "18px", height: "18px", borderRadius: "50%", border: `1px solid ${COLORS.accent}`, background: "none", color: COLORS.accent, fontSize: "11px", fontFamily: MONO, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1, flexShrink: 0 }}
+                              >
+                                i
+                              </button>
+                              {specsOpen && (
+                                <div style={{ position: "absolute", top: "26px", left: "0", zIndex: 20, width: "260px", background: COLORS.bgDark, border: `1px solid ${COLORS.border}`, borderRadius: "12px", padding: "13px 15px", boxShadow: "0 20px 50px -18px rgba(0,0,0,.9)" }}>
+                                  <div style={{ fontFamily: MONO, fontSize: "10px", letterSpacing: "1.5px", color: COLORS.accent, marginBottom: "9px" }}>SPECIFIKACIJE</div>
+                                  {activeProduct.pcfSpecs.value.split("\n").map((line) => line.trim()).filter(Boolean).map((line, i) => {
+                                    const ix = line.indexOf(":");
+                                    const lbl = ix === -1 ? "" : line.slice(0, ix).trim();
+                                    const val = ix === -1 ? line : line.slice(ix + 1).trim();
+                                    return (
+                                      <div key={i} style={{ display: "flex", justifyContent: "space-between", gap: "12px", fontSize: "12.5px", padding: "4px 0", borderBottom: i < activeProduct.pcfSpecs!.value.split("\n").filter((l) => l.trim()).length - 1 ? `1px solid ${COLORS.border}` : "none" }}>
+                                        {lbl && <span style={{ color: COLORS.textMuted }}>{lbl}</span>}
+                                        <span style={{ color: COLORS.textMain, fontWeight: 500, textAlign: "right" }}>{val}</span>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </span>
+                          )}
+                        </div>
                         <div style={{ display: "flex", alignItems: "center", gap: "12px", marginTop: "9px", flexWrap: "wrap" }}>
                           {currentStep !== "case" && currentStep !== "os" && (() => {
                             const q = getQualityScore(activeProduct?.pcfQuality?.value);
