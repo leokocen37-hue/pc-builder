@@ -71,7 +71,7 @@ export default function CartDrawer() {
 
             <div className="rs-cart-foot">
               <div className="rs-cart-sub">
-                <span>Međuzbroj</span>
+                <span>Ukupno</span>
                 <b>{formatEUR(subtotal)}</b>
               </div>
               <button

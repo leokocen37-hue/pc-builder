@@ -125,14 +125,14 @@ const ASSEMBLY_FEE = 200;
 const REC_LINE = " Opciju koju preporučujemo označili smo zvjezdicom ★.";
 const STEP_HELP: Record<string, string> = {
   cpu: "Procesor je 'mozak' računala. Varijante se uglavnom razlikuju po broju jezgri i brzini — više znači brže u zahtjevnim zadacima i igrama. Sve su kompatibilne s odabranom platformom." + REC_LINE,
-  mb: "Matična ploča povezuje sve komponente. Sve ponuđene odgovaraju vašem procesoru. Skuplje ploče nude više priključaka (USB, M.2), bolje napajanje za overclock i jače WiFi — za većinu korisnika i povoljnija ploča radi jednako pouzdano." + REC_LINE,
+  motherboard: "Matična ploča povezuje sve komponente. Sve ponuđene odgovaraju vašem procesoru. Skuplje ploče nude više priključaka (USB, M.2), bolje napajanje za overclock i jače WiFi — za većinu korisnika i povoljnija ploča radi jednako pouzdano." + REC_LINE,
   ram: "RAM je radna memorija — kratkoročni prostor u kojem računalo drži ono na čemu trenutno radi. Najvažnije je koliko GB ima: 16 GB je dovoljno za većinu, 32 GB za igre i posao, a 64 GB+ za profesionalni rad poput montaže ili 3D-a. Brojevi uz to govore o brzini: MHz (npr. 6000) — veći broj je brži; i CL (npr. CL30) — kod njega je manji broj bolji. Sve opcije su provjereno kompatibilne s vašom pločom." + REC_LINE,
   gpu: "Grafička kartica crta sliku i najviše utječe na igre. Varijante dijele isti čip, a razlikuju se po proizvođaču i hlađenju." + REC_LINE,
   ssd: "SSD je glavni disk — tu se instaliraju Windows, igre i programi, i on čini računalo brzim pri pokretanju. Birate kapacitet: što je veći broj (TB), to više stane. Svi su brzi (NVMe), razlika je uglavnom u prostoru." + REC_LINE,
   hdd: "Tvrdi disk (HDD) je jeftin dodatni prostor za pohranu — filmovi, slike, sigurnosne kopije. Veći broj TB = više prostora. Sporiji je od SSD-a pa služi za arhivu, ne za igre." + REC_LINE,
   psu: "Napajanje opskrbljuje cijelo računalo strujom. Veći broj W (vati) znači više snage u rezervi; konfigurator već pazi da bude dovoljno za vaše komponente. Kvalitetnije napajanje (80+ Gold i više) radi tiše i pouzdanije." + REC_LINE,
   cooler: "Hladnjak drži procesor na sigurnoj temperaturi da radi mirno i tiho. Sve ponuđene opcije pristaju na vaš procesor i kućište. Zračni hladnjaci su jednostavni i pouzdani, a vodeni (AIO) tiši uz jače procesore." + REC_LINE,
-  case: "Kućište je najviše stvar osobnog ukusa — sva su kvalitetna i sve komponente stanu u svako. Razlikuju se po izgledu, protoku zraka i staklenim stranicama. Odaberite ono koje vam se najviše sviđa." + REC_LINE,
+  case: "Kućište je najviše stvar osobnog ukusa — sva su kvalitetna i vaše odabrane komponente stanu u svako od njih. Razlikuju se po izgledu, protoku zraka i staklenim stranicama. Odaberite ono koje vam se najviše sviđa." + REC_LINE,
   os: "Svako računalo isporučujemo sa instaliranim i temeljito testiranim sustavom Windows. Windows 11 Home/Pro dolaze s aktivnom licencom. Ako odaberete „Bez operativnog sustava\u201d, i dalje instaliramo Windows kako bismo računalo provjerili i testirali, ali bez aktivirane licence — aktivirate ga vlastitim ključem. Računalo nikada ne šaljemo neispravno ili neprovjereno.",
 };
 
@@ -716,7 +716,29 @@ function BuilderContent() {
   };
 
   const shareBuild = () => {
-    navigator.clipboard.writeText(window.location.href);
+    // Build the URL from the current configuration directly, so it always contains
+    // the full build even if the address bar was cleaned (e.g. after clicking the
+    // header "Konfigurator" link, which strips the query params).
+    const params = new URLSearchParams();
+    if (brand) params.set("brand", brand);
+    if (cpu) params.set("cpu", cpu.selectedVariant?.id || cpu.id);
+    if (mb) params.set("mb", mb.selectedVariant?.id || mb.id);
+    if (ram) params.set("ram", ram.selectedVariant?.id || ram.id);
+    if (gpu) params.set("gpu", gpu.selectedVariant?.id || gpu.id);
+    if (gpu2) params.set("gpu2", gpu2.selectedVariant?.id || gpu2.id);
+    if (ssd) params.set("ssd", ssd.selectedVariant?.id || ssd.id);
+    if (ssd2) params.set("ssd2", ssd2.selectedVariant?.id || ssd2.id);
+    if (hdd) params.set("hdd", hdd.selectedVariant?.id || hdd.id);
+    if (hdd2) params.set("hdd2", hdd2.selectedVariant?.id || hdd2.id);
+    if (pcCase) params.set("case", pcCase.selectedVariant?.id || pcCase.id);
+    if (psu) params.set("psu", psu.selectedVariant?.id || psu.id);
+    if (cooler) params.set("cooler", cooler.selectedVariant?.id || cooler.id);
+    if (os) params.set("os", os.selectedVariant?.id || os.id);
+
+    const url = `${window.location.origin}/konfigurator?${params.toString()}`;
+    navigator.clipboard.writeText(url);
+    // keep the address bar in sync too
+    window.history.replaceState(null, "", `/konfigurator?${params.toString()}`);
     setShareCopied(true);
     setTimeout(() => setShareCopied(false), 1800);
   };
@@ -1040,17 +1062,20 @@ function BuilderContent() {
                       setBrand("intel");
                       setStepIndex(1);
                     }}
-                    style={{ ...brandBtnStyle, borderTop: "3px solid #0099ff", alignItems: "center", gap: "12px" }}
+                    style={{ ...brandBtnStyle, borderTop: "3px solid #0099ff", alignItems: "center", gap: "14px" }}
                   >
                     <span style={{ fontFamily: MONO, fontSize: "11px", letterSpacing: "2.5px", color: COLORS.textMuted }}>
                       PLATFORMA
                     </span>
-                    <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#3da5ff" strokeWidth="1.5" strokeLinecap="round">
-                      <rect x="7" y="7" width="10" height="10" rx="2" />
-                      <rect x="10.5" y="10.5" width="3" height="3" rx="0.5" fill="#3da5ff" stroke="none" />
-                      <path d="M9.5 3v4M12 3v4M14.5 3v4M9.5 17v4M12 17v4M14.5 17v4M3 9.5h4M3 12h4M3 14.5h4M17 9.5h4M17 12h4M17 14.5h4" />
-                    </svg>
-                    <span style={{ fontSize: "30px", fontWeight: 700, letterSpacing: "-.5px", color: "#3da5ff" }}>intel</span>
+                    <div style={{ height: "58px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <img
+                        src="/intel.svg"
+                        alt="Intel"
+                        style={{ maxHeight: "58px", maxWidth: "150px", objectFit: "contain" }}
+                        onError={(e) => { const t = e.currentTarget; t.style.display = "none"; const f = t.nextElementSibling as HTMLElement; if (f) f.style.display = "inline"; }}
+                      />
+                      <span style={{ display: "none", fontSize: "34px", fontWeight: 700, letterSpacing: "-.5px", color: "#3da5ff" }}>intel</span>
+                    </div>
                     <span style={{ fontFamily: MONO, fontSize: "11px", color: COLORS.textMuted, letterSpacing: "1px" }}>Core &amp; Core Ultra</span>
                   </button>
                   <button
@@ -1058,17 +1083,20 @@ function BuilderContent() {
                       setBrand("amd");
                       setStepIndex(1);
                     }}
-                    style={{ ...brandBtnStyle, borderTop: "3px solid #ff5e00", alignItems: "center", gap: "12px" }}
+                    style={{ ...brandBtnStyle, borderTop: "3px solid #ff5e00", alignItems: "center", gap: "14px" }}
                   >
                     <span style={{ fontFamily: MONO, fontSize: "11px", letterSpacing: "2.5px", color: COLORS.textMuted }}>
                       PLATFORMA
                     </span>
-                    <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#ff7a33" strokeWidth="1.5" strokeLinecap="round">
-                      <rect x="7" y="7" width="10" height="10" rx="2" />
-                      <rect x="10.5" y="10.5" width="3" height="3" rx="0.5" fill="#ff7a33" stroke="none" />
-                      <path d="M9.5 3v4M12 3v4M14.5 3v4M9.5 17v4M12 17v4M14.5 17v4M3 9.5h4M3 12h4M3 14.5h4M17 9.5h4M17 12h4M17 14.5h4" />
-                    </svg>
-                    <span style={{ fontSize: "30px", fontWeight: 800, letterSpacing: "0px", color: "#ff7a33" }}>AMD</span>
+                    <div style={{ height: "58px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <img
+                        src="/amd.svg"
+                        alt="AMD"
+                        style={{ maxHeight: "52px", maxWidth: "150px", objectFit: "contain" }}
+                        onError={(e) => { const t = e.currentTarget; t.style.display = "none"; const f = t.nextElementSibling as HTMLElement; if (f) f.style.display = "inline"; }}
+                      />
+                      <span style={{ display: "none", fontSize: "34px", fontWeight: 800, color: "#ff7a33" }}>AMD</span>
+                    </div>
                     <span style={{ fontFamily: MONO, fontSize: "11px", color: COLORS.textMuted, letterSpacing: "1px" }}>Ryzen</span>
                   </button>
                 </div>
@@ -1400,7 +1428,7 @@ function BuilderContent() {
                         </div>
                         <div style={{ fontWeight: 600, fontSize: "17px", marginTop: "4px" }}>{activeProduct?.title}</div>
                         <div style={{ display: "flex", alignItems: "center", gap: "12px", marginTop: "9px", flexWrap: "wrap" }}>
-                          {currentStep !== "case" && (() => {
+                          {currentStep !== "case" && currentStep !== "os" && (() => {
                             const q = getQualityScore(activeProduct?.pcfQuality?.value);
                             const label = ["—", "Osnovna", "Dobra", "Vrlo dobra", "Vrhunska", "Elitna"][q] || "—";
                             return (
