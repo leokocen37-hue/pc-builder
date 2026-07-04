@@ -177,6 +177,7 @@ function BuilderContent() {
   const [viewMode, setViewMode] = useState<"coverflow" | "grid">("coverflow");
   const [shareCopied, setShareCopied] = useState(false);
   const [hoverBrand, setHoverBrand] = useState<string | null>(null);
+  const [hoverCard, setHoverCard] = useState<number | null>(null);
   const [specsOpen, setSpecsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
@@ -1258,6 +1259,8 @@ function BuilderContent() {
                           <div
                             key={p.id}
                             data-cardidx={idx}
+                            onMouseEnter={() => setHoverCard(idx)}
+                            onMouseLeave={() => setHoverCard((c) => (c === idx ? null : c))}
                             style={{
                               position: "absolute",
                               left: "50%",
@@ -1267,7 +1270,7 @@ function BuilderContent() {
                               borderRadius: "18px",
                               padding: isMobile ? "14px" : "18px",
                               background: "linear-gradient(165deg,#171b27,#0d0f17)",
-                              border: isActive ? "1px solid rgba(216,31,216,.7)" : `1px solid ${COLORS.border}`,
+                              border: isActive ? "1px solid rgba(216,31,216,.7)" : hoverCard === idx ? "1px solid rgba(216,31,216,.4)" : `1px solid ${COLORS.border}`,
                               boxShadow: isActive
                                 ? "0 0 0 1px rgba(216,31,216,.55), 0 30px 70px -22px rgba(216,31,216,.5)"
                                 : "0 22px 44px -22px rgba(0,0,0,.85)",
@@ -1277,7 +1280,7 @@ function BuilderContent() {
                               userSelect: "none",
                               transformOrigin: "center center",
                               willChange: "transform",
-                              transform: `translate(-50%,-50%) ${cs.transform}`,
+                              transform: `translate(-50%,-50%) ${cs.transform}${hoverCard === idx && !isDragging ? " translateY(-7px)" : ""}`,
                               opacity: cs.opacity,
                               zIndex: cs.zIndex,
                               transition: cs.transition,
@@ -1359,6 +1362,8 @@ function BuilderContent() {
                               if (selected) handleSelection(currentStep, p);
                               else setActiveIndex(idx);
                             }}
+                            onMouseEnter={() => setHoverCard(idx)}
+                            onMouseLeave={() => setHoverCard((c) => (c === idx ? null : c))}
                             style={{
                               position: "relative",
                               background: COLORS.bgCard,
@@ -1366,9 +1371,12 @@ function BuilderContent() {
                               padding: "15px",
                               cursor: "pointer",
                               transition: "all .18s",
-                              border: selected ? "1px solid rgba(216,31,216,.7)" : `1px solid ${COLORS.border}`,
+                              transform: hoverCard === idx && !selected ? "translateY(-5px)" : "none",
+                              border: selected ? "1px solid rgba(216,31,216,.7)" : hoverCard === idx ? "1px solid rgba(216,31,216,.4)" : `1px solid ${COLORS.border}`,
                               boxShadow: selected
                                 ? "0 0 0 1px rgba(216,31,216,.5), 0 20px 44px -24px rgba(216,31,216,.5)"
+                                : hoverCard === idx
+                                ? "0 18px 38px -22px rgba(0,0,0,.8)"
                                 : "none",
                             }}
                           >
