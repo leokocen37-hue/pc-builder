@@ -37,7 +37,14 @@ export default function CartDrawer() {
                   <div className="rs-line-info">
                     <div className="rs-line-title">{l.title}</div>
                     {l.kind === "custom" ? (
-                      <div className="rs-line-variant" style={{ maxHeight: 34, overflow: "hidden" }}>Custom konfiguracija</div>
+                      <details className="rs-line-specs">
+                        <summary>Prikaži komponente</summary>
+                        <ul>
+                          {l.summary.split(",").map((part, i) => (
+                            <li key={i}>{part.trim()}</li>
+                          ))}
+                        </ul>
+                      </details>
                     ) : (
                       l.variantTitle && <div className="rs-line-variant">{l.variantTitle}</div>
                     )}

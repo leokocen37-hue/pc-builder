@@ -122,14 +122,17 @@ const STEP_GLYPH: Record<string, string> = {
 const ASSEMBLY_FEE = 200;
 
 // Plain-language guidance so non-technical buyers can choose a variant with confidence.
+const REC_LINE = " Opciju koju preporučujemo označili smo zvjezdicom ★.";
 const STEP_HELP: Record<string, string> = {
-  ram: "RAM je radna memorija — kratkoročni prostor u kojem računalo drži ono na čemu trenutno radi. Najvažnije je koliko GB ima: više GB znači da lakše radi više stvari odjednom (npr. igra + preglednik + Discord). 16 GB je dovoljno za većinu, 32 GB za igre i posao, a 64 GB+ za profesionalni rad poput montaže ili 3D-a. Brojevi uz to govore o brzini: MHz (npr. 6000) — što veći broj, to brže; i CL (npr. CL30) — kod njega je obrnuto, manji broj je bolji. Bržu memoriju računalo malo brže koristi. Sve opcije koje nudimo su provjereno kompatibilne s vašom pločom, a prvi odabir je naša preporuka.",
-  ssd: "SSD je glavni disk — tu se instaliraju Windows, igre i programi, i on čini računalo brzim pri pokretanju. Birate kapacitet: što je veći broj (TB), to više stane. Svi su brzi (NVMe), razlika je samo u količini prostora. Prvi odabir je naša preporuka.",
-  hdd: "Tvrdi disk (HDD) je jeftin dodatni prostor za pohranu — filmovi, slike, sigurnosne kopije. Veći broj TB = više prostora. Sporiji je od SSD-a pa služi za arhivu, ne za igre. Prvi odabir je naša preporuka.",
-  cpu: "Procesor je 'mozak' računala. Varijante se uglavnom razlikuju po broju jezgri i brzini — više znači brže u zahtjevnim zadacima i igrama. Sve su kompatibilne s odabranom platformom, a prvi odabir je naša preporuka.",
-  gpu: "Grafička kartica crta sliku i najviše utječe na igre. Varijante dijele isti čip, a razlikuju se po proizvođaču i hlađenju. Prvi odabir je naša preporuka.",
-  psu: "Napajanje opskrbljuje cijelo računalo strujom. Veći broj W (vati) znači više snage u rezervi; konfigurator već pazi da bude dovoljno za vaše komponente. Prvi odabir je naša preporuka.",
-  cooler: "Hladnjak drži procesor na sigurnoj temperaturi da radi mirno i tiho. Sve ponuđene opcije pristaju na vaš procesor i kućište. Prvi odabir je naša preporuka.",
+  cpu: "Procesor je 'mozak' računala. Varijante se uglavnom razlikuju po broju jezgri i brzini — više znači brže u zahtjevnim zadacima i igrama. Sve su kompatibilne s odabranom platformom." + REC_LINE,
+  mb: "Matična ploča povezuje sve komponente. Sve ponuđene odgovaraju vašem procesoru. Skuplje ploče nude više priključaka (USB, M.2), bolje napajanje za overclock i jače WiFi — za većinu korisnika i povoljnija ploča radi jednako pouzdano." + REC_LINE,
+  ram: "RAM je radna memorija — kratkoročni prostor u kojem računalo drži ono na čemu trenutno radi. Najvažnije je koliko GB ima: 16 GB je dovoljno za većinu, 32 GB za igre i posao, a 64 GB+ za profesionalni rad poput montaže ili 3D-a. Brojevi uz to govore o brzini: MHz (npr. 6000) — veći broj je brži; i CL (npr. CL30) — kod njega je manji broj bolji. Sve opcije su provjereno kompatibilne s vašom pločom." + REC_LINE,
+  gpu: "Grafička kartica crta sliku i najviše utječe na igre. Varijante dijele isti čip, a razlikuju se po proizvođaču i hlađenju." + REC_LINE,
+  ssd: "SSD je glavni disk — tu se instaliraju Windows, igre i programi, i on čini računalo brzim pri pokretanju. Birate kapacitet: što je veći broj (TB), to više stane. Svi su brzi (NVMe), razlika je uglavnom u prostoru." + REC_LINE,
+  hdd: "Tvrdi disk (HDD) je jeftin dodatni prostor za pohranu — filmovi, slike, sigurnosne kopije. Veći broj TB = više prostora. Sporiji je od SSD-a pa služi za arhivu, ne za igre." + REC_LINE,
+  psu: "Napajanje opskrbljuje cijelo računalo strujom. Veći broj W (vati) znači više snage u rezervi; konfigurator već pazi da bude dovoljno za vaše komponente. Kvalitetnije napajanje (80+ Gold i više) radi tiše i pouzdanije." + REC_LINE,
+  cooler: "Hladnjak drži procesor na sigurnoj temperaturi da radi mirno i tiho. Sve ponuđene opcije pristaju na vaš procesor i kućište. Zračni hladnjaci su jednostavni i pouzdani, a vodeni (AIO) tiši uz jače procesore." + REC_LINE,
+  case: "Kućište je najviše stvar osobnog ukusa — sva su kvalitetna i sve komponente stanu u svako. Razlikuju se po izgledu, protoku zraka i staklenim stranicama. Odaberite ono koje vam se najviše sviđa." + REC_LINE,
   os: "Svako računalo isporučujemo sa instaliranim i temeljito testiranim sustavom Windows. Windows 11 Home/Pro dolaze s aktivnom licencom. Ako odaberete „Bez operativnog sustava\u201d, i dalje instaliramo Windows kako bismo računalo provjerili i testirali, ali bez aktivirane licence — aktivirate ga vlastitim ključem. Računalo nikada ne šaljemo neispravno ili neprovjereno.",
 };
 
@@ -226,6 +229,7 @@ function BuilderContent() {
 
   const getQualityScore = (quality?: string) => {
     const q = (quality || "").toLowerCase();
+    if (q === "flagship") return 5;
     if (q === "excellent") return 4;
     if (q === "very good") return 3;
     if (q === "good") return 2;
@@ -1036,24 +1040,36 @@ function BuilderContent() {
                       setBrand("intel");
                       setStepIndex(1);
                     }}
-                    style={{ ...brandBtnStyle, borderTop: "3px solid #3da5ff" }}
+                    style={{ ...brandBtnStyle, borderTop: "3px solid #0099ff", alignItems: "center", gap: "12px" }}
                   >
                     <span style={{ fontFamily: MONO, fontSize: "11px", letterSpacing: "2.5px", color: COLORS.textMuted }}>
                       PLATFORMA
                     </span>
-                    <span style={{ fontSize: "30px", fontWeight: 700 }}>INTEL</span>
+                    <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#3da5ff" strokeWidth="1.5" strokeLinecap="round">
+                      <rect x="7" y="7" width="10" height="10" rx="2" />
+                      <rect x="10.5" y="10.5" width="3" height="3" rx="0.5" fill="#3da5ff" stroke="none" />
+                      <path d="M9.5 3v4M12 3v4M14.5 3v4M9.5 17v4M12 17v4M14.5 17v4M3 9.5h4M3 12h4M3 14.5h4M17 9.5h4M17 12h4M17 14.5h4" />
+                    </svg>
+                    <span style={{ fontSize: "30px", fontWeight: 700, letterSpacing: "-.5px", color: "#3da5ff" }}>intel</span>
+                    <span style={{ fontFamily: MONO, fontSize: "11px", color: COLORS.textMuted, letterSpacing: "1px" }}>Core &amp; Core Ultra</span>
                   </button>
                   <button
                     onClick={() => {
                       setBrand("amd");
                       setStepIndex(1);
                     }}
-                    style={{ ...brandBtnStyle, borderTop: "3px solid #ff5e00" }}
+                    style={{ ...brandBtnStyle, borderTop: "3px solid #ff5e00", alignItems: "center", gap: "12px" }}
                   >
                     <span style={{ fontFamily: MONO, fontSize: "11px", letterSpacing: "2.5px", color: COLORS.textMuted }}>
                       PLATFORMA
                     </span>
-                    <span style={{ fontSize: "30px", fontWeight: 700 }}>AMD</span>
+                    <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#ff7a33" strokeWidth="1.5" strokeLinecap="round">
+                      <rect x="7" y="7" width="10" height="10" rx="2" />
+                      <rect x="10.5" y="10.5" width="3" height="3" rx="0.5" fill="#ff7a33" stroke="none" />
+                      <path d="M9.5 3v4M12 3v4M14.5 3v4M9.5 17v4M12 17v4M14.5 17v4M3 9.5h4M3 12h4M3 14.5h4M17 9.5h4M17 12h4M17 14.5h4" />
+                    </svg>
+                    <span style={{ fontSize: "30px", fontWeight: 800, letterSpacing: "0px", color: "#ff7a33" }}>AMD</span>
+                    <span style={{ fontFamily: MONO, fontSize: "11px", color: COLORS.textMuted, letterSpacing: "1px" }}>Ryzen</span>
                   </button>
                 </div>
               </div>
@@ -1227,6 +1243,9 @@ function BuilderContent() {
                               transition: cs.transition,
                             }}
                           >
+                            {(p.pcfRecommended?.value || "").toLowerCase() === "true" && (
+                              <span title="Naša preporuka" style={{ position: "absolute", top: "10px", right: "10px", zIndex: 5, width: "26px", height: "26px", borderRadius: "50%", background: "linear-gradient(135deg,#ffd36b,#ffb84d)", color: "#0a0a0a", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px", boxShadow: "0 4px 12px rgba(255,184,77,.5)" }}>★</span>
+                            )}
                             {p.pcfBadge?.value && badgeStyle && (
                               <span
                                 style={{
@@ -1301,6 +1320,7 @@ function BuilderContent() {
                               else setActiveIndex(idx);
                             }}
                             style={{
+                              position: "relative",
                               background: COLORS.bgCard,
                               borderRadius: "16px",
                               padding: "15px",
@@ -1312,6 +1332,9 @@ function BuilderContent() {
                                 : "none",
                             }}
                           >
+                            {(p.pcfRecommended?.value || "").toLowerCase() === "true" && (
+                              <span title="Naša preporuka" style={{ position: "absolute", top: "10px", right: "10px", zIndex: 5, width: "26px", height: "26px", borderRadius: "50%", background: "linear-gradient(135deg,#ffd36b,#ffb84d)", color: "#0a0a0a", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px", boxShadow: "0 4px 12px rgba(255,184,77,.5)" }}>★</span>
+                            )}
                             <div style={{ position: "relative", width: "100%", aspectRatio: "4/3", marginBottom: "14px" }}>
                               <ImageBlock src={dv.img} h="100%" />
                               {p.pcfBadge?.value && badgeStyle && (
@@ -1377,20 +1400,23 @@ function BuilderContent() {
                         </div>
                         <div style={{ fontWeight: 600, fontSize: "17px", marginTop: "4px" }}>{activeProduct?.title}</div>
                         <div style={{ display: "flex", alignItems: "center", gap: "12px", marginTop: "9px", flexWrap: "wrap" }}>
-                          {(() => {
+                          {currentStep !== "case" && (() => {
                             const q = getQualityScore(activeProduct?.pcfQuality?.value);
-                            const label = ["—", "Osnovna", "Dobra", "Vrlo dobra", "Vrhunska"][q] || "—";
+                            const label = ["—", "Osnovna", "Dobra", "Vrlo dobra", "Vrhunska", "Elitna"][q] || "—";
                             return (
                               <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
                                 <div style={{ display: "flex", gap: "3px" }}>
-                                  {[1, 2, 3, 4].map((i) => (
-                                    <span key={i} style={{ width: "18px", height: "5px", borderRadius: "3px", background: i <= q ? COLORS.accent : "rgba(255,255,255,.14)" }} />
+                                  {[1, 2, 3, 4, 5].map((i) => (
+                                    <span key={i} style={{ width: "16px", height: "5px", borderRadius: "3px", background: i <= q ? COLORS.accent : "rgba(255,255,255,.14)" }} />
                                   ))}
                                 </div>
                                 <span style={{ fontFamily: MONO, fontSize: "11px", color: COLORS.textMuted, letterSpacing: ".5px" }}>Razina: {label}</span>
                               </div>
                             );
                           })()}
+                          {currentStep === "case" && (
+                            <span style={{ fontFamily: MONO, fontSize: "11px", color: COLORS.textMuted, letterSpacing: ".5px" }}>Stvar osobnog ukusa — sva su kvalitetna</span>
+                          )}
                           {(activeProduct?.pcfRecommended?.value || "").toLowerCase() === "true" && (
                             <span style={{ fontFamily: MONO, fontSize: "10px", fontWeight: 700, letterSpacing: "1px", color: "#0a0a0a", background: "linear-gradient(90deg,#ffd36b,#ffb84d)", padding: "4px 9px", borderRadius: "20px" }}>
                               ★ NAŠA PREPORUKA
