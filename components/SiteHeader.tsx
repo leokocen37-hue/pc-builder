@@ -18,9 +18,7 @@ export default function SiteHeader() {
           <nav className="rs-links">
             <Link href="/konfigurator">Konfigurator</Link>
             <Link href="/gotova-racunala">Računala</Link>
-            <Link href="/laptopi">Laptopi</Link>
             <Link href="/periferija">Periferija</Link>
-            <Link href="/playstation">PlayStation</Link>
             <Link href="/kontakt">Kontakt</Link>
           </nav>
           <div className="rs-nav-right">

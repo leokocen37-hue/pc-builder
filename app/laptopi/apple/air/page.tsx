@@ -1,10 +1,5 @@
-import CollectionView from "@/components/CollectionView";
-const APPLE_TABS = [
-  { label: "Svi Apple", href: "/laptopi/apple" },
-  { label: "Air", href: "/laptopi/apple/air" },
-  { label: "Pro", href: "/laptopi/apple/pro" },
-  { label: "Neo", href: "/laptopi/apple/neo" },
-];
-export default function MacBookAirPage() {
-  return <CollectionView kicker="Apple" heading="MacBook Air" activeHref="/laptopi/apple/air" tabs={APPLE_TABS} collectionHandles={["macbook-air"]} />;
+import { notFound } from "next/navigation";
+ 
+export default function HiddenPage() {
+  notFound();
 }

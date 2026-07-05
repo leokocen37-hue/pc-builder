@@ -121,24 +121,29 @@ export default function HomePage() {
         <div className="rs-wrap">
           <div className="rs-head">
             <div className="rs-kicker">Trgovina</div>
-            <h2>Kupuj po kategorijama</h2>
-            <p>Laptopi, PlayStation i periferija — sve na jednom mjestu.</p>
+            <h2>Sve za tvoj setup</h2>
+            <p>Nadopuni svoje računalo — monitori, tipkovnice i miševi.</p>
           </div>
-          <div className="rs-bento">
-            <Link href="/laptopi" className="rs-bento-tile rs-bento-a" style={{ background: "linear-gradient(150deg,#3a1f7a,#a020f0)" }}>
-              <span className="rs-bento-label">Laptopi</span>
-              <span className="rs-bento-sub">Apple & Windows — za posao i igru</span>
-              <span className="rs-bento-cta">Istraži →</span>
+          <div className="rs-cats">
+            <Link href="/monitori" className="rs-cat" style={{ background: "linear-gradient(135deg,#0e5a8a,#22a3d8)" }}>
+              <span className="rs-cat-label">Monitori</span>
+              <span className="rs-cat-sub">Gaming & uredski</span>
+              <span className="rs-cat-link">Pogledaj →</span>
             </Link>
-            <Link href="/playstation" className="rs-bento-tile" style={{ background: "linear-gradient(135deg,#1f3a8a,#2f6ff7)" }}>
-              <span className="rs-bento-label">PlayStation</span>
-              <span className="rs-bento-sub">PS5 Slim & Pro</span>
-              <span className="rs-bento-cta">Istraži →</span>
+            <Link href="/tipkovnice" className="rs-cat" style={{ background: "linear-gradient(135deg,#8a0e6a,#d81fd8)" }}>
+              <span className="rs-cat-label">Tipkovnice</span>
+              <span className="rs-cat-sub">Mehaničke & RGB</span>
+              <span className="rs-cat-link">Pogledaj →</span>
             </Link>
-            <Link href="/periferija" className="rs-bento-tile" style={{ background: "linear-gradient(135deg,#8a0e6a,#d81fd8)" }}>
-              <span className="rs-bento-label">Periferija</span>
-              <span className="rs-bento-sub">Monitori, tipkovnice, miševi</span>
-              <span className="rs-bento-cta">Istraži →</span>
+            <Link href="/misevi" className="rs-cat" style={{ background: "linear-gradient(135deg,#0e7a52,#27c08a)" }}>
+              <span className="rs-cat-label">Miševi</span>
+              <span className="rs-cat-sub">Gaming & precizni</span>
+              <span className="rs-cat-link">Pogledaj →</span>
+            </Link>
+            <Link href="/periferija" className="rs-cat" style={{ background: "linear-gradient(135deg,#3a1f7a,#7b2ff7)" }}>
+              <span className="rs-cat-label">Sva periferija</span>
+              <span className="rs-cat-sub">Pregledaj sve</span>
+              <span className="rs-cat-link">Pogledaj →</span>
             </Link>
           </div>
         </div>
