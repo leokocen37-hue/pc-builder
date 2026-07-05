@@ -23,10 +23,13 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // Not unlocked → show the lock screen (rewrite so the URL stays the same).
+  // Not unlocked → show the lock screen (rewrite so the URL stays the same),
+  // and flag it so the layout renders ONLY the lock screen (no header/cart).
+  const requestHeaders = new Headers(req.headers);
+  requestHeaders.set("x-site-locked", "1");
   const url = req.nextUrl.clone();
   url.pathname = "/zakljucano";
-  return NextResponse.rewrite(url);
+  return NextResponse.rewrite(url, { request: { headers: requestHeaders } });
 }
 
 // run on everything except the assets we already allowed above

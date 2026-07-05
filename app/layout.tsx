@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import "./storefront.css";                 // ← add: storefront styles
-import { CartProvider } from "@/lib/cart";  // ← add
-import SiteHeader from "@/components/SiteHeader"; // ← add
-import CartDrawer from "@/components/CartDrawer"; // ← add
+import "./storefront.css";
+import { CartProvider } from "@/lib/cart";
+import SiteHeader from "@/components/SiteHeader";
+import CartDrawer from "@/components/CartDrawer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -20,11 +21,14 @@ export const metadata: Metadata = {
   description: "Ručno sastavljena i testirana računala po mjeri. Složi svoje u konfiguratoru ili odaberi gotovu konfiguraciju.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const h = await headers();
+  const locked = h.get("x-site-locked") === "1";
+
   return (
     <html lang="hr">
       <head>
@@ -36,11 +40,16 @@ export default function RootLayout({
         />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
-        <CartProvider>
-          <SiteHeader />
-          {children}
-          <CartDrawer />
-        </CartProvider>
+        {locked ? (
+          // lock screen only — no header, cart or announcement bar
+          children
+        ) : (
+          <CartProvider>
+            <SiteHeader />
+            {children}
+            <CartDrawer />
+          </CartProvider>
+        )}
       </body>
     </html>
   );
