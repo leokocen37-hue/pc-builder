@@ -16,6 +16,7 @@ export default function SiteHeader() {
         <div className="rs-nav-inner">
           <Link href="/" className="rs-logo">RAČUNALO<span>.hr</span></Link>
           <nav className="rs-links">
+            <Link href="/">Početna</Link>
             <Link href="/konfigurator">Konfigurator</Link>
             <Link href="/gotova-racunala">Računala</Link>
             <Link href="/periferija">Periferija</Link>
