@@ -8,14 +8,14 @@ const PERIFERIJA_TABS = [
   { label: "Slušalice", href: "/slusalice" },
 ];
  
-export default function TipkovnicePage() {
+export default function SlusalicePage() {
   return (
     <CollectionView
       kicker="Periferija"
-      heading="Tipkovnice"
-      activeHref="/tipkovnice"
+      heading="Slušalice"
+      activeHref="/slusalice"
       tabs={PERIFERIJA_TABS}
-      collectionHandles={["tipkovnice"]}
+      collectionHandles={["slusalice"]}
     />
   );
 }

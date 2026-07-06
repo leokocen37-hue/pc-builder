@@ -140,9 +140,9 @@ export default function HomePage() {
               <span className="rs-cat-sub">Gaming & precizni</span>
               <span className="rs-cat-link">Pogledaj →</span>
             </Link>
-            <Link href="/periferija" className="rs-cat" style={{ background: "linear-gradient(135deg,#3a1f7a,#7b2ff7)" }}>
-              <span className="rs-cat-label">Sva periferija</span>
-              <span className="rs-cat-sub">Pregledaj sve</span>
+            <Link href="/slusalice" className="rs-cat" style={{ background: "linear-gradient(135deg,#3a1f7a,#7b2ff7)" }}>
+              <span className="rs-cat-label">Slušalice</span>
+              <span className="rs-cat-sub">Gaming & bežične</span>
               <span className="rs-cat-link">Pogledaj →</span>
             </Link>
           </div>

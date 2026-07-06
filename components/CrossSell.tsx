@@ -6,7 +6,7 @@ import { shopifyFetch } from "@/lib/shopify";
 import { useCart, formatEUR } from "@/lib/cart";
 
 // Which collections to pull cross-sell items from. Edit to match your handles.
-const CROSS_SELL_HANDLES = ["tipkovnice", "misevi", "monitori"];
+const CROSS_SELL_HANDLES = ["tipkovnice", "misevi", "monitori", "slusalice"];
 const MAX_ITEMS = 6;
 
 type Node = {
