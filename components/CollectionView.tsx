@@ -7,10 +7,12 @@ import { shopifyFetch } from "@/lib/shopify";
 import { formatMoney } from "@/lib/cart";
 
 type Money = { amount: string; currencyCode: string };
+type Metafield = { key: string; value: string } | null;
 type ProductNode = {
   id: string; title: string; handle: string; availableForSale: boolean;
   featuredImage?: { url: string; altText?: string | null } | null;
   priceRange: { minVariantPrice: Money };
+  metafields?: Metafield[];
 };
 type CollectionResp = { collection: { products: { edges: { node: ProductNode }[] } } | null };
 
@@ -22,6 +24,10 @@ const QUERY = `
           id title handle availableForSale
           featuredImage { url altText }
           priceRange { minVariantPrice { amount currencyCode } }
+          metafields(identifiers: [
+            { namespace: "pcf", key: "pick" },
+            { namespace: "pcf", key: "recommended" }
+          ]) { key value }
         }}
       }
     }
@@ -102,25 +108,30 @@ export default function CollectionView({
             ) : products.length === 0 ? (
               <div className="rs-empty">Trenutno nema konfiguracija u ovoj kategoriji.</div>
             ) : (
-              products.map((p) => (
-                <Link key={p.id} href={`/${p.handle}`} className="rs-card">
-                  <div className="rs-ph">
-                    {p.featuredImage?.url ? (
-                      <img src={p.featuredImage.url} alt={p.featuredImage.altText || p.title} loading="lazy" />
-                    ) : (
-                      <div className="rs-ph-fallback" />
-                    )}
-                    {!p.availableForSale && <span className="rs-badge">Uskoro</span>}
-                  </div>
-                  <div className="rs-card-body">
-                    <h4>{p.title}</h4>
-                    <div className="rs-price-row">
-                      <span className="rs-price">{formatMoney(p.priceRange?.minVariantPrice)}</span>
-                      <span className="rs-buy">Detalji →</span>
+              products.map((p) => {
+                const pick = p.metafields?.find((m) => m && m.key === "pick")?.value || "";
+                const rec = (p.metafields?.find((m) => m && m.key === "recommended")?.value || "").toLowerCase() === "true";
+                return (
+                  <Link key={p.id} href={`/${p.handle}`} className="rs-card">
+                    <div className="rs-ph">
+                      {p.featuredImage?.url ? (
+                        <img src={p.featuredImage.url} alt={p.featuredImage.altText || p.title} loading="lazy" />
+                      ) : (
+                        <div className="rs-ph-fallback" />
+                      )}
+                      {pick && <span className={`rs-pick ${rec ? "rs-pick-rec" : ""}`}>{rec ? `★ ${pick}` : pick}</span>}
+                      {!p.availableForSale && <span className="rs-badge">Uskoro</span>}
                     </div>
-                  </div>
-                </Link>
-              ))
+                    <div className="rs-card-body">
+                      <h4>{p.title}</h4>
+                      <div className="rs-price-row">
+                        <span className="rs-price">{formatMoney(p.priceRange?.minVariantPrice)}</span>
+                        <span className="rs-buy">Detalji →</span>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })
             )}
           </div>
         </div>
