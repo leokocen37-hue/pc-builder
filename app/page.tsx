@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { shopifyFetch } from "@/lib/shopify";
 import { formatMoney } from "@/lib/cart";
+import Reveal from "@/components/Reveal";
 
 const CONFIGURATOR_PATH = "/konfigurator";
 
@@ -77,7 +78,7 @@ export default function HomePage() {
 
       {/* configurator centerpiece */}
       <section className="rs-config" id="konfigurator">
-        <div className="rs-wrap rs-config-grid">
+        <Reveal className="rs-wrap rs-config-grid">
           <div>
             <div className="rs-kicker">Naš konfigurator</div>
             <h2>Sastavi računalo<br />točno po svojoj mjeri</h2>
@@ -100,31 +101,35 @@ export default function HomePage() {
               ))}
             </div>
           </Link>
-        </div>
+        </Reveal>
       </section>
 
       {/* prebuilts */}
       <section id="gotova" className="rs-section">
         <div className="rs-wrap">
-          <div className="rs-head">
+          <Reveal className="rs-head">
             <div className="rs-kicker">Gotova računala</div>
             <h2>Spremno za svaki izazov</h2>
             <p>Provjereni buildovi — ili kreni od nule u konfiguratoru.</p>
-          </div>
-          <CollectionRow title="Gaming računala" href="/gaming-racunala" products={gaming} loading={loading} />
-          <CollectionRow title="Radne stanice" href="/radne-stanice" products={stanice} loading={loading} />
+          </Reveal>
+          <Reveal delay={80}>
+            <CollectionRow title="Gaming računala" href="/gaming-racunala" products={gaming} loading={loading} />
+          </Reveal>
+          <Reveal delay={140}>
+            <CollectionRow title="Radne stanice" href="/radne-stanice" products={stanice} loading={loading} />
+          </Reveal>
         </div>
       </section>
 
       {/* categories */}
       <section id="kategorije" className="rs-section rs-section-alt">
         <div className="rs-wrap">
-          <div className="rs-head">
+          <Reveal className="rs-head">
             <div className="rs-kicker">Trgovina</div>
             <h2>Sve za tvoj setup</h2>
             <p>Nadopuni svoje računalo — monitori, tipkovnice i miševi.</p>
-          </div>
-          <div className="rs-cats">
+          </Reveal>
+          <Reveal className="rs-cats" delay={80}>
             <Link href="/monitori" className="rs-cat" style={{ background: "linear-gradient(135deg,#0e5a8a,#22a3d8)" }}>
               <span className="rs-cat-label">Monitori</span>
               <span className="rs-cat-sub">Gaming & uredski</span>
@@ -145,18 +150,18 @@ export default function HomePage() {
               <span className="rs-cat-sub">Gaming & bežične</span>
               <span className="rs-cat-link">Pogledaj →</span>
             </Link>
-          </div>
+          </Reveal>
         </div>
       </section>
 
       {/* why us */}
       <section className="rs-section">
         <div className="rs-wrap">
-          <div className="rs-head">
+          <Reveal className="rs-head">
             <div className="rs-kicker">Zašto Računalo.hr</div>
             <h2>Sigurna kupnja, bez iznenađenja</h2>
-          </div>
-          <div className="rs-why">
+          </Reveal>
+          <Reveal className="rs-why" delay={80}>
             {[
               ["Brza dostava", "Sklapanje i isporuka u nekoliko radnih dana, diljem Hrvatske."],
               ["Testirano prije slanja", "Svako računalo prolazi stress-test i kontrolu prije isporuke."],
@@ -169,17 +174,17 @@ export default function HomePage() {
                 <p>{d}</p>
               </div>
             ))}
-          </div>
+          </Reveal>
         </div>
       </section>
 
       {/* cta band */}
       <section className="rs-band">
-        <div className="rs-wrap">
+        <Reveal className="rs-wrap">
           <h2>Spreman sastaviti svoje?</h2>
           <p>Pokreni konfigurator i složi računalo baš po svojoj mjeri — uz provjeru kompatibilnosti na svakom koraku.</p>
           <Link href={CONFIGURATOR_PATH} className="rs-btn">Otvori konfigurator →</Link>
-        </div>
+        </Reveal>
       </section>
 
       {/* footer */}
