@@ -49,12 +49,14 @@ export default function CollectionView({
   collectionHandles,
   kicker = "Gotova računala",
   tabs = PC_TABS,
+  subtitle,
 }: {
   heading: string;
   activeHref: string;
   collectionHandles: string[]; // one or more Shopify collection handles to merge
   kicker?: string;
   tabs?: Tab[];
+  subtitle?: string;
 }) {
   const [products, setProducts] = useState<ProductNode[]>([]);
   const [loading, setLoading] = useState(true);
@@ -92,27 +94,33 @@ export default function CollectionView({
           <div className="rs-coll-head">
             <div className="rs-kicker">{kicker}</div>
             <h1>{heading}</h1>
+            {subtitle && <p className="rs-coll-sub">{subtitle}</p>}
           </div>
 
-          <div className="rs-tabs">
-            {tabs.map((t) => (
-              <Link key={t.href} href={t.href} className={`rs-tab ${t.href === activeHref ? "active" : ""}`}>
-                {t.label}
-              </Link>
-            ))}
+          <div className="rs-coll-bar">
+            <nav className="rs-tabs">
+              {tabs.map((t) => (
+                <Link key={t.href} href={t.href} className={`rs-tab ${t.href === activeHref ? "active" : ""}`}>
+                  {t.label}
+                </Link>
+              ))}
+            </nav>
+            {!loading && products.length > 0 && (
+              <span className="rs-coll-count">{products.length} {products.length === 1 ? "proizvod" : products.length < 5 ? "proizvoda" : "proizvoda"}</span>
+            )}
           </div>
 
           <div className="rs-grid">
             {loading ? (
               Array.from({ length: 6 }).map((_, i) => <div key={i} className="rs-skel" />)
             ) : products.length === 0 ? (
-              <div className="rs-empty">Trenutno nema konfiguracija u ovoj kategoriji.</div>
+              <div className="rs-empty">Trenutno nema proizvoda u ovoj kategoriji.</div>
             ) : (
               products.map((p) => {
                 const pick = p.metafields?.find((m) => m && m.key === "pick")?.value || "";
                 const rec = (p.metafields?.find((m) => m && m.key === "recommended")?.value || "").toLowerCase() === "true";
                 return (
-                  <Link key={p.id} href={`/${p.handle}`} className="rs-card">
+                  <Link key={p.id} href={`/${p.handle}`} className="rs-card rs-card-fin">
                     <div className="rs-ph">
                       {p.featuredImage?.url ? (
                         <img src={p.featuredImage.url} alt={p.featuredImage.altText || p.title} loading="lazy" />
