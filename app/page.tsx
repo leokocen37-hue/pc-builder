@@ -42,8 +42,8 @@ export default function HomePage() {
     (async () => {
       try {
         const [g, s] = await Promise.all([
-          shopifyFetch<CollectionResp>(COLLECTION_QUERY, { handle: "gaming", first: 4 }),
-          shopifyFetch<CollectionResp>(COLLECTION_QUERY, { handle: "radne-stanice", first: 4 }),
+          shopifyFetch<CollectionResp>(COLLECTION_QUERY, { handle: "gaming", first: 6 }),
+          shopifyFetch<CollectionResp>(COLLECTION_QUERY, { handle: "radne-stanice", first: 6 }),
         ]);
         if (!alive) return;
         setGaming(g.collection?.products.edges.map((e) => e.node) ?? []);
