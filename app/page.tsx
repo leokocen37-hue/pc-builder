@@ -243,20 +243,17 @@ function CollectionRow({ title, href, products, loading, subtitle }: { title: st
     <div className="rs-row-block">
       <div className="rs-row-head">
         <div className="rs-row-head-left">
-          <span className="rs-row-bar" />
-          <div>
-            <h3>{title}</h3>
-            {subtitle && <p className="rs-row-sub">{subtitle}</p>}
-          </div>
+          <h3>{title}</h3>
+          {subtitle && <p className="rs-row-sub">{subtitle}</p>}
         </div>
-        <Link href={href} className="rs-row-all">Pogledaj sve →</Link>
+        <Link href={href} className="rs-row-all">Pogledaj sve <span className="rs-row-arrow">→</span></Link>
       </div>
-      <div className="rs-grid">
+      <div className="rs-row-grid">
         {loading
-          ? Array.from({ length: 4 }).map((_, i) => <div key={i} className="rs-skel" />)
+          ? Array.from({ length: 5 }).map((_, i) => <div key={i} className="rs-skel" />)
           : products.length === 0
           ? <div className="rs-empty">Konfiguracije uskoro.</div>
-          : products.slice(0, 4).map((p) => (
+          : products.slice(0, 5).map((p) => (
               <Link key={p.id} href={`/${p.handle}`} className="rs-card rs-card-fin">
                 <div className="rs-ph">
                   {p.featuredImage?.url ? <img src={p.featuredImage.url} alt={p.featuredImage.altText || p.title} loading="lazy" /> : <div className="rs-ph-fallback" />}
