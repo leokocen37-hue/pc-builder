@@ -43,6 +43,18 @@ const PC_TABS = [
 
 type Tab = { label: string; href: string };
 
+// per-page subtitles (shown under the heading). Falls back to none.
+const SUBTITLES: Record<string, string> = {
+  "/gotova-racunala": "Ručno sastavljena i testirana računala, spremna za isporuku — bez čekanja i nagađanja.",
+  "/gaming-racunala": "Konfiguracije optimizirane za visok broj sličica i igranje na visokim postavkama.",
+  "/radne-stanice": "Snaga za montažu, 3D, render i najzahtjevniji profesionalni rad.",
+  "/periferija": "Pažljivo odabrana oprema — svaki komad s razlogom na popisu.",
+  "/monitori": "Od brzih 1440p panela do 4K OLED-a — zaslon koji tvoja grafička zaslužuje.",
+  "/tipkovnice": "Mehaničke, Hall-effect i custom tipkovnice za gaming i tipkanje.",
+  "/misevi": "Lagani, precizni i bežični — miš za svaki stil igre.",
+  "/slusalice": "Bežične i žične slušalice s vrhunskim zvukom i mikrofonom.",
+};
+
 export default function CollectionView({
   heading,
   activeHref,
@@ -94,7 +106,7 @@ export default function CollectionView({
           <div className="rs-coll-head">
             <div className="rs-kicker">{kicker}</div>
             <h1>{heading}</h1>
-            {subtitle && <p className="rs-coll-sub">{subtitle}</p>}
+            {(subtitle || SUBTITLES[activeHref]) && <p className="rs-coll-sub">{subtitle || SUBTITLES[activeHref]}</p>}
           </div>
 
           <div className="rs-coll-bar">

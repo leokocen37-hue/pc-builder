@@ -403,3 +403,20 @@
 /* why-us cards — hover zoom */
 .rs-why-item{transition:transform .25s cubic-bezier(.16,1,.3,1),border-color .25s,background .25s}
 .rs-why-item:hover{transform:scale(1.04) translateY(-4px);border-color:var(--line2)}
+
+/* ===== distinctive product cards — tech / HUD identity ===== */
+.rs-card-fin{border-radius:12px}
+/* viewfinder corner brackets (top-right + bottom-left, clear of the badges) */
+.rs-card-fin .rs-ph::before,
+.rs-card-fin .rs-ph::after{content:"";position:absolute;width:14px;height:14px;z-index:3;pointer-events:none;opacity:.4;transition:all .3s cubic-bezier(.16,1,.3,1)}
+.rs-card-fin .rs-ph::before{top:11px;right:11px;border-top:2px solid var(--accent);border-right:2px solid var(--accent)}
+.rs-card-fin .rs-ph::after{bottom:11px;left:11px;border-bottom:2px solid var(--accent);border-left:2px solid var(--accent)}
+.rs-card-fin:hover .rs-ph::before{top:8px;right:8px;width:20px;height:20px;opacity:1}
+.rs-card-fin:hover .rs-ph::after{bottom:8px;left:8px;width:20px;height:20px;opacity:1}
+/* gradient hairline + faint tint under image */
+.rs-card-fin .rs-card-body{position:relative;background:linear-gradient(180deg,rgba(216,31,216,.045),transparent 55%)}
+.rs-card-fin .rs-card-body::before{content:"";position:absolute;top:0;left:16px;right:16px;height:1px;background:linear-gradient(90deg,transparent,var(--line2),transparent)}
+.rs-card-fin .rs-card-body h4{letter-spacing:-.2px}
+/* mono, techy price with glowing tick */
+.rs-card-fin .rs-price{font-family:'IBM Plex Mono',monospace;font-size:15.5px;font-weight:600;letter-spacing:-.3px;display:inline-flex;align-items:center;gap:8px}
+.rs-card-fin .rs-price::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);flex:0 0 auto}
