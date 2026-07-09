@@ -118,10 +118,10 @@ export default function HomePage() {
             <Link href="/gotova-racunala" className="rs-head-cta">Pogledaj sva računala →</Link>
           </Reveal>
           <Reveal delay={80}>
-            <CollectionRow title="Gaming računala" href="/gaming-racunala" products={gaming} loading={loading} />
+            <CollectionRow title="Gaming računala" subtitle="Za igranje na visokim postavkama i visokom broju sličica." href="/gaming-racunala" products={gaming} loading={loading} />
           </Reveal>
           <Reveal delay={140}>
-            <CollectionRow title="Radne stanice" href="/radne-stanice" products={stanice} loading={loading} />
+            <CollectionRow title="Radne stanice" subtitle="Snaga za montažu, 3D, render i zahtjevan profesionalni rad." href="/radne-stanice" products={stanice} loading={loading} />
           </Reveal>
         </div>
       </section>
@@ -238,11 +238,17 @@ function CatTile({ href, label, sub, handle, g }: { href: string; label: string;
   );
 }
 
-function CollectionRow({ title, href, products, loading }: { title: string; href: string; products: ProductNode[]; loading: boolean }) {
+function CollectionRow({ title, href, products, loading, subtitle }: { title: string; href: string; products: ProductNode[]; loading: boolean; subtitle?: string }) {
   return (
     <div className="rs-row-block">
       <div className="rs-row-head">
-        <h3>{title}</h3>
+        <div className="rs-row-head-left">
+          <span className="rs-row-bar" />
+          <div>
+            <h3>{title}</h3>
+            {subtitle && <p className="rs-row-sub">{subtitle}</p>}
+          </div>
+        </div>
         <Link href={href} className="rs-row-all">Pogledaj sve →</Link>
       </div>
       <div className="rs-grid">
@@ -251,7 +257,7 @@ function CollectionRow({ title, href, products, loading }: { title: string; href
           : products.length === 0
           ? <div className="rs-empty">Konfiguracije uskoro.</div>
           : products.slice(0, 4).map((p) => (
-              <Link key={p.id} href={`/${p.handle}`} className="rs-card">
+              <Link key={p.id} href={`/${p.handle}`} className="rs-card rs-card-fin">
                 <div className="rs-ph">
                   {p.featuredImage?.url ? <img src={p.featuredImage.url} alt={p.featuredImage.altText || p.title} loading="lazy" /> : <div className="rs-ph-fallback" />}
                   {!p.availableForSale && <span className="rs-badge">Uskoro</span>}
