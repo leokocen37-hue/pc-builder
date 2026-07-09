@@ -4,7 +4,9 @@
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
 
 /* ---- item types ---- */
-type CustomItem = { kind: "custom"; lineId: string; title: string; price: number; summary: string; quantity: number };
+// price here is only for the cart UI's own running total — the checkout API
+// never trusts it; it re-derives the real price from variantIds server-side.
+type CustomItem = { kind: "custom"; lineId: string; title: string; price: number; summary: string; quantity: number; variantIds: string[] };
 type ProductItem = { kind: "product"; lineId: string; variantId: string; title: string; price: number; image?: string; variantTitle?: string; quantity: number };
 export type CartItem = CustomItem | ProductItem;
 
@@ -18,7 +20,7 @@ type Ctx = {
   subtotal: number;
   checkoutBusy: boolean;
   setOpen: (o: boolean) => void;
-  addCustomBuild: (b: { title?: string; price: number; summary: string }) => void;
+  addCustomBuild: (b: { title?: string; price: number; summary: string; variantIds: string[] }) => void;
   addProduct: (p: { variantId: string; title: string; price: number; image?: string; variantTitle?: string; quantity?: number }) => void;
   updateQty: (lineId: string, quantity: number) => void;
   removeItem: (lineId: string) => void;
@@ -48,8 +50,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (hydrated) { try { localStorage.setItem(LS, JSON.stringify(items)); } catch {} }
   }, [items, hydrated]);
 
-  const addCustomBuild = useCallback((b: { title?: string; price: number; summary: string }) => {
-    setItems((p) => [...p, { kind: "custom", lineId: uid(), title: b.title || "Custom PC Konfiguracija", price: b.price, summary: b.summary, quantity: 1 }]);
+  const addCustomBuild = useCallback((b: { title?: string; price: number; summary: string; variantIds: string[] }) => {
+    setItems((p) => [...p, { kind: "custom", lineId: uid(), title: b.title || "Custom PC Konfiguracija", price: b.price, summary: b.summary, quantity: 1, variantIds: b.variantIds }]);
     setOpen(true);
   }, []);
 
@@ -82,7 +84,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const payload = {
         items: items.map((i) =>
           i.kind === "custom"
-            ? { kind: "custom", title: i.title, price: i.price, summary: i.summary, quantity: i.quantity }
+            ? { kind: "custom", title: i.title, summary: i.summary, quantity: i.quantity, variantIds: i.variantIds }
             : { kind: "product", variantId: i.variantId, quantity: i.quantity }
         ),
       };

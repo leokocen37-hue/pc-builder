@@ -1,7 +1,7 @@
 // → put this at:  components/Reveal.tsx
 "use client";
 
-import { useEffect, useRef, useState, ReactNode } from "react";
+import { useEffect, useRef, useState, ElementType, ReactNode } from "react";
 
 /**
  * Wrap any block to fade + rise it into view on scroll.
@@ -15,21 +15,18 @@ export default function Reveal({
 }: {
   children: ReactNode;
   delay?: number;
-  as?: any;
+  as?: ElementType;
   className?: string;
 }) {
   const ref = useRef<HTMLElement | null>(null);
-  const [shown, setShown] = useState(false);
+  const [shown, setShown] = useState(
+    () => typeof window !== "undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+  );
 
   useEffect(() => {
+    if (shown) return; // reduced-motion case already resolved in initial state
     const el = ref.current;
     if (!el) return;
-
-    // respect users who prefer no motion
-    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
-      setShown(true);
-      return;
-    }
 
     const io = new IntersectionObserver(
       (entries) => {
@@ -45,7 +42,7 @@ export default function Reveal({
 
     io.observe(el);
     return () => io.disconnect();
-  }, []);
+  }, [shown]);
 
   return (
     <Tag

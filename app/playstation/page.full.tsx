@@ -25,10 +25,28 @@ const Q = `
   }
 `;
  
+function Box({ data, tag, title, spec }: { data: BoxData; tag: string; title: string; spec: string }) {
+  const href = data.handle ? `/${data.handle}` : "#";
+  return (
+    <Link href={href} className="ps-box" aria-disabled={!data.handle}>
+      <div className="ps-box-img">{data.img ? <img src={data.img} alt={title} /> : <div className="ps-box-imgfallback" />}</div>
+      <div className="ps-box-body">
+        <div className="ps-box-tag">{tag}</div>
+        <div className="ps-box-title">{title}</div>
+        <div className="ps-box-spec">{spec}</div>
+        <div className="ps-box-foot">
+          <span className="ps-box-price">{data.price ? `od ${formatMoney(data.price)}` : "Uskoro"}</span>
+          <span className="ps-box-cta">{data.handle ? "Pogledaj →" : ""}</span>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
 export default function PlayStationPage() {
   const [slim, setSlim] = useState<BoxData>({});
   const [pro, setPro] = useState<BoxData>({});
- 
+
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -48,25 +66,7 @@ export default function PlayStationPage() {
     })();
     return () => { alive = false; };
   }, []);
- 
-  const Box = ({ data, tag, title, spec }: { data: BoxData; tag: string; title: string; spec: string }) => {
-    const href = data.handle ? `/${data.handle}` : "#";
-    return (
-      <Link href={href} className="ps-box" aria-disabled={!data.handle}>
-        <div className="ps-box-img">{data.img ? <img src={data.img} alt={title} /> : <div className="ps-box-imgfallback" />}</div>
-        <div className="ps-box-body">
-          <div className="ps-box-tag">{tag}</div>
-          <div className="ps-box-title">{title}</div>
-          <div className="ps-box-spec">{spec}</div>
-          <div className="ps-box-foot">
-            <span className="ps-box-price">{data.price ? `od ${formatMoney(data.price)}` : "Uskoro"}</span>
-            <span className="ps-box-cta">{data.handle ? "Pogledaj →" : ""}</span>
-          </div>
-        </div>
-      </Link>
-    );
-  };
- 
+
   return (
     <div className="rs-root">
       <section className="ps-hero">

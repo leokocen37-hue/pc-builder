@@ -1,8 +1,8 @@
-"use client";
-
+// Plain fetch wrapper — safe to import from both client components and
+// server code (API routes), since it has no client-only dependencies.
 export async function shopifyFetch<T>(
-  query: string, 
-  variables: Record<string, any> = {}
+  query: string,
+  variables: Record<string, unknown> = {}
 ): Promise<T> {
   
   const domain = process.env.NEXT_PUBLIC_SHOPIFY_DOMAIN;

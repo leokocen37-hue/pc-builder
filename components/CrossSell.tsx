@@ -48,7 +48,7 @@ export default function CrossSell() {
           })
         );
         setItems(merged.slice(0, MAX_ITEMS));
-      } catch (e) {
+      } catch {
         /* collections may not exist yet — just show nothing */
       }
     })();

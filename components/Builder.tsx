@@ -2,6 +2,7 @@
 import { CSSProperties, useEffect, useState, Suspense, useRef } from "react";
 import { shopifyFetch } from "@/lib/shopify";
 import { useCart } from "@/lib/cart";
+import { ASSEMBLY_FEE } from "@/lib/pricing";
 import { useSearchParams, useRouter } from "next/navigation";
 
 // --- TYPES ---
@@ -119,8 +120,6 @@ const STEP_GLYPH: Record<string, string> = {
   cooler: "COOL",
   os: "OS",
 };
-
-const ASSEMBLY_FEE = 200;
 
 // Plain-language guidance so non-technical buyers can choose a variant with confidence.
 const REC_LINE = " Opciju koju preporučujemo označili smo zvjezdicom ★.";
@@ -807,18 +806,22 @@ function BuilderContent() {
   const handleCheckout = async () => {
     if (!buildComplete) return;
 
-    // one clean custom line at the configurator's exact price (assembly already included)
-    const parts = [cpu, mb, ram, gpu, gpu2, ssd, ssd2, hdd, hdd2, pcCase, psu, cooler, os];
-    const summary = parts
-      .filter(Boolean)
+    // one clean custom line at the configurator's exact price (assembly already included).
+    // variantIds is the source of truth the server uses to re-price this build —
+    // the `price` we show here is only for the cart UI, never trusted by checkout.
+    const chosenParts = [cpu, mb, ram, gpu, gpu2, ssd, ssd2, hdd, hdd2, pcCase, psu, cooler, os].filter(
+      (p): p is ProductNode => !!p
+    );
+    const summary = chosenParts
       .map((p) => {
         const varTitle =
-          p?.selectedVariant && p?.selectedVariant?.title !== "Default Title" ? ` (${p?.selectedVariant?.title})` : "";
-        return `${p?.title}${varTitle}`;
+          p.selectedVariant && p.selectedVariant.title !== "Default Title" ? ` (${p.selectedVariant.title})` : "";
+        return `${p.title}${varTitle}`;
       })
       .join(", ");
+    const variantIds = chosenParts.map((p) => p.selectedVariant?.id || p.variants.edges[0].node.id);
 
-    addCustomBuild({ title: "Custom PC Konfiguracija", price: currentTotal(), summary });
+    addCustomBuild({ title: "Custom PC Konfiguracija", price: currentTotal(), summary, variantIds });
   };
 
   // A PC is only orderable when every required part is chosen.

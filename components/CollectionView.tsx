@@ -104,6 +104,7 @@ export default function CollectionView({
       <section className="rs-coll">
         <div className="rs-wrap">
           <div className="rs-coll-head">
+            {kicker && <div className="rs-kicker">{kicker}</div>}
             <h1>{heading}</h1>
             {(subtitle || SUBTITLES[activeHref]) && <p className="rs-coll-sub">{subtitle || SUBTITLES[activeHref]}</p>}
           </div>

@@ -1,44 +1,82 @@
 // → replace app/api/checkout/route.ts with this
 import { NextResponse } from "next/server";
+import { shopifyFetch } from "@/lib/shopify";
+import { ASSEMBLY_FEE } from "@/lib/pricing";
 
 type InItem =
-  | { kind: "custom"; title?: string; price: number; summary?: string; quantity?: number }
+  | { kind: "custom"; title?: string; summary?: string; quantity?: number; variantIds?: string[] }
   | { kind: "product"; variantId: string; quantity?: number };
+
+type VariantPriceNode = { id: string; price: { amount: string } } | null;
+
+type DraftOrderLineItem =
+  | { title: string; originalUnitPrice: string; quantity: number; customAttributes: { key: string; value: string }[] }
+  | { variantId: string; quantity: number };
+
+const errorMessage = (e: unknown) => (e instanceof Error ? e.message : "Unknown error");
+
+// Re-derive the price of a custom build from real, current Shopify variant prices
+// + the fixed assembly fee — NEVER from client input. Without this, a POST with a
+// hand-picked price could buy a full build for whatever the caller chose to send.
+async function priceCustomBuild(variantIds: string[]): Promise<number> {
+  if (!variantIds.length) {
+    throw new Error("Konfiguracija nema odabranih komponenti.");
+  }
+
+  const data = await shopifyFetch<{ nodes: VariantPriceNode[] }>(
+    `query VariantPrices($ids: [ID!]!) {
+      nodes(ids: $ids) {
+        ... on ProductVariant { id price { amount } }
+      }
+    }`,
+    { ids: variantIds }
+  );
+
+  const priceById = new Map<string, number>();
+  for (const node of data.nodes) {
+    if (node) priceById.set(node.id, Number(node.price.amount));
+  }
+
+  let total = ASSEMBLY_FEE;
+  for (const id of variantIds) {
+    const price = priceById.get(id);
+    if (price === undefined) {
+      throw new Error("Jedna od komponenti u konfiguraciji više nije dostupna.");
+    }
+    total += price;
+  }
+  return total;
+}
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    // Build the draft-order line items.
-    // - custom  → arbitrary title + price (the configurator build, assembly already included)
-    // - product → real Shopify variant, priced by Shopify (keyboard, monitor, prebuilt…)
-    let lineItems: any[];
-
-    if (Array.isArray(body.items)) {
-      lineItems = (body.items as InItem[]).map((it) =>
-        it.kind === "custom"
-          ? {
-              title: it.title || "Custom PC Konfiguracija",
-              originalUnitPrice: Number(it.price).toFixed(2),
-              quantity: it.quantity || 1,
-              customAttributes: [{ key: "Komponente", value: (it as any).summary || "" }],
-            }
-          : { variantId: it.variantId, quantity: it.quantity || 1 }
-      );
-    } else {
-      // backward-compatible single custom build ({ totalPrice, summary })
-      lineItems = [
-        {
-          title: "Custom PC Konfiguracija",
-          originalUnitPrice: Number(body.totalPrice || 0).toFixed(2),
-          quantity: 1,
-          customAttributes: [{ key: "Komponente", value: body.summary || "" }],
-        },
-      ];
+    if (!Array.isArray(body.items) || body.items.length === 0) {
+      return NextResponse.json({ error: "Košarica je prazna" }, { status: 400 });
     }
 
-    if (!lineItems.length) {
-      return NextResponse.json({ error: "Košarica je prazna" }, { status: 400 });
+    // Build the draft-order line items.
+    // - custom  → price re-derived server-side from real component prices + assembly fee
+    // - product → real Shopify variant, priced by Shopify (keyboard, monitor, prebuilt…)
+    const lineItems: DraftOrderLineItem[] = [];
+    for (const it of body.items as InItem[]) {
+      if (it.kind === "custom") {
+        let price: number;
+        try {
+          price = await priceCustomBuild(it.variantIds || []);
+        } catch (e) {
+          return NextResponse.json({ error: errorMessage(e) || "Neispravna konfiguracija" }, { status: 400 });
+        }
+        lineItems.push({
+          title: it.title || "Custom PC Konfiguracija",
+          originalUnitPrice: price.toFixed(2),
+          quantity: it.quantity || 1,
+          customAttributes: [{ key: "Komponente", value: it.summary || "" }],
+        });
+      } else {
+        lineItems.push({ variantId: it.variantId, quantity: it.quantity || 1 });
+      }
     }
 
     // 1. temporary Admin access token (client credentials)
@@ -86,7 +124,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: out.userErrors[0].message, userErrors: out.userErrors }, { status: 400 });
     }
     return NextResponse.json(out || { error: "Draft order failed" });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error) {
+    return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
   }
 }
