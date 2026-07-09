@@ -6,6 +6,7 @@ import Link from "next/link";
 import { shopifyFetch } from "@/lib/shopify";
 import { formatMoney } from "@/lib/cart";
 import Reveal from "@/components/Reveal";
+import BrandMarquee from "@/components/BrandMarquee";
 
 const CONFIGURATOR_PATH = "/konfigurator";
 
@@ -76,6 +77,9 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* brand logo marquee (pulls from Shopify "marke" collection) */}
+      <BrandMarquee />
+
       {/* configurator centerpiece */}
       <section className="rs-config" id="konfigurator">
         <Reveal className="rs-wrap rs-config-grid">
@@ -110,7 +114,8 @@ export default function HomePage() {
           <Reveal className="rs-head">
             <div className="rs-kicker">Gotova računala</div>
             <h2>Spremno za svaki izazov</h2>
-            <p>Provjereni buildovi — ili kreni od nule u konfiguratoru.</p>
+            <p>Ručno sastavljene i testirane konfiguracije — odaberi provjeren build ili kreni od nule u konfiguratoru.</p>
+            <Link href="/gotova-racunala" className="rs-head-cta">Pogledaj sva računala →</Link>
           </Reveal>
           <Reveal delay={80}>
             <CollectionRow title="Gaming računala" href="/gaming-racunala" products={gaming} loading={loading} />
@@ -130,26 +135,10 @@ export default function HomePage() {
             <p>Nadopuni svoje računalo — monitori, tipkovnice i miševi.</p>
           </Reveal>
           <Reveal className="rs-cats" delay={80}>
-            <Link href="/monitori" className="rs-cat" style={{ background: "linear-gradient(135deg,#0e5a8a,#22a3d8)" }}>
-              <span className="rs-cat-label">Monitori</span>
-              <span className="rs-cat-sub">Gaming & uredski</span>
-              <span className="rs-cat-link">Pogledaj →</span>
-            </Link>
-            <Link href="/tipkovnice" className="rs-cat" style={{ background: "linear-gradient(135deg,#8a0e6a,#d81fd8)" }}>
-              <span className="rs-cat-label">Tipkovnice</span>
-              <span className="rs-cat-sub">Mehaničke & RGB</span>
-              <span className="rs-cat-link">Pogledaj →</span>
-            </Link>
-            <Link href="/misevi" className="rs-cat" style={{ background: "linear-gradient(135deg,#0e7a52,#27c08a)" }}>
-              <span className="rs-cat-label">Miševi</span>
-              <span className="rs-cat-sub">Gaming & precizni</span>
-              <span className="rs-cat-link">Pogledaj →</span>
-            </Link>
-            <Link href="/slusalice" className="rs-cat" style={{ background: "linear-gradient(135deg,#3a1f7a,#7b2ff7)" }}>
-              <span className="rs-cat-label">Slušalice</span>
-              <span className="rs-cat-sub">Gaming & bežične</span>
-              <span className="rs-cat-link">Pogledaj →</span>
-            </Link>
+            <CatTile href="/monitori" label="Monitori" sub="Gaming & uredski" handle="monitori" g="linear-gradient(135deg,#0e5a8a,#22a3d8)" />
+            <CatTile href="/tipkovnice" label="Tipkovnice" sub="Mehaničke & RGB" handle="tipkovnice" g="linear-gradient(135deg,#8a0e6a,#d81fd8)" />
+            <CatTile href="/misevi" label="Miševi" sub="Gaming & precizni" handle="misevi" g="linear-gradient(135deg,#0e7a52,#27c08a)" />
+            <CatTile href="/slusalice" label="Slušalice" sub="Gaming & bežične" handle="slusalice" g="linear-gradient(135deg,#3a1f7a,#7b2ff7)" />
           </Reveal>
         </div>
       </section>
@@ -163,7 +152,6 @@ export default function HomePage() {
           </Reveal>
           <Reveal className="rs-why" delay={80}>
             {[
-              ["Brza dostava", "Sklapanje i isporuka u nekoliko radnih dana, diljem Hrvatske."],
               ["Testirano prije slanja", "Svako računalo prolazi stress-test i kontrolu prije isporuke."],
               ["24 mjeseca jamstva", "Puno jamstvo i podrška — uvijek smo tu nakon kupnje."],
               ["Savjet stručnjaka", "Niste sigurni? Javite nam namjenu i proračun, složimo idealan build."],
@@ -220,6 +208,33 @@ export default function HomePage() {
         </div>
       </footer>
     </div>
+  );
+}
+
+function CatTile({ href, label, sub, handle, g }: { href: string; label: string; sub: string; handle: string; g: string }) {
+  const [img, setImg] = useState<string | null>(null);
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const d = await shopifyFetch<{ collection: { image?: { url: string } | null; products: { edges: { node: { featuredImage?: { url: string } | null } }[] } } | null }>(
+          `query($h:String!){ collection(handle:$h){ image{url} products(first:1){ edges{ node{ featuredImage{url} } } } } }`,
+          { h: handle }
+        );
+        if (!alive) return;
+        setImg(d.collection?.image?.url || d.collection?.products.edges[0]?.node.featuredImage?.url || null);
+      } catch {}
+    })();
+    return () => { alive = false; };
+  }, [handle]);
+
+  return (
+    <Link href={href} className="rs-cat" style={{ background: g }}>
+      {img && <img src={img} alt={label} className="rs-cat-img" loading="lazy" />}
+      <span className="rs-cat-label">{label}</span>
+      <span className="rs-cat-sub">{sub}</span>
+      <span className="rs-cat-link">Pogledaj →</span>
+    </Link>
   );
 }
 
