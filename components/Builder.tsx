@@ -178,6 +178,7 @@ function BuilderContent() {
   const [shareCopied, setShareCopied] = useState(false);
   const [hoverBrand, setHoverBrand] = useState<string | null>(null);
   const [hoverCard, setHoverCard] = useState<number | null>(null);
+  const [hoverReviewRow, setHoverReviewRow] = useState<string | null>(null);
   const [specsOpen, setSpecsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
@@ -1656,6 +1657,8 @@ function BuilderContent() {
                       <div
                         key={part.key}
                         onClick={targetStep ? () => setStepIndex(STEPS.indexOf(targetStep)) : undefined}
+                        onMouseEnter={() => setHoverReviewRow(part.key)}
+                        onMouseLeave={() => setHoverReviewRow((c) => (c === part.key ? null : c))}
                         role={targetStep ? "button" : undefined}
                         tabIndex={targetStep ? 0 : undefined}
                         onKeyDown={targetStep ? (e) => { if (e.key === "Enter") setStepIndex(STEPS.indexOf(targetStep)); } : undefined}
@@ -1664,7 +1667,7 @@ function BuilderContent() {
                           alignItems: "center",
                           gap: "18px",
                           background: COLORS.bgCard,
-                          border: `1px solid ${COLORS.border}`,
+                          border: `1px solid ${hoverReviewRow === part.key ? COLORS.accent : COLORS.border}`,
                           borderRadius: "14px",
                           padding: "16px 20px",
                           cursor: targetStep ? "pointer" : "default",
@@ -1689,7 +1692,13 @@ function BuilderContent() {
                           {part.item?.featuredImage?.url ? (
                             <img
                               src={part.item.featuredImage.url}
-                              style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                              style={{
+                                width: "100%",
+                                height: "100%",
+                                objectFit: "contain",
+                                transform: hoverReviewRow === part.key ? "scale(1.18)" : "scale(1)",
+                                transition: "transform .25s cubic-bezier(.16,1,.3,1)",
+                              }}
                             />
                           ) : (
                             <span style={{ fontFamily: MONO, fontSize: "11px", color: COLORS.textFaint }}>
