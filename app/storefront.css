@@ -76,38 +76,23 @@
 .rs-stats span{font-size:11px;letter-spacing:1.5px;color:#cbb3d6;text-transform:uppercase}
 @media(max-width:600px){.rs-stats{gap:24px}}
 
-/* mobile hero — the banner crop position/brightness varies with viewport, so text
-   needs its own guaranteed contrast rather than relying on the image underneath.
-   A frosted dark card does that regardless of what's behind it, on any phone. */
+/* mobile hero — keep the image plain (no card/box behind the text), just smaller
+   type with a strong drop-shadow for contrast, and reframe on the right-hand PC. */
 @media(max-width:860px){
-  .rs-hero{background-position:74% center;min-height:78vh;min-height:78svh;padding:0 16px}
+  .rs-hero{background-position:74% center;min-height:74vh;min-height:74svh;padding:0 24px}
   .rs-hero::before{background:radial-gradient(65% 60% at 50% 55%,rgba(7,8,12,.72),rgba(7,8,12,.4) 55%,transparent 82%),linear-gradient(180deg,rgba(7,8,12,.6) 0%,rgba(7,8,12,.25) 22%,rgba(7,8,12,.35) 60%,rgba(7,8,12,.96) 100%)}
-  .rs-hero-inner{
-    background:rgba(7,8,12,.42);
-    -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
-    border:1px solid rgba(255,255,255,.09);
-    border-radius:22px;
-    padding:30px 20px;
-    width:100%;
-  }
-  .rs-hero-inner .rs-kicker{
-    background:rgba(255,255,255,.08);
-    border:1px solid rgba(255,255,255,.14);
-    color:#f0d9f5;
-    padding:6px 13px;
-    border-radius:20px;
-    font-size:10px;
-  }
-  .rs-hero-inner h1{font-size:34px;line-height:1.04;letter-spacing:-.5px;margin-top:14px}
+  .rs-hero-inner{padding:0}
+  .rs-hero-inner .rs-kicker{color:#fff;font-size:10px;text-shadow:0 2px 10px rgba(0,0,0,.85),0 0 16px rgba(0,0,0,.6)}
+  .rs-hero-inner h1{font-size:28px;line-height:1.08;letter-spacing:-.3px;margin-top:12px;text-shadow:0 3px 18px rgba(0,0,0,.85),0 1px 4px rgba(0,0,0,.9)}
   .rs-hero-inner h1 em{-webkit-text-stroke:1px #fff}
-  .rs-hero-inner p{font-size:14.5px;margin:16px auto 24px;line-height:1.55}
+  .rs-hero-inner p{font-size:13.5px;margin:14px auto 22px;line-height:1.5}
   .rs-hero-cta{flex-direction:column;align-items:stretch;gap:10px}
-  .rs-hero-cta .rs-btn{justify-content:center;padding:14px 24px;font-size:14px}
-  .rs-stats{gap:16px;margin-top:26px;flex-wrap:wrap}
-  .rs-stats b{font-size:18px}
+  .rs-hero-cta .rs-btn{justify-content:center;padding:13px 22px;font-size:13.5px}
+  .rs-stats{gap:16px;margin-top:22px;flex-wrap:wrap}
+  .rs-stats b{font-size:17px}
   .rs-stats span{font-size:10px;letter-spacing:1px}
 }
-@media(max-width:400px){.rs-hero-inner h1{font-size:29px}}
+@media(max-width:400px){.rs-hero-inner h1{font-size:24px}}
 
 /* sections */
 .rs-section{padding:88px 0}
