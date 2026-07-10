@@ -1,6 +1,13 @@
 import type { MetadataRoute } from "next";
 import { shopifyFetch } from "@/lib/shopify";
 
+// shopifyFetch always fetches with `cache: "no-store"` (product data must stay
+// live) — that's incompatible with Next trying to prerender this route statically
+// at build time, which is what caused the DYNAMIC_SERVER_USAGE error on Vercel.
+// Forcing it dynamic makes the route render per-request instead, which is also
+// just correct for a sitemap backed by a catalog that changes independently of deploys.
+export const dynamic = "force-dynamic";
+
 const SITE_URL = "https://racunalo.hr";
 
 // only the collections actually linked from site navigation — individual

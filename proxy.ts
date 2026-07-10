@@ -1,9 +1,11 @@
-// → put this at the PROJECT ROOT:  middleware.ts   (same level as package.json, next to app/)
+// → project root: proxy.ts (same level as package.json, next to app/)
+// Next.js 16 renamed the "middleware" file convention to "proxy" — same
+// behavior, just a rename of the file and the exported function.
 import { NextRequest, NextResponse } from "next/server";
 
 const COOKIE = "rs_site_unlock";
 
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // Always allow: the unlock API, Next internals, and static/asset files.
