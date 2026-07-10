@@ -1031,7 +1031,7 @@ function BuilderContent() {
           <div style={{ flex: "1 1 580px", minWidth: 0, width: "100%" }}>
             {/* Nav row */}
             {stepIndex > 0 && !isReviewStep && (
-              <div style={{ display: "flex", justifyContent: "space-between", gap: "10px", marginBottom: "18px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: "10px", marginBottom: "18px", flexWrap: "wrap" }}>
                 <div style={{ display: "flex", gap: "10px" }}>
                   <button onClick={() => setStepIndex(stepIndex - 1)} style={navBtnStyle}>
                     ← Nazad
