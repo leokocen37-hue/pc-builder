@@ -160,6 +160,7 @@ function BuilderContent() {
   const movedRef = useRef(false);
   const capturedRef = useRef(false);
   const downIdxRef = useRef<number | null>(null);
+  const dragStartTimeRef = useRef(0);
 
   // --- STATE ---
   const [stepIndex, setStepIndex] = useState(0);
@@ -616,6 +617,7 @@ function BuilderContent() {
     const cardEl = (e.target as HTMLElement).closest("[data-cardidx]") as HTMLElement | null;
     downIdxRef.current = cardEl ? Number(cardEl.dataset.cardidx) : null;
     movedRef.current = false;
+    dragStartTimeRef.current = performance.now();
     // capture immediately so the browser can never steal the gesture for scrolling (fixes mobile)
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
@@ -628,7 +630,7 @@ function BuilderContent() {
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (startX === null) return;
     const diff = e.clientX - startX;
-    if (Math.abs(diff) > 4) {
+    if (Math.abs(diff) > 6) {
       movedRef.current = true;
       setIsDragging(true);
       setDragOffset(diff);
@@ -644,9 +646,17 @@ function BuilderContent() {
     if (startX === null) return;
     const N = currentProducts.length;
     if (movedRef.current) {
-      // dragged: snap to whichever card you released on (can cross several)
-      const steps = Math.round(dragOffset / SLIDE);
-      if (N > 0) setActiveIndex((prev) => (((prev - steps) % N) + N) % N);
+      // dragged: snap to whichever card you released on (can cross several).
+      // a quick flick (short distance but high velocity) should still advance
+      // one slide — otherwise fast mobile swipes that don't cover the full
+      // SLIDE distance just snap back and look like the carousel is stuck.
+      const elapsedMs = Math.max(1, performance.now() - dragStartTimeRef.current);
+      const velocity = Math.abs(dragOffset) / elapsedMs; // px/ms
+      let steps = Math.round(dragOffset / SLIDE);
+      if (steps === 0 && Math.abs(dragOffset) > 12 && velocity > 0.35) {
+        steps = dragOffset > 0 ? 1 : -1;
+      }
+      if (N > 0 && steps !== 0) setActiveIndex((prev) => (((prev - steps) % N) + N) % N);
     } else {
       // tapped (no real movement): center card selects, side card comes to center
       const i = downIdxRef.current;
@@ -879,6 +889,19 @@ function BuilderContent() {
     { key: "cooler", label: "HLAĐENJE", item: cooler },
     { key: "os", label: "OPERATIVNI SUSTAV", item: os },
   ].filter((p) => p.item);
+
+  // review-row actions: parts chosen through a normal build step jump back to
+  // that step to swap them; the three upsell slots (no dedicated step) get an
+  // inline remove instead, since re-adding is how you'd "change" those anyway.
+  const KEY_TO_STEP: Partial<Record<string, Step>> = {
+    cpu: "cpu", gpu: "gpu", mb: "motherboard", ram: "ram", ssd: "ssd", hdd: "hdd",
+    case: "case", psu: "psu", cooler: "cooler", os: "os",
+  };
+  const KEY_TO_REMOVE: Partial<Record<string, () => void>> = {
+    gpu2: () => setGpu2(null),
+    ssd2: () => setSsd2(null),
+    hdd2: () => setHdd2(null),
+  };
 
   // --- LOADING / ERROR STATES ---
   if (loading) {
@@ -1223,7 +1246,6 @@ function BuilderContent() {
                       onPointerDown={handlePointerDown}
                       onPointerMove={handlePointerMove}
                       onPointerUp={handlePointerUp}
-                      onPointerLeave={handlePointerUp}
                       onPointerCancel={handlePointerUp}
                       onDragStart={(e) => e.preventDefault()}
                       style={{
@@ -1627,65 +1649,90 @@ function BuilderContent() {
                 </div>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "11px" }}>
-                  {selectedPartsList.map((part) => (
-                    <div
-                      key={part.key}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "18px",
-                        background: COLORS.bgCard,
-                        border: `1px solid ${COLORS.border}`,
-                        borderRadius: "14px",
-                        padding: "16px 20px",
-                      }}
-                    >
+                  {selectedPartsList.map((part) => {
+                    const targetStep = KEY_TO_STEP[part.key];
+                    const removeAction = KEY_TO_REMOVE[part.key];
+                    return (
                       <div
+                        key={part.key}
+                        onClick={targetStep ? () => setStepIndex(STEPS.indexOf(targetStep)) : undefined}
+                        role={targetStep ? "button" : undefined}
+                        tabIndex={targetStep ? 0 : undefined}
+                        onKeyDown={targetStep ? (e) => { if (e.key === "Enter") setStepIndex(STEPS.indexOf(targetStep)); } : undefined}
                         style={{
-                          width: "54px",
-                          height: "54px",
-                          flexShrink: 0,
-                          borderRadius: "10px",
-                          background: COLORS.bgDark,
-                          border: `1px solid ${COLORS.border}`,
                           display: "flex",
                           alignItems: "center",
-                          justifyContent: "center",
-                          padding: "5px",
-                          overflow: "hidden",
+                          gap: "18px",
+                          background: COLORS.bgCard,
+                          border: `1px solid ${COLORS.border}`,
+                          borderRadius: "14px",
+                          padding: "16px 20px",
+                          cursor: targetStep ? "pointer" : "default",
+                          transition: "border-color .15s",
                         }}
                       >
-                        {part.item?.featuredImage?.url ? (
-                          <img
-                            src={part.item.featuredImage.url}
-                            style={{ width: "100%", height: "100%", objectFit: "contain" }}
-                          />
-                        ) : (
-                          <span style={{ fontFamily: MONO, fontSize: "11px", color: COLORS.textFaint }}>
-                            {STEP_GLYPH[part.key] || "PC"}
-                          </span>
-                        )}
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontFamily: MONO, fontSize: "9.5px", color: COLORS.textFaint, letterSpacing: "1.5px", marginBottom: "5px" }}>
-                          {part.label}
+                        <div
+                          style={{
+                            width: "54px",
+                            height: "54px",
+                            flexShrink: 0,
+                            borderRadius: "10px",
+                            background: COLORS.bgDark,
+                            border: `1px solid ${COLORS.border}`,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            padding: "5px",
+                            overflow: "hidden",
+                          }}
+                        >
+                          {part.item?.featuredImage?.url ? (
+                            <img
+                              src={part.item.featuredImage.url}
+                              style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                            />
+                          ) : (
+                            <span style={{ fontFamily: MONO, fontSize: "11px", color: COLORS.textFaint }}>
+                              {STEP_GLYPH[part.key] || "PC"}
+                            </span>
+                          )}
                         </div>
-                        <div style={{ fontWeight: 600, fontSize: "15px" }}>
-                          {part.item?.title}{" "}
-                          {part.item?.selectedVariant && part.item?.selectedVariant.title !== "Default Title"
-                            ? `(${part.item?.selectedVariant.title})`
-                            : ""}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontFamily: MONO, fontSize: "9.5px", color: COLORS.textFaint, letterSpacing: "1.5px", marginBottom: "5px" }}>
+                            {part.label}
+                          </div>
+                          <div style={{ fontWeight: 600, fontSize: "15px" }}>
+                            {part.item?.title}{" "}
+                            {part.item?.selectedVariant && part.item?.selectedVariant.title !== "Default Title"
+                              ? `(${part.item?.selectedVariant.title})`
+                              : ""}
+                          </div>
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "6px" }}>
+                          <div style={{ fontWeight: 700, fontSize: "16px", letterSpacing: "-.3px" }}>
+                            €
+                            {Number(
+                              part.item?.selectedVariant?.price?.amount ||
+                                part.item?.variants.edges[0].node.price.amount
+                            ).toFixed(2)}
+                          </div>
+                          {targetStep && (
+                            <span style={{ fontFamily: MONO, fontSize: "10.5px", color: COLORS.accent, letterSpacing: ".3px", whiteSpace: "nowrap" }}>
+                              Promijeni ›
+                            </span>
+                          )}
+                          {removeAction && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); removeAction(); }}
+                              style={{ background: "none", border: "none", padding: 0, cursor: "pointer", fontFamily: MONO, fontSize: "10.5px", color: "#ff6a82", letterSpacing: ".3px", whiteSpace: "nowrap" }}
+                            >
+                              ✖ Ukloni
+                            </button>
+                          )}
                         </div>
                       </div>
-                      <div style={{ fontWeight: 700, fontSize: "16px", letterSpacing: "-.3px" }}>
-                        €
-                        {Number(
-                          part.item?.selectedVariant?.price?.amount ||
-                            part.item?.variants.edges[0].node.price.amount
-                        ).toFixed(2)}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 {/* Upsells */}

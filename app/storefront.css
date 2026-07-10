@@ -50,6 +50,10 @@
   .rs-cart-label{display:none}
   .rs-nav-right{gap:2px}
   .rs-cart-btn{width:44px;height:44px;justify-content:center}
+  /* the icon is now centered inside a bigger 44px tap target, so the badge
+     (positioned relative to the *button*, not the icon) needs repositioning
+     to stay pinned to the icon's corner instead of the button's corner */
+  .rs-cart-count{top:3px;right:3px}
 }
 @media(min-width:861px){.rs-mobile-nav,.rs-mobile-nav-overlay{display:none !important}}
 @media(max-width:400px){.rs-nav-inner{padding:0 16px}.rs-logo{font-size:18px}}
