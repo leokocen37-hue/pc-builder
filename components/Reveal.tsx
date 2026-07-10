@@ -37,7 +37,11 @@ export default function Reveal({
           }
         });
       },
-      { threshold: 0.15, rootMargin: "0px 0px -60px 0px" }
+      // positive bottom margin fires the reveal *before* the section is actually
+      // on screen (while it's still up to 200px below the fold), so by the time
+      // it scrolls into view the fade is already done — no more lagging behind
+      // fast (mobile flick) scrolls the way a negative margin would.
+      { threshold: 0, rootMargin: "0px 0px 200px 0px" }
     );
 
     io.observe(el);
