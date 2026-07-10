@@ -43,6 +43,12 @@ const PC_TABS = [
 
 type Tab = { label: string; href: string };
 
+// Product names in this store follow "<Tier> <roman numeral>" (e.g. "Pro Gamer III",
+// "Starter V") for tiered lineups. Strip the numeral to get the tier's display name,
+// so e.g. "Starter", "Starter II", "Starter III" all group under one "Starter" filter.
+const ROMAN_SUFFIX = /\s+[IVXLCDM]+$/i;
+const tierOf = (title: string) => title.replace(ROMAN_SUFFIX, "").trim() || title;
+
 // per-page subtitles (shown under the heading). Falls back to none.
 const SUBTITLES: Record<string, string> = {
   "/gotova-racunala": "Sastavljena, testirana i spremna za isporuku.",
@@ -72,11 +78,13 @@ export default function CollectionView({
 }) {
   const [products, setProducts] = useState<ProductNode[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTier, setActiveTier] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
     (async () => {
       setLoading(true);
+      setActiveTier(null);
       try {
         const results = await Promise.all(
           collectionHandles.map((h) => shopifyFetch<CollectionResp>(QUERY, { handle: h, first: 30 }))
@@ -99,6 +107,16 @@ export default function CollectionView({
     return () => { alive = false; };
   }, [collectionHandles.join(",")]);
 
+  // distinct tiers, in first-seen order — only worth showing as a filter if the
+  // titles actually group into a handful of tiers (not just N unrelated products)
+  const tiers: string[] = [];
+  products.forEach((p) => {
+    const t = tierOf(p.title);
+    if (!tiers.includes(t)) tiers.push(t);
+  });
+  const showTierFilter = tiers.length >= 2 && tiers.length < products.length;
+  const visibleProducts = showTierFilter && activeTier ? products.filter((p) => tierOf(p.title) === activeTier) : products;
+
   return (
     <div className="rs-root">
       <section className="rs-coll">
@@ -117,10 +135,23 @@ export default function CollectionView({
                 </Link>
               ))}
             </nav>
-            {!loading && products.length > 0 && (
-              <span className="rs-coll-count">{products.length} {products.length === 1 ? "proizvod" : products.length < 5 ? "proizvoda" : "proizvoda"}</span>
+            {!loading && visibleProducts.length > 0 && (
+              <span className="rs-coll-count">{visibleProducts.length} {visibleProducts.length === 1 ? "proizvod" : visibleProducts.length < 5 ? "proizvoda" : "proizvoda"}</span>
             )}
           </div>
+
+          {showTierFilter && (
+            <div className="rs-tier-row">
+              <button className={`rs-tier-pill ${!activeTier ? "active" : ""}`} onClick={() => setActiveTier(null)}>
+                Sve
+              </button>
+              {tiers.map((t) => (
+                <button key={t} className={`rs-tier-pill ${activeTier === t ? "active" : ""}`} onClick={() => setActiveTier(t)}>
+                  {t}
+                </button>
+              ))}
+            </div>
+          )}
 
           <div className="rs-grid">
             {loading ? (
@@ -128,7 +159,7 @@ export default function CollectionView({
             ) : products.length === 0 ? (
               <div className="rs-empty">Trenutno nema proizvoda u ovoj kategoriji.</div>
             ) : (
-              products.map((p) => {
+              visibleProducts.map((p) => {
                 const pick = p.metafields?.find((m) => m && m.key === "pick")?.value || "";
                 const rec = (p.metafields?.find((m) => m && m.key === "recommended")?.value || "").toLowerCase() === "true";
                 return (

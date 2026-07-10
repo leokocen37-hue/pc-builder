@@ -65,6 +65,7 @@
 .rs-hero{position:relative;min-height:92vh;min-height:92svh;display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden;background:#0a0816 center/cover no-repeat;background-image:url('/hero-banner.jpg')}
 .rs-hero::before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(58% 60% at 50% 50%,rgba(7,8,12,.66),rgba(7,8,12,.28) 55%,transparent 80%),linear-gradient(180deg,rgba(7,8,12,.5) 0%,transparent 20%,transparent 64%,rgba(7,8,12,.95) 100%)}
 .rs-hero-inner{position:relative;z-index:2;max-width:780px;padding:0 24px}
+.rs-hero-inner .rs-kicker{display:inline-block}
 .rs-hero-inner h1{font-size:clamp(46px,8.5vw,104px);line-height:.9;font-weight:700;letter-spacing:-2.5px;text-transform:uppercase;margin:16px 0 0;text-shadow:0 8px 50px rgba(0,0,0,.6)}
 .rs-hero-inner h1 em{font-style:normal;display:block;color:transparent;-webkit-text-stroke:1.6px #fff}
 .rs-hero-inner p{margin:24px auto 32px;color:#ece8f3;font-size:17px;line-height:1.6;max-width:470px;text-shadow:0 2px 16px rgba(0,0,0,.65)}
@@ -74,22 +75,39 @@
 .rs-stats b{display:block;font-size:24px;color:#fff;text-shadow:0 2px 14px rgba(0,0,0,.6)}
 .rs-stats span{font-size:11px;letter-spacing:1.5px;color:#cbb3d6;text-transform:uppercase}
 @media(max-width:600px){.rs-stats{gap:24px}}
-@media(max-width:480px){
-  .rs-hero-inner{padding:0 18px}
-  .rs-hero-inner h1{font-size:38px;letter-spacing:-1px}
-  .rs-hero-inner p{font-size:15.5px}
-  .rs-hero-cta{flex-direction:column;align-items:stretch}
-  .rs-hero-cta .rs-btn{justify-content:center}
-  .rs-stats{gap:18px;flex-wrap:wrap}
-  .rs-stats b{font-size:20px}
-}
-/* on narrow portrait screens, cover-cropping this wide banner at "center" lands
-   right in the empty gap between the two PCs — reframe on the right-hand (white) PC
-   instead, and trim the height so it doesn't dominate the whole first screen. */
+
+/* mobile hero — the banner crop position/brightness varies with viewport, so text
+   needs its own guaranteed contrast rather than relying on the image underneath.
+   A frosted dark card does that regardless of what's behind it, on any phone. */
 @media(max-width:860px){
-  .rs-hero{background-position:74% center;min-height:80vh;min-height:80svh}
+  .rs-hero{background-position:74% center;min-height:78vh;min-height:78svh;padding:0 16px}
   .rs-hero::before{background:radial-gradient(65% 60% at 50% 55%,rgba(7,8,12,.72),rgba(7,8,12,.4) 55%,transparent 82%),linear-gradient(180deg,rgba(7,8,12,.6) 0%,rgba(7,8,12,.25) 22%,rgba(7,8,12,.35) 60%,rgba(7,8,12,.96) 100%)}
+  .rs-hero-inner{
+    background:rgba(7,8,12,.42);
+    -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+    border:1px solid rgba(255,255,255,.09);
+    border-radius:22px;
+    padding:30px 20px;
+    width:100%;
+  }
+  .rs-hero-inner .rs-kicker{
+    background:rgba(255,255,255,.08);
+    border:1px solid rgba(255,255,255,.14);
+    color:#f0d9f5;
+    padding:6px 13px;
+    border-radius:20px;
+    font-size:10px;
+  }
+  .rs-hero-inner h1{font-size:34px;line-height:1.04;letter-spacing:-.5px;margin-top:14px}
+  .rs-hero-inner h1 em{-webkit-text-stroke:1px #fff}
+  .rs-hero-inner p{font-size:14.5px;margin:16px auto 24px;line-height:1.55}
+  .rs-hero-cta{flex-direction:column;align-items:stretch;gap:10px}
+  .rs-hero-cta .rs-btn{justify-content:center;padding:14px 24px;font-size:14px}
+  .rs-stats{gap:16px;margin-top:26px;flex-wrap:wrap}
+  .rs-stats b{font-size:18px}
+  .rs-stats span{font-size:10px;letter-spacing:1px}
 }
+@media(max-width:400px){.rs-hero-inner h1{font-size:29px}}
 
 /* sections */
 .rs-section{padding:88px 0}
@@ -195,6 +213,14 @@
 .rs-tab.active::after{transform:scaleX(1)}
 .rs-coll-count{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.5px;color:var(--faint);padding-bottom:16px;white-space:nowrap}
 @media(max-width:600px){.rs-tabs{gap:20px}.rs-tab{font-size:13.5px;padding-bottom:12px}.rs-coll-count{display:none}}
+
+/* secondary tier filter (e.g. Starter / Performance / Pro Gamer) — smaller & quieter
+   than the main .rs-tabs row above it, since it's a refinement, not primary nav */
+.rs-tier-row{display:flex;gap:8px;flex-wrap:wrap;margin:-14px 0 30px}
+.rs-tier-pill{padding:6px 14px;border-radius:20px;border:1px solid var(--line2);background:transparent;color:var(--muted);font-family:'Space Grotesk',sans-serif;font-size:12.5px;font-weight:500;cursor:pointer;transition:.18s}
+.rs-tier-pill:hover{border-color:var(--accent);color:var(--text)}
+.rs-tier-pill.active{background:rgba(216,31,216,.14);border-color:var(--accent);color:#fff}
+@media(max-width:600px){.rs-tier-row{margin-top:-8px}.rs-tier-pill{padding:5px 12px;font-size:12px}}
 
 /* ===== product page ===== */
 .rs-pdp{padding:48px 0 88px}
