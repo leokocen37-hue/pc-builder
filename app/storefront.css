@@ -39,7 +39,7 @@
 .rs-btn.ghost:hover{border-color:var(--accent);background:rgba(216,31,216,.15)}
 
 /* hero */
-.rs-hero{position:relative;min-height:92vh;display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden;background:#0a0816 center/cover no-repeat;background-image:url('https://racunalo.hr/cdn/shop/files/Custom_PC_website_-_web_banner.jpg?width=2400')}
+.rs-hero{position:relative;min-height:92vh;display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden;background:#0a0816 center/cover no-repeat;background-image:url('/hero-banner.jpg')}
 .rs-hero::before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(58% 60% at 50% 50%,rgba(7,8,12,.66),rgba(7,8,12,.28) 55%,transparent 80%),linear-gradient(180deg,rgba(7,8,12,.5) 0%,transparent 20%,transparent 64%,rgba(7,8,12,.95) 100%)}
 .rs-hero-inner{position:relative;z-index:2;max-width:780px;padding:0 24px}
 .rs-hero-inner h1{font-size:clamp(46px,8.5vw,104px);line-height:.9;font-weight:700;letter-spacing:-2.5px;text-transform:uppercase;margin:16px 0 0;text-shadow:0 8px 50px rgba(0,0,0,.6)}
