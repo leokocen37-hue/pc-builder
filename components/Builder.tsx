@@ -1015,6 +1015,11 @@ function BuilderContent() {
 
   return (
     <div style={containerStyle}>
+      {/* visually hidden — the visual step heading below (h2Style) carries the UI,
+          but the page still needs one real h1 for SEO/accessibility */}
+      <h1 style={{ position: "absolute", width: "1px", height: "1px", padding: 0, margin: "-1px", overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap", border: 0 }}>
+        Konfigurator računala — sastavi PC po mjeri
+      </h1>
       <div style={{ maxWidth: "1340px", margin: "0 auto" }}>
         {/* === STEP RAIL === */}
         {renderRail()}

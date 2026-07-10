@@ -12,7 +12,8 @@ export function middleware(req: NextRequest) {
     pathname.startsWith("/_next") ||
     pathname === "/favicon.ico" ||
     pathname === "/robots.txt" ||
-    /\.(svg|png|jpg|jpeg|gif|webp|ico|css|js|txt|woff2?|ttf)$/.test(pathname)
+    pathname === "/sitemap.xml" ||
+    /\.(svg|png|jpg|jpeg|gif|webp|ico|css|js|txt|xml|woff2?|ttf)$/.test(pathname)
   ) {
     return NextResponse.next();
   }

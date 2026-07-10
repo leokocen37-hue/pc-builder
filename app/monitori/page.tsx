@@ -1,5 +1,6 @@
+import type { Metadata } from "next";
 import CollectionView from "@/components/CollectionView";
- 
+
 const PERIFERIJA_TABS = [
   { label: "Sve", href: "/periferija" },
   { label: "Monitori", href: "/monitori" },
@@ -7,7 +8,19 @@ const PERIFERIJA_TABS = [
   { label: "Miševi", href: "/misevi" },
   { label: "Slušalice", href: "/slusalice" },
 ];
- 
+
+const TITLE = "Monitori — Gaming i uredski monitori";
+const DESCRIPTION =
+  "Od brzih 1440p gaming panela do 4K OLED monitora. Pronađi savršen monitor za igre, rad ili kreativan rad.";
+
+export const metadata: Metadata = {
+  title: TITLE,
+  description: DESCRIPTION,
+  alternates: { canonical: "/monitori" },
+  openGraph: { title: TITLE, description: DESCRIPTION, url: "/monitori" },
+  twitter: { title: TITLE, description: DESCRIPTION },
+};
+
 export default function MonitoriPage() {
   return (
     <CollectionView

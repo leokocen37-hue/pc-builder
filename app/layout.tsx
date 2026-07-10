@@ -16,9 +16,63 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const SITE_URL = "https://racunalo.hr";
+const SITE_NAME = "RAČUNALO.hr";
+// note: this is used verbatim (untemplated) for the homepage, since Next's title
+// template only applies to *descendant* routes, not the root page itself — so it
+// includes the brand name directly rather than relying on the "%s | SITE_NAME" suffix.
+const DEFAULT_TITLE = "RAČUNALO.hr — Custom PC po mjeri, konfigurator i gotova računala";
+const DEFAULT_DESCRIPTION =
+  "Ručno sastavljena i testirana računala po mjeri. Složi svoje računalo u online konfiguratoru uz provjeru kompatibilnosti u stvarnom vremenu, ili odaberi gotovu, testiranu konfiguraciju. Dostava diljem Hrvatske, 24 mjeseca jamstva.";
+
 export const metadata: Metadata = {
-  title: "RACUNALO.hr — Custom PC po mjeri",
-  description: "Ručno sastavljena i testirana računala po mjeri. Složi svoje u konfiguratoru ili odaberi gotovu konfiguraciju.",
+  metadataBase: new URL(SITE_URL),
+  title: { default: DEFAULT_TITLE, template: `%s | ${SITE_NAME}` },
+  description: DEFAULT_DESCRIPTION,
+  keywords: [
+    "custom pc",
+    "konfigurator računala",
+    "gaming računalo",
+    "sastavljanje računala",
+    "gotova računala",
+    "radna stanica",
+    "računalo po mjeri Hrvatska",
+  ],
+  alternates: { canonical: "/" },
+  robots: { index: true, follow: true },
+  openGraph: {
+    type: "website",
+    locale: "hr_HR",
+    url: SITE_URL,
+    siteName: SITE_NAME,
+    title: DEFAULT_TITLE,
+    description: DEFAULT_DESCRIPTION,
+    images: [{ url: "/hero-banner.jpg", width: 2256, height: 1000, alt: "RAČUNALO.hr — custom PC konfiguracije" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: DEFAULT_TITLE,
+    description: DEFAULT_DESCRIPTION,
+    images: ["/hero-banner.jpg"],
+  },
+};
+
+// site-wide structured data (Organization + WebSite) — helps Google understand
+// who/what this site is, independent of any single page's content.
+const ORG_JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: SITE_NAME,
+  url: SITE_URL,
+  description: DEFAULT_DESCRIPTION,
+  email: "info@racunalo.hr",
+};
+const WEBSITE_JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: SITE_NAME,
+  url: SITE_URL,
+  inLanguage: "hr-HR",
 };
 
 export default async function RootLayout({
@@ -37,6 +91,14 @@ export default async function RootLayout({
         <link
           href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
           rel="stylesheet"
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(ORG_JSON_LD).replace(/</g, "\\u003c") }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(WEBSITE_JSON_LD).replace(/</g, "\\u003c") }}
         />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable}`}>

@@ -1,235 +1,88 @@
-// → put this at:  app/[handle]/page.tsx
-"use client";
-
-import { useEffect, useMemo, useState } from "react";
-import { useParams } from "next/navigation";
-import Link from "next/link";
+import type { Metadata } from "next";
+import { cache } from "react";
 import { shopifyFetch } from "@/lib/shopify";
-import { useCart, formatMoney } from "@/lib/cart";
+import ProductClient from "./ProductClient";
 
 type Money = { amount: string; currencyCode: string };
-type Variant = {
-  id: string; title: string; availableForSale: boolean;
-  price: Money;
-  selectedOptions: { name: string; value: string }[];
-  image?: { url: string; altText?: string | null } | null;
-};
-type Metafield = { key: string; value: string } | null;
-type Product = {
-  id: string; title: string; descriptionHtml: string;
+type SeoProduct = {
+  title: string;
+  descriptionHtml: string;
   featuredImage?: { url: string; altText?: string | null } | null;
-  images: { edges: { node: { url: string; altText?: string | null } }[] };
-  options: { name: string; values: string[] }[];
-  variants: { edges: { node: Variant }[] };
-  metafields: Metafield[];
+  priceRange: { minVariantPrice: Money };
+  availableForSale: boolean;
 };
 
-const QUERY = `
-  query Product($handle: String!) {
+const SEO_QUERY = `
+  query ProductSeo($handle: String!) {
     product(handle: $handle) {
-      id title descriptionHtml
+      title
+      descriptionHtml
       featuredImage { url altText }
-      images(first: 10) { edges { node { url altText } } }
-      options { name values }
-      variants(first: 50) { edges { node {
-        id title availableForSale
-        price { amount currencyCode }
-        selectedOptions { name value }
-        image { url altText }
-      }}}
-      metafields(identifiers: [
-        { namespace: "specs", key: "cpu" },
-        { namespace: "specs", key: "gpu" },
-        { namespace: "specs", key: "ram" },
-        { namespace: "specs", key: "storage" },
-        { namespace: "specs", key: "full" }
-      ]) { key value }
+      priceRange { minVariantPrice { amount currencyCode } }
+      availableForSale
     }
   }
 `;
 
-export default function ProductPage() {
-  const params = useParams();
-  const handle = Array.isArray(params.handle) ? params.handle[0] : params.handle;
-  const { addProduct } = useCart();
+// shared by generateMetadata and the page body so we only hit Shopify once per request
+const getProduct = cache(async (handle: string) => {
+  const data = await shopifyFetch<{ product: SeoProduct | null }>(SEO_QUERY, { handle });
+  return data.product;
+});
 
-  const [product, setProduct] = useState<Product | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [variantId, setVariantId] = useState<string | null>(null);
-  const [activeImg, setActiveImg] = useState(0);
-  const [qty, setQty] = useState(1);
+const stripHtml = (html: string) => html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      setLoading(true);
-      try {
-        const d = await shopifyFetch<{ product: Product | null }>(QUERY, { handle });
-        if (!alive) return;
-        setProduct(d.product);
-        const firstAvail = d.product?.variants.edges.find((e) => e.node.availableForSale)?.node
-          ?? d.product?.variants.edges[0]?.node;
-        setVariantId(firstAvail?.id ?? null);
-      } catch (e) {
-        console.error("product fetch failed", e);
-      } finally {
-        if (alive) setLoading(false);
-      }
-    })();
-    return () => { alive = false; };
-  }, [handle]);
+export async function generateMetadata({ params }: { params: Promise<{ handle: string }> }): Promise<Metadata> {
+  const { handle } = await params;
+  const product = await getProduct(handle);
 
-  const variants = product?.variants.edges.map((e) => e.node) ?? [];
-  const selected = useMemo(() => variants.find((v) => v.id === variantId) ?? null, [variants, variantId]);
-  const images = product?.images.edges.map((e) => e.node) ?? (product?.featuredImage ? [product.featuredImage] : []);
-  const hasRealOptions = (product?.options ?? []).some((o) => !(o.values.length === 1 && o.values[0] === "Default Title"));
-
-  // --- specs from Shopify metafields (namespace "specs") ---
-  const mf = (key: string) => product?.metafields?.find((m) => m && m.key === key)?.value || "";
-  const highlights = [
-    { label: "Procesor", value: mf("cpu") },
-    { label: "Grafička", value: mf("gpu") },
-    { label: "Memorija", value: mf("ram") },
-    { label: "Pohrana", value: mf("storage") },
-  ].filter((h) => h.value);
-  // full spec: one "Label: Value" per line
-  const specRows = mf("full")
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => {
-      const idx = line.indexOf(":");
-      return idx === -1 ? { label: "", value: line } : { label: line.slice(0, idx).trim(), value: line.slice(idx + 1).trim() };
-    });
-
-  if (loading) {
-    return (
-      <div className="rs-root"><section className="rs-pdp"><div className="rs-wrap rs-pdp-grid">
-        <div className="rs-skel" style={{ height: 460 }} /><div className="rs-skel" style={{ height: 460 }} />
-      </div></section></div>
-    );
-  }
   if (!product) {
-    return (
-      <div className="rs-root"><section className="rs-pdp"><div className="rs-wrap" style={{ textAlign: "center", padding: "80px 0" }}>
-        <h1 style={{ fontSize: 28, marginBottom: 12 }}>Proizvod nije pronađen</h1>
-        <p style={{ color: "var(--muted)", marginBottom: 24 }}>Možda je uklonjen ili je poveznica netočna.</p>
-        <Link href="/gotova-racunala" className="rs-btn">Natrag na računala</Link>
-      </div></section></div>
-    );
+    return { title: "Proizvod nije pronađen", robots: { index: false, follow: false } };
   }
+
+  const description = stripHtml(product.descriptionHtml).slice(0, 160) || `${product.title} — pogledajte specifikacije i cijenu na RAČUNALO.hr.`;
+  const url = `/${handle}`;
+  const images = product.featuredImage ? [{ url: product.featuredImage.url, alt: product.featuredImage.altText || product.title }] : undefined;
+
+  return {
+    title: product.title,
+    description,
+    alternates: { canonical: url },
+    openGraph: { title: product.title, description, url, images },
+    twitter: { title: product.title, description, images: images?.map((i) => i.url) },
+  };
+}
+
+export default async function Page({ params }: { params: Promise<{ handle: string }> }) {
+  const { handle } = await params;
+  const product = await getProduct(handle);
+
+  const jsonLd = product
+    ? {
+        "@context": "https://schema.org",
+        "@type": "Product",
+        name: product.title,
+        description: stripHtml(product.descriptionHtml) || undefined,
+        image: product.featuredImage?.url ? [product.featuredImage.url] : undefined,
+        offers: {
+          "@type": "Offer",
+          url: `https://racunalo.hr/${handle}`,
+          priceCurrency: product.priceRange.minVariantPrice.currencyCode,
+          price: product.priceRange.minVariantPrice.amount,
+          availability: product.availableForSale ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+        },
+      }
+    : null;
 
   return (
-    <div className="rs-root">
-      <section className="rs-pdp">
-        <div className="rs-wrap rs-pdp-grid">
-          {/* gallery */}
-          <div>
-            <div className="rs-gallery-main">
-              {images[activeImg]?.url
-                ? <img src={images[activeImg].url} alt={images[activeImg].altText || product.title} />
-                : <div className="rs-ph-fallback" />}
-            </div>
-            {images.length > 1 && (
-              <div className="rs-thumbs">
-                {images.map((img, i) => (
-                  <div key={i} className={`rs-thumb ${i === activeImg ? "active" : ""}`} onClick={() => setActiveImg(i)}>
-                    <img src={img.url} alt={img.altText || ""} />
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* info */}
-          <div className="rs-pdp-info">
-            <h1>{product.title}</h1>
-            <div className="rs-pdp-price">{formatMoney(selected?.price)}</div>
-
-            {highlights.length > 0 && (
-              <div className="rs-spec-highlights">
-                {highlights.map((h) => (
-                  <div key={h.label} className="rs-spec-hl">
-                    <div className="rs-spec-hl-label">{h.label}</div>
-                    <div className="rs-spec-hl-value">{h.value}</div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {hasRealOptions && (
-              <div className="rs-opt">
-                <div className="rs-opt-label">Varijanta</div>
-                <div className="rs-opt-vals">
-                  {variants.map((v) => (
-                    <button
-                      key={v.id}
-                      className={`rs-chip ${v.id === variantId ? "active" : ""}`}
-                      disabled={!v.availableForSale}
-                      onClick={() => { setVariantId(v.id); if (v.image) { const idx = images.findIndex((im) => im.url === v.image!.url); if (idx >= 0) setActiveImg(idx); } }}
-                    >
-                      {v.title}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {selected && !selected.availableForSale && <div className="rs-soldout">Trenutno nedostupno</div>}
-
-            <div className="rs-qty">
-              <button onClick={() => setQty((q) => Math.max(1, q - 1))}>−</button>
-              <span>{qty}</span>
-              <button onClick={() => setQty((q) => q + 1)}>+</button>
-            </div>
-
-            <button
-              className="rs-btn"
-              style={{ width: "100%", justifyContent: "center" }}
-              disabled={!selected?.availableForSale}
-              onClick={() =>
-                selected &&
-                addProduct({
-                  variantId: selected.id,
-                  title: product.title,
-                  price: Number(selected.price.amount),
-                  image: selected.image?.url || product.featuredImage?.url || undefined,
-                  variantTitle: selected.title !== "Default Title" ? selected.title : undefined,
-                  quantity: qty,
-                })
-              }
-            >
-              {selected?.availableForSale ? "Dodaj u košaricu" : "Nedostupno"}
-            </button>
-          </div>
-        </div>
-
-        {/* --- description + full specification (from Shopify) --- */}
-        {(product.descriptionHtml || specRows.length > 0) && (
-          <div className="rs-wrap rs-pdp-detail">
-            {product.descriptionHtml && (
-              <div className="rs-pdp-detail-desc">
-                <h2 className="rs-detail-h">Opis</h2>
-                <div className="rs-pdp-desc" dangerouslySetInnerHTML={{ __html: product.descriptionHtml }} />
-              </div>
-            )}
-            {specRows.length > 0 && (
-              <div className="rs-pdp-detail-spec">
-                <h2 className="rs-detail-h">Specifikacije</h2>
-                <table className="rs-spec-table">
-                  <tbody>
-                    {specRows.map((r, i) => (
-                      <tr key={i}>
-                        {r.label ? <><th>{r.label}</th><td>{r.value}</td></> : <td colSpan={2}>{r.value}</td>}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
-      </section>
-    </div>
+    <>
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
+        />
+      )}
+      <ProductClient />
+    </>
   );
 }

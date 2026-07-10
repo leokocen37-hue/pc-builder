@@ -1,5 +1,18 @@
+import type { Metadata } from "next";
 import CollectionView from "@/components/CollectionView";
- 
+
+const TITLE = "Gotova računala — Gaming PC i radne stanice";
+const DESCRIPTION =
+  "Ručno sastavljena i testirana gotova računala, spremna za isporuku. Gaming računala i profesionalne radne stanice uz 24 mjeseca jamstva.";
+
+export const metadata: Metadata = {
+  title: TITLE,
+  description: DESCRIPTION,
+  alternates: { canonical: "/gotova-racunala" },
+  openGraph: { title: TITLE, description: DESCRIPTION, url: "/gotova-racunala" },
+  twitter: { title: TITLE, description: DESCRIPTION },
+};
+
 export default function GotovaRacunalaPage() {
   return (
     <CollectionView
@@ -9,4 +22,3 @@ export default function GotovaRacunalaPage() {
     />
   );
 }
- 
