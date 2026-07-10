@@ -6,6 +6,8 @@ import "./storefront.css";
 import { CartProvider } from "@/lib/cart";
 import SiteHeader from "@/components/SiteHeader";
 import CartDrawer from "@/components/CartDrawer";
+import Footer from "@/components/Footer";
+import CookieConsent from "@/components/CookieConsent";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -109,7 +111,9 @@ export default async function RootLayout({
           <CartProvider>
             <SiteHeader />
             {children}
+            <Footer />
             <CartDrawer />
+            <CookieConsent />
           </CartProvider>
         )}
       </body>

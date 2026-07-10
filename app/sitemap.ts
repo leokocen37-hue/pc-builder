@@ -37,6 +37,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/misevi`, changeFrequency: "daily", priority: 0.6 },
     { url: `${SITE_URL}/slusalice`, changeFrequency: "daily", priority: 0.6 },
     { url: `${SITE_URL}/kontakt`, changeFrequency: "monthly", priority: 0.4 },
+    // support
+    { url: `${SITE_URL}/o-nama`, changeFrequency: "monthly", priority: 0.5 },
+    { url: `${SITE_URL}/dostava`, changeFrequency: "monthly", priority: 0.5 },
+    { url: `${SITE_URL}/faq`, changeFrequency: "monthly", priority: 0.5 },
+    { url: `${SITE_URL}/jamstvo`, changeFrequency: "monthly", priority: 0.5 },
+    // legal
+    { url: `${SITE_URL}/uvjeti`, changeFrequency: "yearly", priority: 0.3 },
+    { url: `${SITE_URL}/raskid`, changeFrequency: "yearly", priority: 0.3 },
+    { url: `${SITE_URL}/privatnost`, changeFrequency: "yearly", priority: 0.3 },
+    { url: `${SITE_URL}/kolacici`, changeFrequency: "yearly", priority: 0.3 },
+    { url: `${SITE_URL}/reklamacije`, changeFrequency: "yearly", priority: 0.3 },
   ];
 
   const productRoutes: MetadataRoute.Sitemap = [];

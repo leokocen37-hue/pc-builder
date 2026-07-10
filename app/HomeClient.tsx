@@ -173,39 +173,6 @@ export default function HomeClient() {
           <Link href={CONFIGURATOR_PATH} className="rs-btn">Otvori konfigurator →</Link>
         </Reveal>
       </section>
-
-      {/* footer */}
-      <footer id="kontakt" className="rs-footer">
-        <div className="rs-wrap rs-foot-grid">
-          <div>
-            <div className="rs-logo" style={{ fontSize: 22, marginBottom: 12 }}>RAČUNALO<span>.hr</span></div>
-            <p className="rs-foot-blurb">Ručno sastavljena i testirana računala po mjeri. Jedinstvene konfiguracije za igru, posao i kreativan rad.</p>
-          </div>
-          <div>
-            <h5>Trgovina</h5>
-            <Link href={CONFIGURATOR_PATH}>Konfigurator</Link>
-            <Link href="/gaming-racunala">Gaming računala</Link>
-            <Link href="/radne-stanice">Radne stanice</Link>
-            <Link href="/gotova-racunala">Sva računala</Link>
-          </div>
-          <div>
-            <h5>Pomoć</h5>
-            <a href="https://racunalo.hr/pages/about-us">Česta pitanja</a>
-            <a href="#">Dostava</a>
-            <a href="#">Jamstvo</a>
-            <a href="#kontakt">Kontakt</a>
-          </div>
-          <div>
-            <h5>Kontakt</h5>
-            <p>info@racunalo.hr</p>
-            <p className="rs-faint">Pon–Pet · 9–17h</p>
-          </div>
-        </div>
-        <div className="rs-foot-bottom">
-          <span>© {new Date().getFullYear()} RAČUNALO.hr — sva prava pridržana</span>
-          <span className="rs-faint">Plaćanje: kartice · PayPal · KEKS Pay</span>
-        </div>
-      </footer>
     </div>
   );
 }
