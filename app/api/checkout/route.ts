@@ -10,7 +10,7 @@ type InItem =
 type VariantPriceNode = { id: string; price: { amount: string } } | null;
 
 type DraftOrderLineItem =
-  | { title: string; originalUnitPrice: string; quantity: number; customAttributes: { key: string; value: string }[] }
+  | { title: string; originalUnitPrice: string; quantity: number; customAttributes: { key: string; value: string }[]; requiresShipping: boolean }
   | { variantId: string; quantity: number };
 
 const errorMessage = (e: unknown) => (e instanceof Error ? e.message : "Unknown error");
@@ -73,6 +73,11 @@ export async function POST(request: Request) {
           originalUnitPrice: price.toFixed(2),
           quantity: it.quantity || 1,
           customAttributes: [{ key: "Komponente", value: it.summary || "" }],
+          // custom (non-variant) draft order lines default to non-shippable —
+          // without this, a cart with ONLY a custom build skips the shipping
+          // step entirely at checkout (a real product line masks this, since
+          // those default to shippable, which is why it "worked" alongside one).
+          requiresShipping: true,
         });
       } else {
         lineItems.push({ variantId: it.variantId, quantity: it.quantity || 1 });
