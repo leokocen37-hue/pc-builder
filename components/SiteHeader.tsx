@@ -9,7 +9,7 @@ import { useCart } from "@/lib/cart";
 const NAV_LINKS = [
   { href: "/", label: "Početna" },
   { href: "/konfigurator", label: "Konfigurator" },
-  { href: "/gotova-racunala", label: "Računala" },
+  { href: "/racunala", label: "Računala" },
   { href: "/periferija", label: "Periferija" },
   { href: "/kontakt", label: "Kontakt" },
 ];

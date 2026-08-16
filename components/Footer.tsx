@@ -24,7 +24,7 @@ export default function Footer() {
         <div>
           <h5>Trgovina</h5>
           <Link href={CONFIGURATOR_PATH}>Konfigurator</Link>
-          <Link href="/gotova-racunala">Gotova računala</Link>
+          <Link href="/racunala">Gotova računala</Link>
           <Link href="/periferija">Periferija</Link>
           <Link href="/kontakt">Kontakt</Link>
         </div>

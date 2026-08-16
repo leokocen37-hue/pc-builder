@@ -4,10 +4,10 @@ import { getCollectionProducts } from "@/lib/collections";
 
 const PERIFERIJA_TABS = [
   { label: "Sve", href: "/periferija" },
-  { label: "Monitori", href: "/monitori" },
-  { label: "Tipkovnice", href: "/tipkovnice" },
-  { label: "Miševi", href: "/misevi" },
-  { label: "Slušalice", href: "/slusalice" },
+  { label: "Monitori", href: "/periferija/monitori" },
+  { label: "Tipkovnice", href: "/periferija/tipkovnice" },
+  { label: "Miševi", href: "/periferija/misevi" },
+  { label: "Slušalice", href: "/periferija/slusalice" },
 ];
 
 const TITLE = "Periferija — Monitori, tipkovnice, miševi i slušalice";
@@ -31,6 +31,8 @@ export default async function PeriferijaPage() {
       activeHref="/periferija"
       tabs={PERIFERIJA_TABS}
       products={products}
+      section="periferija"
+      breadcrumbs={[{ label: "Početna", href: "/" }, { label: "Periferija" }]}
     />
   );
 }

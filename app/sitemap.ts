@@ -10,10 +10,14 @@ export const dynamic = "force-dynamic";
 
 const SITE_URL = "https://racunalo.hr";
 
-// only the collections actually linked from site navigation — individual
-// components (CPUs, GPUs, etc.) exist as Shopify products too but are meant
-// to be picked inside the configurator, not landed on directly from Google.
-const CATALOG_COLLECTIONS = ["gaming", "radne-stanice", "monitori", "tipkovnice", "misevi", "slusalice"];
+// section -> collection handles that live under it, mirrors lib/product-page.ts's
+// SECTIONS config (kept separate/duplicated on purpose — sitemap.ts can't import
+// react's cache() from a route segment config file without pulling in server-only
+// bits it doesn't need; this list is small and stable enough to just repeat).
+const SECTION_COLLECTIONS: { base: string; collections: string[] }[] = [
+  { base: "/racunala", collections: ["gaming", "radne-stanice"] },
+  { base: "/periferija", collections: ["monitori", "tipkovnice", "misevi", "slusalice"] },
+];
 
 const PRODUCTS_QUERY = `
   query SitemapCollection($handle: String!) {
@@ -28,14 +32,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: `${SITE_URL}/`, changeFrequency: "weekly", priority: 1 },
     { url: `${SITE_URL}/konfigurator`, changeFrequency: "weekly", priority: 0.9 },
-    { url: `${SITE_URL}/gotova-racunala`, changeFrequency: "daily", priority: 0.9 },
-    { url: `${SITE_URL}/gaming-racunala`, changeFrequency: "daily", priority: 0.8 },
-    { url: `${SITE_URL}/radne-stanice`, changeFrequency: "daily", priority: 0.8 },
+    { url: `${SITE_URL}/racunala`, changeFrequency: "daily", priority: 0.9 },
+    { url: `${SITE_URL}/racunala/gaming`, changeFrequency: "daily", priority: 0.8 },
+    { url: `${SITE_URL}/racunala/radne-stanice`, changeFrequency: "daily", priority: 0.8 },
     { url: `${SITE_URL}/periferija`, changeFrequency: "daily", priority: 0.7 },
-    { url: `${SITE_URL}/monitori`, changeFrequency: "daily", priority: 0.7 },
-    { url: `${SITE_URL}/tipkovnice`, changeFrequency: "daily", priority: 0.6 },
-    { url: `${SITE_URL}/misevi`, changeFrequency: "daily", priority: 0.6 },
-    { url: `${SITE_URL}/slusalice`, changeFrequency: "daily", priority: 0.6 },
+    { url: `${SITE_URL}/periferija/monitori`, changeFrequency: "daily", priority: 0.7 },
+    { url: `${SITE_URL}/periferija/tipkovnice`, changeFrequency: "daily", priority: 0.6 },
+    { url: `${SITE_URL}/periferija/misevi`, changeFrequency: "daily", priority: 0.6 },
+    { url: `${SITE_URL}/periferija/slusalice`, changeFrequency: "daily", priority: 0.6 },
     { url: `${SITE_URL}/kontakt`, changeFrequency: "monthly", priority: 0.4 },
     // support
     { url: `${SITE_URL}/o-nama`, changeFrequency: "monthly", priority: 0.5 },
@@ -52,24 +56,26 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const productRoutes: MetadataRoute.Sitemap = [];
   try {
-    const results = await Promise.all(
-      CATALOG_COLLECTIONS.map((handle) =>
-        shopifyFetch<ProductsResp>(PRODUCTS_QUERY, { handle }, { next: { revalidate: 3600 } })
-      )
-    );
-    const seen = new Set<string>();
-    results.forEach((r) => {
-      r.collection?.products.edges.forEach((e) => {
-        if (seen.has(e.node.handle)) return;
-        seen.add(e.node.handle);
-        productRoutes.push({
-          url: `${SITE_URL}/${e.node.handle}`,
-          lastModified: e.node.updatedAt,
-          changeFrequency: "weekly",
-          priority: 0.7,
+    for (const { base, collections } of SECTION_COLLECTIONS) {
+      const results = await Promise.all(
+        collections.map((handle) =>
+          shopifyFetch<ProductsResp>(PRODUCTS_QUERY, { handle }, { next: { revalidate: 3600 } }).then((r) => ({ handle, r }))
+        )
+      );
+      const seen = new Set<string>();
+      results.forEach(({ handle, r }) => {
+        r.collection?.products.edges.forEach((e) => {
+          if (seen.has(e.node.handle)) return;
+          seen.add(e.node.handle);
+          productRoutes.push({
+            url: `${SITE_URL}${base}/${handle}/${e.node.handle}`,
+            lastModified: e.node.updatedAt,
+            changeFrequency: "weekly",
+            priority: 0.7,
+          });
         });
       });
-    });
+    }
   } catch (e) {
     console.error("sitemap: failed to fetch products", e);
   }

@@ -21,7 +21,7 @@ export default function HomeClient({ gaming, stanice }: { gaming: ProductNode[];
           <p>Složi svaku komponentu uz provjeru kompatibilnosti u stvarnom vremenu — ili odaberi gotovu, testiranu konfiguraciju.</p>
           <div className="rs-hero-cta">
             <Link href={CONFIGURATOR_PATH} className="rs-btn">Otvori konfigurator →</Link>
-            <Link href="/gotova-racunala" className="rs-btn ghost">Gotova računala</Link>
+            <Link href="/racunala" className="rs-btn ghost">Gotova računala</Link>
           </div>
           <div className="rs-stats">
             <div><b>100+</b><span>komponenti</span></div>
@@ -69,13 +69,13 @@ export default function HomeClient({ gaming, stanice }: { gaming: ProductNode[];
             <div className="rs-kicker">Gotova računala</div>
             <h2>Spremno za svaki izazov</h2>
             <p>Ručno sastavljene i testirane konfiguracije — odaberi provjeren build ili kreni od nule u konfiguratoru.</p>
-            <Link href="/gotova-racunala" className="rs-head-cta">Pogledaj sva računala →</Link>
+            <Link href="/racunala" className="rs-head-cta">Pogledaj sva računala →</Link>
           </Reveal>
           <Reveal delay={80}>
-            <CollectionRow title="Gaming računala" subtitle="Za igranje na visokim postavkama i visokom broju sličica." href="/gaming-racunala" products={gaming} />
+            <CollectionRow title="Gaming računala" subtitle="Za igranje na visokim postavkama i visokom broju sličica." href="/racunala/gaming" products={gaming} />
           </Reveal>
           <Reveal delay={140}>
-            <CollectionRow title="Radne stanice" subtitle="Snaga za montažu, 3D, render i zahtjevan profesionalni rad." href="/radne-stanice" products={stanice} />
+            <CollectionRow title="Radne stanice" subtitle="Snaga za montažu, 3D, render i zahtjevan profesionalni rad." href="/racunala/radne-stanice" products={stanice} />
           </Reveal>
         </div>
       </section>
@@ -89,10 +89,10 @@ export default function HomeClient({ gaming, stanice }: { gaming: ProductNode[];
             <p>Nadopuni svoje računalo — monitori, tipkovnice i miševi.</p>
           </Reveal>
           <Reveal className="rs-cats" delay={80}>
-            <CatTile href="/monitori" label="Monitori" sub="Gaming & uredski" handle="monitori" g="linear-gradient(135deg,#0e5a8a,#22a3d8)" />
-            <CatTile href="/tipkovnice" label="Tipkovnice" sub="Mehaničke & RGB" handle="tipkovnice" g="linear-gradient(135deg,#8a0e6a,#d81fd8)" />
-            <CatTile href="/misevi" label="Miševi" sub="Gaming & precizni" handle="misevi" g="linear-gradient(135deg,#0e7a52,#27c08a)" />
-            <CatTile href="/slusalice" label="Slušalice" sub="Gaming & bežične" handle="slusalice" g="linear-gradient(135deg,#3a1f7a,#7b2ff7)" />
+            <CatTile href="/periferija/monitori" label="Monitori" sub="Gaming & uredski" handle="monitori" g="linear-gradient(135deg,#0e5a8a,#22a3d8)" />
+            <CatTile href="/periferija/tipkovnice" label="Tipkovnice" sub="Mehaničke & RGB" handle="tipkovnice" g="linear-gradient(135deg,#8a0e6a,#d81fd8)" />
+            <CatTile href="/periferija/misevi" label="Miševi" sub="Gaming & precizni" handle="misevi" g="linear-gradient(135deg,#0e7a52,#27c08a)" />
+            <CatTile href="/periferija/slusalice" label="Slušalice" sub="Gaming & bežične" handle="slusalice" g="linear-gradient(135deg,#3a1f7a,#7b2ff7)" />
           </Reveal>
         </div>
       </section>
@@ -173,7 +173,7 @@ function CollectionRow({ title, href, products, subtitle }: { title: string; hre
         {products.length === 0
           ? <div className="rs-empty">Konfiguracije uskoro.</div>
           : products.slice(0, 5).map((p) => (
-              <Link key={p.id} href={`/${p.handle}`} className="rs-card rs-card-fin">
+              <Link key={p.id} href={`/racunala/${p.category}/${p.handle}`} className="rs-card rs-card-fin">
                 <div className="rs-ph">
                   {p.featuredImage?.url ? <img src={p.featuredImage.url} alt={p.featuredImage.altText || p.title} loading="lazy" /> : <div className="rs-ph-fallback" />}
                   {!p.availableForSale && <span className="rs-badge">Uskoro</span>}

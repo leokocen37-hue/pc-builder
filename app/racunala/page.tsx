@@ -9,18 +9,20 @@ const DESCRIPTION =
 export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
-  alternates: { canonical: "/gotova-racunala" },
-  openGraph: { title: TITLE, description: DESCRIPTION, url: "/gotova-racunala" },
+  alternates: { canonical: "/racunala" },
+  openGraph: { title: TITLE, description: DESCRIPTION, url: "/racunala" },
   twitter: { title: TITLE, description: DESCRIPTION },
 };
 
-export default async function GotovaRacunalaPage() {
+export default async function RacunalaPage() {
   const products = await getCollectionProducts(["gaming", "radne-stanice"]);
   return (
     <CollectionView
       heading="Gotova računala"
-      activeHref="/gotova-racunala"
+      activeHref="/racunala"
       products={products}
+      section="racunala"
+      breadcrumbs={[{ label: "Početna", href: "/" }, { label: "Računala" }]}
     />
   );
 }

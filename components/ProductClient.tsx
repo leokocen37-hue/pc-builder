@@ -1,28 +1,30 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
 import { useCart, formatMoney } from "@/lib/cart";
-import type { Product } from "./page";
+import type { Product } from "@/lib/product-page";
 
-export default function ProductClient({ product }: { product: Product | null }) {
+// callers are expected to have already handled the missing/mismatched-category
+// case via notFound() (see the segment-scoped not-found.tsx next to each page.tsx)
+// before rendering this — product is always real here.
+export default function ProductClient({ product }: { product: Product }) {
   const { addProduct } = useCart();
 
   const [variantId, setVariantId] = useState<string | null>(() => {
-    const firstAvail = product?.variants.edges.find((e) => e.node.availableForSale)?.node
-      ?? product?.variants.edges[0]?.node;
+    const firstAvail = product.variants.edges.find((e) => e.node.availableForSale)?.node
+      ?? product.variants.edges[0]?.node;
     return firstAvail?.id ?? null;
   });
   const [activeImg, setActiveImg] = useState(0);
   const [qty, setQty] = useState(1);
 
-  const variants = product?.variants.edges.map((e) => e.node) ?? [];
+  const variants = product.variants.edges.map((e) => e.node);
   const selected = useMemo(() => variants.find((v) => v.id === variantId) ?? null, [variants, variantId]);
-  const images = product?.images.edges.map((e) => e.node) ?? (product?.featuredImage ? [product.featuredImage] : []);
-  const hasRealOptions = (product?.options ?? []).some((o) => !(o.values.length === 1 && o.values[0] === "Default Title"));
+  const images = product.images.edges.map((e) => e.node).length ? product.images.edges.map((e) => e.node) : (product.featuredImage ? [product.featuredImage] : []);
+  const hasRealOptions = product.options.some((o) => !(o.values.length === 1 && o.values[0] === "Default Title"));
 
   // --- specs from Shopify metafields (namespace "specs") ---
-  const mf = (key: string) => product?.metafields?.find((m) => m && m.key === key)?.value || "";
+  const mf = (key: string) => product.metafields?.find((m) => m && m.key === key)?.value || "";
   const highlights = [
     { label: "Procesor", value: mf("cpu") },
     { label: "Grafička", value: mf("gpu") },
@@ -38,16 +40,6 @@ export default function ProductClient({ product }: { product: Product | null }) 
       const idx = line.indexOf(":");
       return idx === -1 ? { label: "", value: line } : { label: line.slice(0, idx).trim(), value: line.slice(idx + 1).trim() };
     });
-
-  if (!product) {
-    return (
-      <div className="rs-root"><section className="rs-pdp"><div className="rs-wrap" style={{ textAlign: "center", padding: "80px 0" }}>
-        <h1 style={{ fontSize: 28, marginBottom: 12 }}>Proizvod nije pronađen</h1>
-        <p style={{ color: "var(--muted)", marginBottom: 24 }}>Možda je uklonjen ili je poveznica netočna.</p>
-        <Link href="/gotova-racunala" className="rs-btn">Natrag na računala</Link>
-      </div></section></div>
-    );
-  }
 
   return (
     <div className="rs-root">

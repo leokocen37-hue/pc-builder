@@ -8,6 +8,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { formatMoney } from "@/lib/cart";
 import type { ProductNode } from "@/lib/collections";
+import type { SectionKey } from "@/lib/product-page";
 
 type Tab = { label: string; href: string };
 
@@ -21,11 +22,14 @@ export default function CollectionGrid({
   products,
   tabs,
   activeHref,
+  section,
 }: {
   products: ProductNode[];
   tabs: Tab[];
   activeHref: string;
+  section?: SectionKey;
 }) {
+  const linkFor = (p: ProductNode) => (section ? `/${section}/${p.category}/${p.handle}` : `/${p.handle}`);
   const [activeTier, setActiveTier] = useState<string | null>(null);
 
   // distinct tiers, in first-seen order — only worth showing as a filter if the
@@ -74,7 +78,7 @@ export default function CollectionGrid({
             const pick = p.metafields?.find((m) => m && m.key === "pick")?.value || "";
             const rec = (p.metafields?.find((m) => m && m.key === "recommended")?.value || "").toLowerCase() === "true";
             return (
-              <Link key={p.id} href={`/${p.handle}`} className="rs-card rs-card-fin">
+              <Link key={p.id} href={linkFor(p)} className="rs-card rs-card-fin">
                 <div className="rs-ph">
                   {p.featuredImage?.url ? (
                     <img src={p.featuredImage.url} alt={p.featuredImage.altText || p.title} loading="lazy" />
