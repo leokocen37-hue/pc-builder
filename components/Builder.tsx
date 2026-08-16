@@ -174,6 +174,9 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
   const [stepIndex, setStepIndex] = useState(0);
   const { addCustomBuild } = useCart();
   const [isMobile, setIsMobile] = useState(false);
+  // carousel card count tier: 5 cards only above ~1600px, 3 from 900-1600px,
+  // 1 below 900px (same boundary as isMobile)
+  const [cardTier, setCardTier] = useState<"mobile" | "compact" | "wide">("wide");
   const [activeIndex, setActiveIndex] = useState(0);
   const [selectedVarId, setSelectedVarId] = useState("");
   const [startX, setStartX] = useState<number | null>(null);
@@ -281,7 +284,11 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
 
   // --- DATA FETCHING & EFFECTS ---
   useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 900);
+    const handleResize = () => {
+      const w = window.innerWidth;
+      setIsMobile(w < 900);
+      setCardTier(w < 900 ? "mobile" : w < 1600 ? "compact" : "wide");
+    };
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
@@ -600,26 +607,34 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
   };
 
   // --- COVERFLOW GEOMETRY ---
-  // desktop shows 5 cards (focused + 2 each side); mobile shows 1 (focused only)
-  const VISIBLE_RANGE = isMobile ? 0 : 2;
-  const SLIDE = isMobile ? 150 : 230;
-
-  const getOffset = (index: number) => {
-    const N = currentProducts.length;
-    if (N === 0) return 0;
-    let offset = (((index - activeIndex) % N) + N) % N;
-    if (offset > Math.floor(N / 2)) offset -= N;
-    return offset;
+  // Card size + center-to-center spacing (bx) per tier. bx is chosen so that,
+  // at peripheral scale .92, adjacent cards' bounding boxes never touch:
+  //   wide:    half(220)=110, half(220*.92)=101.2 -> needs bx >= 211.2 (have 240)
+  //            and a1/a2 gap needs bx >= 2*101.2=202.4 (have 240)
+  //   compact: half(250)=125, half(250*.92)=115   -> needs bx >= 240 (have 260)
+  //   mobile:  only the focused card is visible (VISIBLE_RANGE 0), no adjacency to check
+  const CARD_DIMS: Record<"mobile" | "compact" | "wide", { w: number; h: number; bx: number }> = {
+    mobile: { w: 196, h: 256, bx: 150 },
+    compact: { w: 250, h: 330, bx: 260 },
+    wide: { w: 220, h: 300, bx: 240 },
   };
+  // how many cards show on each side of the focused one: wide=5 total, compact=3, mobile=1
+  const VISIBLE_RANGE = cardTier === "wide" ? 2 : cardTier === "compact" ? 1 : 0;
+  const SLIDE = CARD_DIMS[cardTier].bx;
+
+  // Non-circular: offset is a plain difference, no wraparound. At the ends,
+  // cards past the boundary simply aren't there — nothing loops from the
+  // other side of the (quality-sorted) list.
+  const getOffset = (index: number) => index - activeIndex;
 
   // coverflow card transform. Peripheral cards (anything not focused, within
   // VISIBLE_RANGE) all get the same flat depth cue — scale .92, opacity .75,
   // a light ±12° tilt for character — instead of a steep per-distance falloff,
   // so a card two positions out reads exactly as well as one position out.
-  const getCardStyle = (o: number, mobile: boolean) => {
+  const getCardStyle = (o: number, tier: "mobile" | "compact" | "wide") => {
     const a = Math.abs(o);
     const sign = o === 0 ? 0 : o < 0 ? -1 : 1;
-    const bx = mobile ? 150 : 230;
+    const bx = CARD_DIMS[tier].bx;
     let tx: number, sc: number, rot: number, op: number, z: number;
     if (a === 0) {
       tx = 0;
@@ -651,8 +666,10 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
     };
   };
 
-  const goPrev = () => setActiveIndex((i) => (i - 1 + currentProducts.length) % currentProducts.length);
-  const goNext = () => setActiveIndex((i) => (i + 1) % currentProducts.length);
+  const atFirst = activeIndex <= 0;
+  const atLast = activeIndex >= currentProducts.length - 1;
+  const goPrev = () => setActiveIndex((i) => Math.max(0, i - 1));
+  const goNext = () => setActiveIndex((i) => Math.min(currentProducts.length - 1, i + 1));
 
   // arrow keys navigate whenever the carousel itself (or something inside it,
   // e.g. an arrow button) has focus
@@ -726,7 +743,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
       if (steps === 0 && Math.abs(dragOffset) > 12 && velocity > 0.35) {
         steps = dragOffset > 0 ? 1 : -1;
       }
-      if (N > 0 && steps !== 0) setActiveIndex((prev) => (((prev - steps) % N) + N) % N);
+      if (N > 0 && steps !== 0) setActiveIndex((prev) => Math.max(0, Math.min(N - 1, prev - steps)));
     } else {
       // tapped (no real movement): center card selects, side card comes to center
       const i = downIdxRef.current;
@@ -1348,7 +1365,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                       onDragStart={(e) => e.preventDefault()}
                       style={{
                         position: "relative",
-                        height: isMobile ? "320px" : "440px",
+                        height: `${CARD_DIMS[cardTier].h + 80}px`,
                         perspective: "1700px",
                         display: "flex",
                         alignItems: "center",
@@ -1361,14 +1378,20 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                         marginBottom: "4px",
                       } as CSSProperties}
                     >
-                      <button className="rs-cf-arrow" onClick={goPrev} style={{ ...arrowStyle, left: "2px" }}>
+                      <button
+                        className="rs-cf-arrow"
+                        onClick={goPrev}
+                        disabled={atFirst}
+                        aria-label="Prethodna komponenta"
+                        style={{ ...arrowStyle, left: "2px", opacity: atFirst ? 0.3 : 1, cursor: atFirst ? "default" : "pointer" }}
+                      >
                         ‹
                       </button>
 
                       {currentProducts.map((p, idx) => {
                         const baseOffset = getOffset(idx);
                         const exactOffset = baseOffset + dragOffset / SLIDE;
-                        const cs = getCardStyle(exactOffset, isMobile);
+                        const cs = getCardStyle(exactOffset, cardTier);
                         const isActive = Math.abs(exactOffset) < 0.5;
                         // keep cards near both the resting and the dragged-to center mounted,
                         // so the settle animation always has neighbors to ease in
@@ -1377,8 +1400,8 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
 
                         const dv = displayVariant(p, idx === activeIndex);
                         const specText = cardSpecLine(p.pcfSpecs?.value);
-                        const cardW = isMobile ? 196 : 284;
-                        const cardH = isMobile ? 256 : 360;
+                        const cardW = CARD_DIMS[cardTier].w;
+                        const cardH = CARD_DIMS[cardTier].h;
 
                         return (
                           <div
@@ -1428,17 +1451,8 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                               <span style={{ ...cardBadgeBase, top: p.id === recommendedId ? "34px" : "10px", background: "transparent", border: `1px solid ${COLORS.accent}`, color: COLORS.accent }}>NAJBOLJI OMJER</span>
                             )}
                             {isActive && (
-                              <button
-                                onClick={(e) => openDetails(p, e)}
-                                style={{
-                                  position: "absolute", top: "10px", right: "10px", zIndex: 5,
-                                  padding: "4px 9px", borderRadius: "7px", border: `1px solid ${COLORS.border}`,
-                                  background: "rgba(7,8,12,.72)", backdropFilter: "blur(4px)", color: COLORS.textMain,
-                                  fontFamily: MONO, fontSize: "9.5px", fontWeight: 600, letterSpacing: ".5px",
-                                  cursor: "pointer",
-                                }}
-                              >
-                                DETALJI
+                              <button onClick={(e) => openDetails(p, e)} style={cardDetailsBtnStyle}>
+                                <span aria-hidden="true">ⓘ</span> DETALJI
                               </button>
                             )}
                             <div style={{ width: "100%", height: "54%" }}>
@@ -1482,7 +1496,13 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                         );
                       })}
 
-                      <button className="rs-cf-arrow" onClick={goNext} style={{ ...arrowStyle, right: "2px" }}>
+                      <button
+                        className="rs-cf-arrow"
+                        onClick={goNext}
+                        disabled={atLast}
+                        aria-label="Sljedeća komponenta"
+                        style={{ ...arrowStyle, right: "2px", opacity: atLast ? 0.3 : 1, cursor: atLast ? "default" : "pointer" }}
+                      >
                         ›
                       </button>
                     </div>
@@ -1569,17 +1589,8 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                             {p.id === pickId && (
                               <span style={{ ...cardBadgeBase, top: p.id === recommendedId ? "34px" : "10px", background: "transparent", border: `1px solid ${COLORS.accent}`, color: COLORS.accent }}>NAJBOLJI OMJER</span>
                             )}
-                            <button
-                              onClick={(e) => openDetails(p, e)}
-                              style={{
-                                position: "absolute", top: "10px", right: "10px", zIndex: 5,
-                                padding: "4px 9px", borderRadius: "7px", border: `1px solid ${COLORS.border}`,
-                                background: "rgba(7,8,12,.72)", backdropFilter: "blur(4px)", color: COLORS.textMain,
-                                fontFamily: MONO, fontSize: "9.5px", fontWeight: 600, letterSpacing: ".5px",
-                                cursor: "pointer",
-                              }}
-                            >
-                              DETALJI
+                            <button onClick={(e) => openDetails(p, e)} style={cardDetailsBtnStyle}>
+                              <span aria-hidden="true">ⓘ</span> DETALJI
                             </button>
                             <div style={{ position: "relative", width: "100%", aspectRatio: "4/3", marginBottom: "14px" }}>
                               <ImageBlock src={dv.img} h="100%" />
@@ -1737,20 +1748,14 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                           )}
                         </div>
                         <div style={{ display: "flex", alignItems: "center", gap: "12px", marginTop: "9px", flexWrap: "wrap" }}>
-                          {currentStep !== "case" && currentStep !== "os" && (() => {
-                            const q = getQualityScore(activeProduct?.pcfQuality?.value);
-                            const label = ["—", "Osnovna", "Dobra", "Vrlo dobra", "Vrhunska", "Elitna"][q] || "—";
-                            return (
-                              <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
-                                <div style={{ display: "flex", gap: "3px" }}>
-                                  {[1, 2, 3, 4, 5].map((i) => (
-                                    <span key={i} style={{ width: "16px", height: "5px", borderRadius: "3px", background: i <= q ? COLORS.accent : "rgba(255,255,255,.14)" }} />
-                                  ))}
-                                </div>
-                                <span style={{ fontFamily: MONO, fontSize: "11px", color: COLORS.textMuted, letterSpacing: ".5px" }}>Razina: {label}</span>
-                              </div>
-                            );
-                          })()}
+                          {/* same ULAZNI/SREDNJI/VRHUNSKI vocabulary as the card's
+                              tier label — this used to be a separate 5-level
+                              "Razina: Vrlo dobra" meter with its own wording */}
+                          {currentStep !== "case" && currentStep !== "os" && tierLabel(activeProduct?.pcfQuality?.value) && (
+                            <span style={{ fontFamily: MONO, fontSize: "11px", color: COLORS.textMuted, letterSpacing: ".5px" }}>
+                              Razina: {tierLabel(activeProduct?.pcfQuality?.value)}
+                            </span>
+                          )}
                           {currentStep === "case" && (
                             <span style={{ fontFamily: MONO, fontSize: "11px", color: COLORS.textMuted, letterSpacing: ".5px" }}>Stvar osobnog ukusa — sva su kvalitetna</span>
                           )}
@@ -2790,6 +2795,32 @@ const cardBadgeBase: CSSProperties = {
   letterSpacing: ".5px",
   textTransform: "uppercase",
   whiteSpace: "nowrap",
+};
+
+// "Detalji" trigger, top-right of a card — a brighter border + stronger
+// backing than the old version, which used the barely-visible COLORS.border
+// (7% white) and read as a label rather than a clickable control over a
+// dark product photo.
+const cardDetailsBtnStyle: CSSProperties = {
+  position: "absolute",
+  top: "10px",
+  right: "10px",
+  zIndex: 5,
+  display: "flex",
+  alignItems: "center",
+  gap: "4px",
+  padding: "5px 10px",
+  borderRadius: "7px",
+  border: "1px solid rgba(255,255,255,.4)",
+  background: "rgba(7,8,12,.82)",
+  backdropFilter: "blur(6px)",
+  color: "#fff",
+  fontFamily: MONO,
+  fontSize: "9.5px",
+  fontWeight: 600,
+  letterSpacing: ".5px",
+  cursor: "pointer",
+  boxShadow: "0 2px 8px rgba(0,0,0,.4)",
 };
 
 const arrowStyle: CSSProperties = {

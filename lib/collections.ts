@@ -44,10 +44,27 @@ const QUERY = `
   }
 `;
 
+// Vendor/family prefixes stripped from spec values so the card line fits —
+// "NVIDIA GeForce RTX3050" -> "RTX3050", "Intel Core i5 14600K" -> "i5 14600K".
+// Applied in sequence; each is a no-op if its prefix isn't present.
+const SPEC_VENDOR_PREFIXES = [
+  /^NVIDIA\s+GeForce\s+/i,
+  /^GeForce\s+/i,
+  /^AMD\s+Radeon\s+/i,
+  /^Radeon\s+/i,
+  /^Intel\s+Core\s+/i,
+];
+function shortenSpecValue(value: string): string {
+  return SPEC_VENDOR_PREFIXES.reduce((v, re) => v.replace(re, ""), value.trim());
+}
+
 // CPU/GPU/RAM card spec line for pre-built PCs — values only, "·"-joined.
 // Whichever of the three are missing are just left out, never padded.
 export function specLine(p: Pick<ProductNode, "specCpu" | "specGpu" | "specRam">): string {
-  return [p.specCpu?.value, p.specGpu?.value, p.specRam?.value].filter(Boolean).join(" · ");
+  return [p.specCpu?.value, p.specGpu?.value, p.specRam?.value]
+    .filter((v): v is string => !!v)
+    .map(shortenSpecValue)
+    .join(" · ");
 }
 
 // fetches one or more collections and merges/dedupes them by product id —
