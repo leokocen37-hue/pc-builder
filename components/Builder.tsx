@@ -164,7 +164,6 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
   const router = useRouter();
   const initialized = useRef(false);
   const railRef = useRef<HTMLDivElement>(null);
-  const coverflowRef = useRef<HTMLDivElement>(null);
   const movedRef = useRef(false);
   const capturedRef = useRef(false);
   const downIdxRef = useRef<number | null>(null);
@@ -175,13 +174,6 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
   const [stepIndex, setStepIndex] = useState(0);
   const { addCustomBuild } = useCart();
   const [isMobile, setIsMobile] = useState(false);
-  // carousel card count tier: 5 cards only above ~1600px, 3 from 900-1600px,
-  // 1 below 900px (same boundary as isMobile)
-  const [cardTier, setCardTier] = useState<"mobile" | "compact" | "wide">("wide");
-  // measured (not assumed) width of the coverflow container, so the track can
-  // be kept clear of the sidebar regardless of exactly how the surrounding
-  // layout resolves — see the trackShift calc below
-  const [coverflowWidth, setCoverflowWidth] = useState(0);
   const [activeIndex, setActiveIndex] = useState(0);
   const [selectedVarId, setSelectedVarId] = useState("");
   const [startX, setStartX] = useState<number | null>(null);
@@ -295,11 +287,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
 
   // --- DATA FETCHING & EFFECTS ---
   useEffect(() => {
-    const handleResize = () => {
-      const w = window.innerWidth;
-      setIsMobile(w < 900);
-      setCardTier(w < 900 ? "mobile" : w < 1600 ? "compact" : "wide");
-    };
+    const handleResize = () => setIsMobile(window.innerWidth < 900);
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
@@ -310,20 +298,6 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
     const el = railRef.current?.querySelector<HTMLElement>(`[data-step-idx="${stepIndex}"]`);
     el?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
   }, [stepIndex]);
-
-  // measure the coverflow's real rendered width (accounts for the sidebar,
-  // any max-width, etc. automatically) so the track can be clamped against
-  // it — re-observes when the coverflow mounts/unmounts (view toggle, step change)
-  useEffect(() => {
-    const el = coverflowRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver((entries) => {
-      const w = entries[0]?.contentRect.width;
-      if (w) setCoverflowWidth(w);
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [viewMode, currentStep]);
 
   // E6: grid/carousel preference persists across steps (already true, same
   // state the whole session) and across visits, via localStorage
@@ -479,14 +453,47 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
     initialized.current = true;
   }, [searchParams, products]);
 
+  // The state variable a given step's carousel selection writes to — used to
+  // detect "the user (or a restored permalink) already decided this step" so
+  // opening it doesn't override their choice with the recommended item.
+  const selectedItemForStep = (step: Step): ProductNode | null => {
+    switch (step) {
+      case "cpu": return cpu;
+      case "motherboard": return mb;
+      case "ram": return ram;
+      case "gpu": return gpu;
+      case "pohrana": return ssd;
+      case "case": return pcCase;
+      case "psu": return psu;
+      case "cooler": return cooler;
+      case "os": return os;
+      default: return null; // brand, review — no carousel
+    }
+  };
+
   useEffect(() => {
-    setActiveIndex(0);
+    // Focus, don't select: this only moves which card is centered in the
+    // carousel. Landing on it never calls handleSelection, so it can't add
+    // anything to the build or change the total.
+    const existing = selectedItemForStep(currentStep);
+    const existingIdx = existing ? currentProducts.findIndex((p) => p.id === existing.id) : -1;
+    if (existingIdx >= 0) {
+      // already decided (picked earlier, or restored from a build permalink) — focus THAT
+      setActiveIndex(existingIdx);
+    } else if (currentProducts.length > 0) {
+      const recIdx = currentProducts.findIndex((p) => (p.pcfRecommended?.value || "").toLowerCase() === "true");
+      const pickIdx = recIdx === -1 ? currentProducts.findIndex((p) => (p.pcfPick?.value || "").toLowerCase() === "true") : -1;
+      setActiveIndex(recIdx >= 0 ? recIdx : pickIdx >= 0 ? pickIdx : Math.floor((currentProducts.length - 1) / 2));
+    } else {
+      setActiveIndex(0);
+    }
     setDragOffset(0);
     setHelpOpen(false);
     // comparing across different component types doesn't make sense
     setCompareIds([]);
     setComparePanelClosed(false);
     setCompareLimitHint(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stepIndex]);
 
   // --- FILTERING (unchanged business logic) ---
@@ -659,105 +666,44 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
   };
 
   // --- COVERFLOW GEOMETRY ---
-  // Card size + center-to-center spacing (bx) per tier. Two constraints, both
-  // checked against the coverflow's REAL available half-width (~417px on
-  // desktop: the outer wrapper caps at 1340px total, so the left column
-  // plateaus at 1340-362(sidebar)-24(gap)=954px no matter how wide the
-  // viewport gets beyond ~1384px — "wide" tier doesn't actually get more
-  // room than that, which is why its dims are much smaller than compact's
-  // despite showing more cards):
-  //  1. adjacent cards' bounding boxes must not touch, at peripheral scale .92
-  //  2. the outermost visible card must fit inside the available half-width
-  //   wide:    half(160)=80, half(160*.92)=73.6 -> bx>=153.6 (have 165);
-  //            outer edge 2*165+73.6=403.6 <= ~417 available
-  //   compact: half(250)=125, half(250*.92)=115 -> bx>=240 (have 260);
-  //            outer edge 260+115=375 <= ~417 available
-  //   mobile:  only the focused card is visible (VISIBLE_RANGE 0), neither constraint applies
-  const CARD_DIMS: Record<"mobile" | "compact" | "wide", { w: number; h: number; bx: number }> = {
-    mobile: { w: 196, h: 256, bx: 150 },
-    compact: { w: 250, h: 330, bx: 260 },
-    wide: { w: 160, h: 220, bx: 165 },
-  };
-  // how many cards show on each side of the focused one: wide=5 total, compact=3, mobile=1
-  const VISIBLE_RANGE = cardTier === "wide" ? 2 : cardTier === "compact" ? 1 : 0;
-  const SLIDE = CARD_DIMS[cardTier].bx;
+  // Reverted to the original 3-prominent-cards-plus-ghosts design (the Phase E
+  // "5 flat cards" redesign traded away visual quality for an illegibility
+  // problem that didn't actually exist — ±1 cards were always readable, and
+  // the ±2 ghosts down to .06 opacity are deliberate depth, not a bug).
+  const SLIDE = isMobile ? 150 : 300;
 
-  // Non-circular: offset is a plain difference, no wraparound. At the ends,
-  // cards past the boundary simply aren't there — nothing loops from the
-  // other side of the (quality-sorted) list.
+  // Non-circular: offset is a plain difference, no wraparound — kept from the
+  // later fix, independent of the geometry revert. At the ends, cards past
+  // the boundary simply aren't there — nothing loops from the other side of
+  // the (quality-sorted) list.
   const getOffset = (index: number) => index - activeIndex;
 
-  // Track-level shift applied to every card, on top of its own per-offset tx,
-  // so the track behaves like a normal clamped scroller instead of always
-  // centering the focused card:
-  //  - near the list's start/end (fewer than VISIBLE_RANGE real cards on that
-  //    side), pull the cluster so the outermost REAL card sits flush against
-  //    the available edge, reclaiming the space phantom neighbors would have
-  //    wasted — this is what removes the empty gap at index 0
-  //  - a safety net afterward clamps the (possibly already-shifted) cluster
-  //    against the measured container width unconditionally, so cards can't
-  //    render under the sidebar at ANY index, not just the ends
-  const EDGE_PADDING = 60; // clears the arrow buttons on each side
-  const trackShift = (() => {
-    const N = currentProducts.length;
-    if (N === 0 || coverflowWidth === 0) return 0;
-    const bx = CARD_DIMS[cardTier].bx;
-    const w = CARD_DIMS[cardTier].w;
-    const halfAt = (offset: number) => (offset === 0 ? w / 2 : (w * 0.92) / 2);
-
-    const firstOffset = Math.max(-VISIBLE_RANGE, -activeIndex);
-    const lastOffset = Math.min(VISIBLE_RANGE, N - 1 - activeIndex);
-    const naturalLeft = firstOffset * bx - halfAt(firstOffset);
-    const naturalRight = lastOffset * bx + halfAt(lastOffset);
-    const halfAvail = coverflowWidth / 2 - EDGE_PADDING;
-
-    let shift = 0;
-    if (activeIndex < VISIBLE_RANGE) shift = -halfAvail - naturalLeft;
-    else if (N - 1 - activeIndex < VISIBLE_RANGE) shift = halfAvail - naturalRight;
-
-    // safety net: clamp into the range of shifts that keep BOTH edges within
-    // bounds at once. A sequential "fix right then fix left" correction can
-    // oscillate when the cluster is wider than the container (each fix
-    // reintroduces the other side's overflow) — Math.max/min into a single
-    // precomputed range doesn't have that failure mode. If no shift can
-    // satisfy both edges (cluster genuinely wider than the container), fall
-    // back to un-shifted centering so at least the focused card stays centered.
-    const minShift = -halfAvail - naturalLeft;
-    const maxShift = halfAvail - naturalRight;
-    shift = minShift <= maxShift ? Math.max(minShift, Math.min(maxShift, shift)) : 0;
-    return shift;
-  })();
-
-  // coverflow card transform. Peripheral cards (anything not focused, within
-  // VISIBLE_RANGE) all get the same flat depth cue — scale .92, opacity .75,
-  // a light ±12° tilt for character — instead of a steep per-distance falloff,
-  // so a card two positions out reads exactly as well as one position out.
-  const getCardStyle = (o: number, tier: "mobile" | "compact" | "wide", shift: number) => {
+  // 3D coverflow card transform (original design)
+  const getCardStyle = (o: number, mobile: boolean) => {
     const a = Math.abs(o);
     const sign = o === 0 ? 0 : o < 0 ? -1 : 1;
-    const bx = CARD_DIMS[tier].bx;
+    const bx = mobile ? 150 : 300;
     let tx: number, sc: number, rot: number, op: number, z: number;
-    if (a === 0) {
-      tx = 0;
-      sc = 1;
-      rot = 0;
-      op = 1;
-      z = 30;
-    } else if (a <= VISIBLE_RANGE) {
-      tx = sign * a * bx;
-      sc = 0.92;
-      rot = -sign * 12;
-      op = 0.75;
+    if (a <= 1) {
+      tx = o * bx;
+      sc = 1 - 0.16 * a;
+      rot = -o * 28;
+      op = 1 - 0.52 * a;
       z = 30 - Math.round(a * 8);
+    } else if (a <= 2) {
+      const f = a - 1;
+      tx = sign * (bx + f * (mobile ? 80 : 175));
+      sc = 0.84 - 0.14 * f;
+      rot = -sign * (28 + 12 * f);
+      op = 0.48 - 0.42 * f;
+      z = Math.round(20 - 10 * f);
     } else {
-      const edge = Math.max(VISIBLE_RANGE, 1);
-      tx = sign * (edge * bx + (a - VISIBLE_RANGE) * 120);
+      tx = sign * (bx + (mobile ? 80 : 175) + (a - 2) * 120);
       sc = 0.6;
-      rot = -sign * 12;
+      rot = -sign * 42;
       op = 0;
       z = 0;
     }
-    tx += shift;
     return {
       transform: `translateX(${tx}px) scale(${sc}) rotateY(${rot}deg)`,
       opacity: Math.max(0, op),
@@ -1454,7 +1400,6 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                   {/* COVERFLOW */}
                   {viewMode === "coverflow" && (
                     <div
-                      ref={coverflowRef}
                       className="rs-cf-container"
                       tabIndex={0}
                       role="region"
@@ -1468,7 +1413,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                       onDragStart={(e) => e.preventDefault()}
                       style={{
                         position: "relative",
-                        height: `${CARD_DIMS[cardTier].h + 80}px`,
+                        height: isMobile ? "320px" : "440px",
                         perspective: "1700px",
                         display: "flex",
                         alignItems: "center",
@@ -1494,7 +1439,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                       {currentProducts.map((p, idx) => {
                         const baseOffset = getOffset(idx);
                         const exactOffset = baseOffset + dragOffset / SLIDE;
-                        const cs = getCardStyle(exactOffset, cardTier, trackShift);
+                        const cs = getCardStyle(exactOffset, isMobile);
                         const isActive = Math.abs(exactOffset) < 0.5;
                         // keep cards near both the resting and the dragged-to center mounted,
                         // so the settle animation always has neighbors to ease in
@@ -1503,8 +1448,8 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
 
                         const dv = displayVariant(p, idx === activeIndex);
                         const specText = cardSpecLine(p.pcfSpecs?.value);
-                        const cardW = CARD_DIMS[cardTier].w;
-                        const cardH = CARD_DIMS[cardTier].h;
+                        const cardW = isMobile ? 196 : 284;
+                        const cardH = isMobile ? 256 : 360;
 
                         return (
                           <div
