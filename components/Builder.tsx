@@ -1,12 +1,11 @@
 "use client";
 import { CSSProperties, useEffect, useState, Suspense, useRef } from "react";
-import { shopifyFetch } from "@/lib/shopify";
 import { useCart } from "@/lib/cart";
 import { ASSEMBLY_FEE } from "@/lib/pricing";
 import { useSearchParams, useRouter } from "next/navigation";
 
 // --- TYPES ---
-type ProductNode = {
+export type ProductNode = {
   id: string;
   title: string;
   tags: string[];
@@ -153,7 +152,7 @@ const COLORS = {
   accent: "#d81fd8",
 };
 
-function BuilderContent() {
+function BuilderContent({ products }: { products: ProductNode[] }) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const initialized = useRef(false);
@@ -164,11 +163,8 @@ function BuilderContent() {
 
   // --- STATE ---
   const [stepIndex, setStepIndex] = useState(0);
-  const [products, setProducts] = useState<ProductNode[]>([]);
-  const [loading, setLoading] = useState(true);
   const { addCustomBuild } = useCart();
   const [isMobile, setIsMobile] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [selectedVarId, setSelectedVarId] = useState("");
   const [startX, setStartX] = useState<number | null>(null);
@@ -326,103 +322,45 @@ function BuilderContent() {
     }
   }, [stepIndex, brand, cpu, mb, ram, gpu, gpu2, ssd, ssd2, hdd, hdd2, pcCase, psu, cooler, os, router, isReviewStep]);
 
+  // products now arrive pre-fetched as a prop (server-rendered) — this effect
+  // only restores a shared build from the URL's search params, same as before.
   useEffect(() => {
     if (initialized.current) return;
 
-    async function fetchAndSync() {
-      try {
-        const data = await shopifyFetch<any>(`
-          query {
-            products(first: 250) {
-              edges {
-                node {
-                  id
-                  title
-                  tags
-                  featuredImage { url altText }
-                  variants(first: 50) {
-                    edges {
-                      node {
-                        id
-                        title
-                        price { amount }
-                        image { url altText }
-                      }
-                    }
-                  }
-                  pcfType: metafield(namespace: "pcf", key: "type") { value }
-                  pcfBrand: metafield(namespace: "pcf", key: "brand") { value }
-                  pcfSocket: metafield(namespace: "pcf", key: "socket") { value }
-                  pcfTdp: metafield(namespace: "pcf", key: "tdp") { value }
-                  pcfRamType: metafield(namespace: "pcf", key: "ram_type") { value }
-                  pcfFormFactor: metafield(namespace: "pcf", key: "form_factor") { value }
-                  pcfSupportedFormFactors: metafield(namespace: "pcf", key: "supported_form_factors") { value }
-                  pcfGpuLength: metafield(namespace: "pcf", key: "gpu_length") { value }
-                  pcfMaxGpuLength: metafield(namespace: "pcf", key: "max_gpu_length") { value }
-                  pcfCoolerHeight: metafield(namespace: "pcf", key: "cooler_height") { value }
-                  pcfMaxCoolerHeight: metafield(namespace: "pcf", key: "max_cooler_height") { value }
-                  pcfRadiatorSize: metafield(namespace: "pcf", key: "radiator_size") { value }
-                  pcfSupportedRadiators: metafield(namespace: "pcf", key: "supported_radiators") { value }
-                  pcfWattage: metafield(namespace: "pcf", key: "wattage") { value }
-                  pcfQuality: metafield(namespace: "pcf", key: "quality") { value }
-                  pcfBadge: metafield(namespace: "pcf", key: "badge") { value }
-                  pcfBadgeColor: metafield(namespace: "pcf", key: "badge_color") { value }
-                  pcfRecommended: metafield(namespace: "pcf", key: "recommended") { value }
-                  pcfSpecs: metafield(namespace: "pcf", key: "specs") { value }
-                }
-              }
-            }
-          }
-        `);
+    const loadParam = (param: string, setter: any) => {
+      const val = searchParams.get(param);
+      if (!val) return;
 
-        if (!data || !data.products) {
-          throw new Error("Shopify didn't return a valid products object.");
-        }
-        const allProducts = data.products.edges.map((e: any) => e.node);
-        setProducts(allProducts);
+      const found = products.find(
+        (p: any) => p.id === val || p.variants.edges.some((v: any) => v.node.id === val)
+      );
 
-        const loadParam = (param: string, setter: any) => {
-          const val = searchParams.get(param);
-          if (!val) return;
-
-          const found = allProducts.find(
-            (p: any) => p.id === val || p.variants.edges.some((v: any) => v.node.id === val)
-          );
-
-          if (found) {
-            const varNode =
-              found.variants.edges.find((v: any) => v.node.id === val)?.node || found.variants.edges[0].node;
-            setter({ ...found, selectedVariant: varNode });
-          }
-        };
-        const uBrand = searchParams.get("brand");
-        if (uBrand) setBrand(uBrand);
-        loadParam("cpu", setCpu);
-        loadParam("mb", setMb);
-        loadParam("ram", setRam);
-        loadParam("gpu", setGpu);
-        loadParam("gpu2", setGpu2);
-        loadParam("ssd", setSsd);
-        loadParam("ssd2", setSsd2);
-        loadParam("hdd", setHdd);
-        loadParam("hdd2", setHdd2);
-        loadParam("case", setPcCase);
-        loadParam("psu", setPsu);
-        loadParam("cooler", setCooler);
-        loadParam("os", setOs);
-        if (searchParams.get("cpu") && searchParams.get("case")) {
-          setStepIndex(STEPS.indexOf("review"));
-        }
-      } catch (err: any) {
-        setErrorMessage(err.message || "Unknown error occurred while fetching.");
-      } finally {
-        setLoading(false);
-        initialized.current = true;
+      if (found) {
+        const varNode =
+          found.variants.edges.find((v: any) => v.node.id === val)?.node || found.variants.edges[0].node;
+        setter({ ...found, selectedVariant: varNode });
       }
+    };
+    const uBrand = searchParams.get("brand");
+    if (uBrand) setBrand(uBrand);
+    loadParam("cpu", setCpu);
+    loadParam("mb", setMb);
+    loadParam("ram", setRam);
+    loadParam("gpu", setGpu);
+    loadParam("gpu2", setGpu2);
+    loadParam("ssd", setSsd);
+    loadParam("ssd2", setSsd2);
+    loadParam("hdd", setHdd);
+    loadParam("hdd2", setHdd2);
+    loadParam("case", setPcCase);
+    loadParam("psu", setPsu);
+    loadParam("cooler", setCooler);
+    loadParam("os", setOs);
+    if (searchParams.get("cpu") && searchParams.get("case")) {
+      setStepIndex(STEPS.indexOf("review"));
     }
-
-    fetchAndSync();
-  }, [searchParams]);
+    initialized.current = true;
+  }, [searchParams, products]);
 
   useEffect(() => {
     setActiveIndex(0);
@@ -903,29 +841,6 @@ function BuilderContent() {
     ssd2: () => setSsd2(null),
     hdd2: () => setHdd2(null),
   };
-
-  // --- LOADING / ERROR STATES ---
-  if (loading) {
-    return (
-      <div style={{ ...fullScreenMsg }}>
-        <span style={{ fontFamily: MONO, fontSize: "12px", letterSpacing: "2px", color: COLORS.accent }}>
-          UČITAVANJE KOMPONENTI…
-        </span>
-      </div>
-    );
-  }
-
-  if (errorMessage) {
-    return (
-      <div style={{ ...fullScreenMsg, flexDirection: "column", gap: "10px" }}>
-        <h2 style={{ color: "#ff6a82", margin: 0, fontFamily: FONT }}>Problem sa spajanjem</h2>
-        <p style={{ margin: 0, color: COLORS.textMuted, fontFamily: FONT }}>
-          Aplikacija se trenutno ne može povezati sa serverom.
-        </p>
-        <p style={{ fontSize: "12px", color: COLORS.textFaint, fontFamily: MONO }}>({errorMessage})</p>
-      </div>
-    );
-  }
 
   const containerStyle: CSSProperties = {
     minHeight: "100vh",
@@ -2265,16 +2180,6 @@ function UpsellRow({
 }
 
 // --- STYLES ---
-const fullScreenMsg: CSSProperties = {
-  minHeight: "100vh",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  background: COLORS.bgMain,
-  fontFamily: FONT,
-  color: COLORS.textMain,
-};
-
 const kickerStyle: CSSProperties = {
   fontFamily: MONO,
   fontSize: "11px",
@@ -2466,7 +2371,7 @@ const dropdownItemStyle: CSSProperties = {
   fontFamily: FONT,
 };
 
-export default function Builder() {
+export default function Builder({ products }: { products: ProductNode[] }) {
   return (
     <Suspense
       fallback={
@@ -2484,7 +2389,7 @@ export default function Builder() {
         </div>
       }
     >
-      <BuilderContent />
+      <BuilderContent products={products} />
     </Suspense>
   );
 }

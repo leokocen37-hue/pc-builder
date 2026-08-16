@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import CollectionView from "@/components/CollectionView";
+import { getCollectionProducts } from "@/lib/collections";
 
 const TITLE = "Gaming računala — Custom PC za igranje";
 const DESCRIPTION =
@@ -13,12 +14,13 @@ export const metadata: Metadata = {
   twitter: { title: TITLE, description: DESCRIPTION },
 };
 
-export default function GamingRacunalaPage() {
+export default async function GamingRacunalaPage() {
+  const products = await getCollectionProducts(["gaming"]);
   return (
     <CollectionView
       heading="Gaming računala"
       activeHref="/gaming-racunala"
-      collectionHandles={["gaming"]}
+      products={products}
     />
   );
 }

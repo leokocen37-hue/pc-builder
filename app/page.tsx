@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import HomeClient from "./HomeClient";
+import { getCollectionProducts } from "@/lib/collections";
 
 // no `title` here on purpose — the root layout's `default` title (which already
 // includes the brand name) is used verbatim for "/", since Next's title template
@@ -15,6 +16,10 @@ export const metadata: Metadata = {
   twitter: { title: TITLE, description: DESCRIPTION },
 };
 
-export default function Page() {
-  return <HomeClient />;
+export default async function Page() {
+  const [gaming, stanice] = await Promise.all([
+    getCollectionProducts(["gaming"], 6),
+    getCollectionProducts(["radne-stanice"], 6),
+  ]);
+  return <HomeClient gaming={gaming} stanice={stanice} />;
 }

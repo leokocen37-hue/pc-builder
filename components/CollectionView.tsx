@@ -1,38 +1,10 @@
-// → put this at:  components/CollectionView.tsx
-"use client";
+// → put this at: components/CollectionView.tsx
+// Server component — head/tabs/subtitle are static; the interactive
+// tier-filter + grid live in the CollectionGrid client island below.
+import type { ProductNode } from "@/lib/collections";
+import CollectionGrid from "@/components/CollectionGrid";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { shopifyFetch } from "@/lib/shopify";
-import { formatMoney } from "@/lib/cart";
-
-type Money = { amount: string; currencyCode: string };
-type Metafield = { key: string; value: string } | null;
-type ProductNode = {
-  id: string; title: string; handle: string; availableForSale: boolean;
-  featuredImage?: { url: string; altText?: string | null } | null;
-  priceRange: { minVariantPrice: Money };
-  metafields?: Metafield[];
-};
-type CollectionResp = { collection: { products: { edges: { node: ProductNode }[] } } | null };
-
-const QUERY = `
-  query Collection($handle: String!, $first: Int!) {
-    collection(handle: $handle) {
-      products(first: $first) {
-        edges { node {
-          id title handle availableForSale
-          featuredImage { url altText }
-          priceRange { minVariantPrice { amount currencyCode } }
-          metafields(identifiers: [
-            { namespace: "pcf", key: "pick" },
-            { namespace: "pcf", key: "recommended" }
-          ]) { key value }
-        }}
-      }
-    }
-  }
-`;
+type Tab = { label: string; href: string };
 
 // default tab set (prebuilt PCs). Pass your own `tabs` for other sections (e.g. Periferija).
 const PC_TABS = [
@@ -40,14 +12,6 @@ const PC_TABS = [
   { label: "Gaming računala", href: "/gaming-racunala" },
   { label: "Radne stanice", href: "/radne-stanice" },
 ];
-
-type Tab = { label: string; href: string };
-
-// Product names in this store follow "<Tier> <roman numeral>" (e.g. "Pro Gamer III",
-// "Starter V") for tiered lineups. Strip the numeral to get the tier's display name,
-// so e.g. "Starter", "Starter II", "Starter III" all group under one "Starter" filter.
-const ROMAN_SUFFIX = /\s+[IVXLCDM]+$/i;
-const tierOf = (title: string) => title.replace(ROMAN_SUFFIX, "").trim() || title;
 
 // per-page subtitles (shown under the heading). Falls back to none.
 const SUBTITLES: Record<string, string> = {
@@ -64,59 +28,18 @@ const SUBTITLES: Record<string, string> = {
 export default function CollectionView({
   heading,
   activeHref,
-  collectionHandles,
+  products,
   kicker = "Gotova računala",
   tabs = PC_TABS,
   subtitle,
 }: {
   heading: string;
   activeHref: string;
-  collectionHandles: string[]; // one or more Shopify collection handles to merge
+  products: ProductNode[];
   kicker?: string;
   tabs?: Tab[];
   subtitle?: string;
 }) {
-  const [products, setProducts] = useState<ProductNode[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [activeTier, setActiveTier] = useState<string | null>(null);
-
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      setLoading(true);
-      setActiveTier(null);
-      try {
-        const results = await Promise.all(
-          collectionHandles.map((h) => shopifyFetch<CollectionResp>(QUERY, { handle: h, first: 30 }))
-        );
-        if (!alive) return;
-        const merged: ProductNode[] = [];
-        const seen = new Set<string>();
-        results.forEach((r) =>
-          r.collection?.products.edges.forEach((e) => {
-            if (!seen.has(e.node.id)) { seen.add(e.node.id); merged.push(e.node); }
-          })
-        );
-        setProducts(merged);
-      } catch (e) {
-        console.error("collection fetch failed", e);
-      } finally {
-        if (alive) setLoading(false);
-      }
-    })();
-    return () => { alive = false; };
-  }, [collectionHandles.join(",")]);
-
-  // distinct tiers, in first-seen order — only worth showing as a filter if the
-  // titles actually group into a handful of tiers (not just N unrelated products)
-  const tiers: string[] = [];
-  products.forEach((p) => {
-    const t = tierOf(p.title);
-    if (!tiers.includes(t)) tiers.push(t);
-  });
-  const showTierFilter = tiers.length >= 2 && tiers.length < products.length;
-  const visibleProducts = showTierFilter && activeTier ? products.filter((p) => tierOf(p.title) === activeTier) : products;
-
   return (
     <div className="rs-root">
       <section className="rs-coll">
@@ -127,64 +50,7 @@ export default function CollectionView({
             {(subtitle || SUBTITLES[activeHref]) && <p className="rs-coll-sub">{subtitle || SUBTITLES[activeHref]}</p>}
           </div>
 
-          <div className="rs-coll-bar">
-            <nav className="rs-tabs">
-              {tabs.map((t) => (
-                <Link key={t.href} href={t.href} className={`rs-tab ${t.href === activeHref ? "active" : ""}`}>
-                  {t.label}
-                </Link>
-              ))}
-            </nav>
-            {!loading && visibleProducts.length > 0 && (
-              <span className="rs-coll-count">{visibleProducts.length} {visibleProducts.length === 1 ? "proizvod" : visibleProducts.length < 5 ? "proizvoda" : "proizvoda"}</span>
-            )}
-          </div>
-
-          {showTierFilter && (
-            <div className="rs-tier-row">
-              <button className={`rs-tier-pill ${!activeTier ? "active" : ""}`} onClick={() => setActiveTier(null)}>
-                Sve
-              </button>
-              {tiers.map((t) => (
-                <button key={t} className={`rs-tier-pill ${activeTier === t ? "active" : ""}`} onClick={() => setActiveTier(t)}>
-                  {t}
-                </button>
-              ))}
-            </div>
-          )}
-
-          <div className="rs-grid">
-            {loading ? (
-              Array.from({ length: 6 }).map((_, i) => <div key={i} className="rs-skel" />)
-            ) : products.length === 0 ? (
-              <div className="rs-empty">Trenutno nema proizvoda u ovoj kategoriji.</div>
-            ) : (
-              visibleProducts.map((p) => {
-                const pick = p.metafields?.find((m) => m && m.key === "pick")?.value || "";
-                const rec = (p.metafields?.find((m) => m && m.key === "recommended")?.value || "").toLowerCase() === "true";
-                return (
-                  <Link key={p.id} href={`/${p.handle}`} className="rs-card rs-card-fin">
-                    <div className="rs-ph">
-                      {p.featuredImage?.url ? (
-                        <img src={p.featuredImage.url} alt={p.featuredImage.altText || p.title} loading="lazy" />
-                      ) : (
-                        <div className="rs-ph-fallback" />
-                      )}
-                      {pick && <span className={`rs-pick ${rec ? "rs-pick-rec" : ""}`}>{rec ? `★ ${pick}` : pick}</span>}
-                      {!p.availableForSale && <span className="rs-badge">Uskoro</span>}
-                    </div>
-                    <div className="rs-card-body">
-                      <h4>{p.title}</h4>
-                      <div className="rs-price-row">
-                        <span className="rs-price">{formatMoney(p.priceRange?.minVariantPrice)}</span>
-                        <span className="rs-buy">Detalji →</span>
-                      </div>
-                    </div>
-                  </Link>
-                );
-              })
-            )}
-          </div>
+          <CollectionGrid products={products} tabs={tabs} activeHref={activeHref} />
         </div>
       </section>
     </div>

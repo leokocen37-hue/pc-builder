@@ -6,56 +6,11 @@ import { shopifyFetch } from "@/lib/shopify";
 import { formatMoney } from "@/lib/cart";
 import Reveal from "@/components/Reveal";
 import BrandMarquee from "@/components/BrandMarquee";
+import type { ProductNode } from "@/lib/collections";
 
 const CONFIGURATOR_PATH = "/konfigurator";
 
-type Money = { amount: string; currencyCode: string };
-type ProductNode = {
-  id: string; title: string; handle: string; availableForSale: boolean;
-  featuredImage?: { url: string; altText?: string | null } | null;
-  priceRange: { minVariantPrice: Money };
-};
-type CollectionResp = { collection: { products: { edges: { node: ProductNode }[] } } | null };
-
-const COLLECTION_QUERY = `
-  query Collection($handle: String!, $first: Int!) {
-    collection(handle: $handle) {
-      products(first: $first) {
-        edges { node {
-          id title handle availableForSale
-          featuredImage { url altText }
-          priceRange { minVariantPrice { amount currencyCode } }
-        }}
-      }
-    }
-  }
-`;
-
-export default function HomeClient() {
-  const [gaming, setGaming] = useState<ProductNode[]>([]);
-  const [stanice, setStanice] = useState<ProductNode[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        const [g, s] = await Promise.all([
-          shopifyFetch<CollectionResp>(COLLECTION_QUERY, { handle: "gaming", first: 6 }),
-          shopifyFetch<CollectionResp>(COLLECTION_QUERY, { handle: "radne-stanice", first: 6 }),
-        ]);
-        if (!alive) return;
-        setGaming(g.collection?.products.edges.map((e) => e.node) ?? []);
-        setStanice(s.collection?.products.edges.map((e) => e.node) ?? []);
-      } catch (e) {
-        console.error("Homepage product fetch failed:", e);
-      } finally {
-        if (alive) setLoading(false);
-      }
-    })();
-    return () => { alive = false; };
-  }, []);
-
+export default function HomeClient({ gaming, stanice }: { gaming: ProductNode[]; stanice: ProductNode[] }) {
   return (
     <div className="rs-root">
       {/* hero */}
@@ -117,10 +72,10 @@ export default function HomeClient() {
             <Link href="/gotova-racunala" className="rs-head-cta">Pogledaj sva računala →</Link>
           </Reveal>
           <Reveal delay={80}>
-            <CollectionRow title="Gaming računala" subtitle="Za igranje na visokim postavkama i visokom broju sličica." href="/gaming-racunala" products={gaming} loading={loading} />
+            <CollectionRow title="Gaming računala" subtitle="Za igranje na visokim postavkama i visokom broju sličica." href="/gaming-racunala" products={gaming} />
           </Reveal>
           <Reveal delay={140}>
-            <CollectionRow title="Radne stanice" subtitle="Snaga za montažu, 3D, render i zahtjevan profesionalni rad." href="/radne-stanice" products={stanice} loading={loading} />
+            <CollectionRow title="Radne stanice" subtitle="Snaga za montažu, 3D, render i zahtjevan profesionalni rad." href="/radne-stanice" products={stanice} />
           </Reveal>
         </div>
       </section>
@@ -204,7 +159,7 @@ function CatTile({ href, label, sub, handle, g }: { href: string; label: string;
   );
 }
 
-function CollectionRow({ title, href, products, loading, subtitle }: { title: string; href: string; products: ProductNode[]; loading: boolean; subtitle?: string }) {
+function CollectionRow({ title, href, products, subtitle }: { title: string; href: string; products: ProductNode[]; subtitle?: string }) {
   return (
     <div className="rs-row-block">
       <div className="rs-row-head">
@@ -215,9 +170,7 @@ function CollectionRow({ title, href, products, loading, subtitle }: { title: st
         <Link href={href} className="rs-row-all">Pogledaj sve <span className="rs-row-arrow">→</span></Link>
       </div>
       <div className="rs-row-grid">
-        {loading
-          ? Array.from({ length: 5 }).map((_, i) => <div key={i} className="rs-skel" />)
-          : products.length === 0
+        {products.length === 0
           ? <div className="rs-empty">Konfiguracije uskoro.</div>
           : products.slice(0, 5).map((p) => (
               <Link key={p.id} href={`/${p.handle}`} className="rs-card rs-card-fin">

@@ -1,82 +1,20 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useParams } from "next/navigation";
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import { shopifyFetch } from "@/lib/shopify";
 import { useCart, formatMoney } from "@/lib/cart";
+import type { Product } from "./page";
 
-type Money = { amount: string; currencyCode: string };
-type Variant = {
-  id: string; title: string; availableForSale: boolean;
-  price: Money;
-  selectedOptions: { name: string; value: string }[];
-  image?: { url: string; altText?: string | null } | null;
-};
-type Metafield = { key: string; value: string } | null;
-type Product = {
-  id: string; title: string; descriptionHtml: string;
-  featuredImage?: { url: string; altText?: string | null } | null;
-  images: { edges: { node: { url: string; altText?: string | null } }[] };
-  options: { name: string; values: string[] }[];
-  variants: { edges: { node: Variant }[] };
-  metafields: Metafield[];
-};
-
-const QUERY = `
-  query Product($handle: String!) {
-    product(handle: $handle) {
-      id title descriptionHtml
-      featuredImage { url altText }
-      images(first: 10) { edges { node { url altText } } }
-      options { name values }
-      variants(first: 50) { edges { node {
-        id title availableForSale
-        price { amount currencyCode }
-        selectedOptions { name value }
-        image { url altText }
-      }}}
-      metafields(identifiers: [
-        { namespace: "specs", key: "cpu" },
-        { namespace: "specs", key: "gpu" },
-        { namespace: "specs", key: "ram" },
-        { namespace: "specs", key: "storage" },
-        { namespace: "specs", key: "full" }
-      ]) { key value }
-    }
-  }
-`;
-
-export default function ProductClient() {
-  const params = useParams();
-  const handle = Array.isArray(params.handle) ? params.handle[0] : params.handle;
+export default function ProductClient({ product }: { product: Product | null }) {
   const { addProduct } = useCart();
 
-  const [product, setProduct] = useState<Product | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [variantId, setVariantId] = useState<string | null>(null);
+  const [variantId, setVariantId] = useState<string | null>(() => {
+    const firstAvail = product?.variants.edges.find((e) => e.node.availableForSale)?.node
+      ?? product?.variants.edges[0]?.node;
+    return firstAvail?.id ?? null;
+  });
   const [activeImg, setActiveImg] = useState(0);
   const [qty, setQty] = useState(1);
-
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      setLoading(true);
-      try {
-        const d = await shopifyFetch<{ product: Product | null }>(QUERY, { handle });
-        if (!alive) return;
-        setProduct(d.product);
-        const firstAvail = d.product?.variants.edges.find((e) => e.node.availableForSale)?.node
-          ?? d.product?.variants.edges[0]?.node;
-        setVariantId(firstAvail?.id ?? null);
-      } catch (e) {
-        console.error("product fetch failed", e);
-      } finally {
-        if (alive) setLoading(false);
-      }
-    })();
-    return () => { alive = false; };
-  }, [handle]);
 
   const variants = product?.variants.edges.map((e) => e.node) ?? [];
   const selected = useMemo(() => variants.find((v) => v.id === variantId) ?? null, [variants, variantId]);
@@ -101,13 +39,6 @@ export default function ProductClient() {
       return idx === -1 ? { label: "", value: line } : { label: line.slice(0, idx).trim(), value: line.slice(idx + 1).trim() };
     });
 
-  if (loading) {
-    return (
-      <div className="rs-root"><section className="rs-pdp"><div className="rs-wrap rs-pdp-grid">
-        <div className="rs-skel" style={{ height: 460 }} /><div className="rs-skel" style={{ height: 460 }} />
-      </div></section></div>
-    );
-  }
   if (!product) {
     return (
       <div className="rs-root"><section className="rs-pdp"><div className="rs-wrap" style={{ textAlign: "center", padding: "80px 0" }}>

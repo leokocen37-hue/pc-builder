@@ -23,13 +23,15 @@ async function priceCustomBuild(variantIds: string[]): Promise<number> {
     throw new Error("Konfiguracija nema odabranih komponenti.");
   }
 
+  // must be live — this is the source of truth for what the customer gets charged
   const data = await shopifyFetch<{ nodes: VariantPriceNode[] }>(
     `query VariantPrices($ids: [ID!]!) {
       nodes(ids: $ids) {
         ... on ProductVariant { id price { amount } }
       }
     }`,
-    { ids: variantIds }
+    { ids: variantIds },
+    { cache: "no-store" }
   );
 
   const priceById = new Map<string, number>();
@@ -84,9 +86,13 @@ export async function POST(request: Request) {
       }
     }
 
+    // this route is server-only, so it can use the non-public domain var directly —
+    // falls back to the NEXT_PUBLIC_ one only until that's set in Vercel
+    const shopifyDomain = process.env.SHOPIFY_DOMAIN || process.env.NEXT_PUBLIC_SHOPIFY_DOMAIN;
+
     // 1. temporary Admin access token (client credentials)
     const authResponse = await fetch(
-      `https://${process.env.NEXT_PUBLIC_SHOPIFY_DOMAIN}/admin/oauth/access_token`,
+      `https://${shopifyDomain}/admin/oauth/access_token`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -113,7 +119,7 @@ export async function POST(request: Request) {
       }
     `;
     const response = await fetch(
-      `https://${process.env.NEXT_PUBLIC_SHOPIFY_DOMAIN}/admin/api/2024-10/graphql.json`,
+      `https://${shopifyDomain}/admin/api/2024-10/graphql.json`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-Shopify-Access-Token": accessToken },

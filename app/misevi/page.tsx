@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import CollectionView from "@/components/CollectionView";
+import { getCollectionProducts } from "@/lib/collections";
 
 const PERIFERIJA_TABS = [
   { label: "Sve", href: "/periferija" },
@@ -20,14 +21,15 @@ export const metadata: Metadata = {
   twitter: { title: TITLE, description: DESCRIPTION },
 };
 
-export default function MiseviPage() {
+export default async function MiseviPage() {
+  const products = await getCollectionProducts(["misevi"]);
   return (
     <CollectionView
       kicker="Periferija"
       heading="Miševi"
       activeHref="/misevi"
       tabs={PERIFERIJA_TABS}
-      collectionHandles={["misevi"]}
+      products={products}
     />
   );
 }

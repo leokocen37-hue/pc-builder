@@ -53,7 +53,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const productRoutes: MetadataRoute.Sitemap = [];
   try {
     const results = await Promise.all(
-      CATALOG_COLLECTIONS.map((handle) => shopifyFetch<ProductsResp>(PRODUCTS_QUERY, { handle }))
+      CATALOG_COLLECTIONS.map((handle) =>
+        shopifyFetch<ProductsResp>(PRODUCTS_QUERY, { handle }, { next: { revalidate: 3600 } })
+      )
     );
     const seen = new Set<string>();
     results.forEach((r) => {
