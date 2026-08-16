@@ -2,6 +2,7 @@
 import { CSSProperties, useEffect, useState, Suspense, useRef } from "react";
 import { useCart } from "@/lib/cart";
 import { ASSEMBLY_FEE } from "@/lib/pricing";
+import { SITE } from "@/lib/site-config";
 import { useSearchParams, useRouter } from "next/navigation";
 
 // --- TYPES ---
@@ -705,6 +706,17 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
     return isReviewStep ? compPrice + ASSEMBLY_FEE : compPrice;
   };
 
+  // rough dispatch window from today, for the mobile sticky bar — matches the
+  // lead time promised on the homepage and product pages (lib/site-config.ts)
+  const estimatedDispatch = () => {
+    const fmt = (d: Date) => d.toLocaleDateString("hr-HR", { day: "numeric", month: "short" });
+    const from = new Date();
+    from.setDate(from.getDate() + SITE.buildDaysMin);
+    const to = new Date();
+    to.setDate(to.getDate() + SITE.buildDaysMax);
+    return `${fmt(from)} – ${fmt(to)}`;
+  };
+
   const handleContactSubmit = async () => {
     if (!contactForm.name.trim() || !contactForm.email.trim() || !contactForm.message.trim()) {
       setContactState("invalid");
@@ -846,7 +858,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
     minHeight: "100vh",
     width: "100%",
     color: COLORS.textMain,
-    padding: isMobile ? "22px 14px 56px" : "26px 22px 64px",
+    padding: isMobile ? "22px 14px 92px" : "26px 22px 64px",
     overflowX: "hidden",
     fontFamily: FONT,
     background:
@@ -2060,6 +2072,35 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                 </button>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* mobile sticky total bar — desktop already has an always-visible sticky
+          sidebar (RIGHT SIDEBAR above), so this only needs to exist on mobile,
+          where that sidebar scrolls out of view below the step content */}
+      {isMobile && (
+        <div
+          style={{
+            position: "fixed",
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 40,
+            background: COLORS.bgCard,
+            borderTop: `1px solid ${COLORS.border}`,
+            padding: "10px 14px calc(10px + env(safe-area-inset-bottom))",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "10px",
+          }}
+        >
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontFamily: MONO, fontSize: "10px", color: COLORS.textMuted, letterSpacing: "1px" }}>
+              {selectedPartsList.length === 0 ? "ODABERI KOMPONENTE" : `ISPORUKA ${estimatedDispatch()}`}
+            </div>
+            <div style={{ fontSize: "19px", fontWeight: 700 }}>€{currentTotal().toFixed(2)}</div>
           </div>
         </div>
       )}

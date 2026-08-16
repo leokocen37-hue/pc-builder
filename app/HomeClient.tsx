@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { shopifyFetch } from "@/lib/shopify";
-import { formatMoney } from "@/lib/cart";
+import { formatMoney, formatEUR } from "@/lib/cart";
 import Reveal from "@/components/Reveal";
 import BrandMarquee from "@/components/BrandMarquee";
 import type { ProductNode } from "@/lib/collections";
+import { SITE } from "@/lib/site-config";
 
 const CONFIGURATOR_PATH = "/konfigurator";
 
@@ -24,10 +25,19 @@ export default function HomeClient({ gaming, stanice }: { gaming: ProductNode[];
             <Link href="/racunala" className="rs-btn ghost">Gotova računala</Link>
           </div>
           <div className="rs-stats">
-            <div><b>100+</b><span>komponenti</span></div>
+            <div><b>{SITE.buildDaysMin}–{SITE.buildDaysMax} dana</b><span>sastavljanje</span></div>
             <div><b>24 mj.</b><span>jamstvo</span></div>
             <div><b>✓</b><span>testirano prije slanja</span></div>
           </div>
+        </div>
+      </section>
+
+      {/* value strip — the three questions buyers ask first */}
+      <section className="rs-value-strip">
+        <div className="rs-wrap rs-value-strip-inner">
+          <div className="rs-value-item">Konfiguracije od <b>{formatEUR(SITE.startingPrice)}</b></div>
+          <div className="rs-value-item">Besplatna dostava iznad <b>{formatEUR(SITE.freeShippingFrom)}</b></div>
+          <div className="rs-value-item">Spremno za <b>{SITE.buildDaysMin}–{SITE.buildDaysMax} radnih dana</b></div>
         </div>
       </section>
 

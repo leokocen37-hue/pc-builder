@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useCart, formatMoney } from "@/lib/cart";
+import { useCart, formatMoney, formatEUR } from "@/lib/cart";
 import type { Product } from "@/lib/product-page";
+import { SITE } from "@/lib/site-config";
 
 // callers are expected to have already handled the missing/mismatched-category
 // case via notFound() (see the segment-scoped not-found.tsx next to each page.tsx)
@@ -67,6 +68,15 @@ export default function ProductClient({ product }: { product: Product }) {
           <div className="rs-pdp-info">
             <h1>{product.title}</h1>
             <div className="rs-pdp-price">{formatMoney(selected?.price)}</div>
+            <div className="rs-pdp-delivery">
+              <span>
+                {selected && Number(selected.price.amount) >= SITE.freeShippingFrom
+                  ? "✓ Besplatna dostava"
+                  : `Besplatna dostava iznad ${formatEUR(SITE.freeShippingFrom)}`}
+              </span>
+              <span className="rs-pdp-delivery-sep">·</span>
+              <span>Isporuka za {SITE.buildDaysMin}–{SITE.buildDaysMax} radnih dana</span>
+            </div>
 
             {highlights.length > 0 && (
               <div className="rs-spec-highlights">
