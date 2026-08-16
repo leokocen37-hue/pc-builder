@@ -41,9 +41,8 @@ const PRODUCTS_QUERY = `
           pcfSupportedRadiators: metafield(namespace: "pcf", key: "supported_radiators") { value }
           pcfWattage: metafield(namespace: "pcf", key: "wattage") { value }
           pcfQuality: metafield(namespace: "pcf", key: "quality") { value }
-          pcfBadge: metafield(namespace: "pcf", key: "badge") { value }
-          pcfBadgeColor: metafield(namespace: "pcf", key: "badge_color") { value }
           pcfRecommended: metafield(namespace: "pcf", key: "recommended") { value }
+          pcfPick: metafield(namespace: "pcf", key: "pick") { value }
           pcfSpecs: metafield(namespace: "pcf", key: "specs") { value }
         }
       }

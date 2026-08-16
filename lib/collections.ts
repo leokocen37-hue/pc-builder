@@ -10,6 +10,11 @@ export type ProductNode = {
   featuredImage?: { url: string; altText?: string | null } | null;
   priceRange: { minVariantPrice: Money };
   metafields?: Metafield[];
+  // CPU/GPU/RAM for the card's spec line — only populated on pre-built PCs
+  // (specs.* is a separate namespace from the configurator components' pcf.specs)
+  specCpu?: { value: string } | null;
+  specGpu?: { value: string } | null;
+  specRam?: { value: string } | null;
   // which collection handle this product was fetched under — lets listing
   // pages that merge multiple collections (e.g. /racunala, /periferija) build
   // the correct nested /section/kategorija/handle link per product.
@@ -30,6 +35,9 @@ const QUERY = `
             { namespace: "pcf", key: "recommended" },
             { namespace: "pcf", key: "tier" }
           ]) { key value }
+          specCpu: metafield(namespace: "specs", key: "cpu") { value }
+          specGpu: metafield(namespace: "specs", key: "gpu") { value }
+          specRam: metafield(namespace: "specs", key: "ram") { value }
         }}
       }
     }
