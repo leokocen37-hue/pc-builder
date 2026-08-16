@@ -27,7 +27,8 @@ const QUERY = `
           priceRange { minVariantPrice { amount currencyCode } }
           metafields(identifiers: [
             { namespace: "pcf", key: "pick" },
-            { namespace: "pcf", key: "recommended" }
+            { namespace: "pcf", key: "recommended" },
+            { namespace: "pcf", key: "tier" }
           ]) { key value }
         }}
       }

@@ -12,11 +12,18 @@ import type { SectionKey } from "@/lib/product-page";
 
 type Tab = { label: string; href: string };
 
-// Product names in this store follow "<Tier> <roman numeral>" (e.g. "Pro Gamer III",
-// "Starter V") for tiered lineups. Strip the numeral to get the tier's display name,
-// so e.g. "Starter", "Starter II", "Starter III" all group under one "Starter" filter.
-const ROMAN_SUFFIX = /\s+[IVXLCDM]+$/i;
-const tierOf = (title: string) => title.replace(ROMAN_SUFFIX, "").trim() || title;
+// Tier comes from the product's pcf.tier metafield (set in Shopify), not
+// inferred from the title — title-matching broke on the "Perfomance" typo
+// (a separate tier from "Performance") and on any product whose name has no
+// trailing numeral (each became its own one-item tier). Known tiers render
+// in this order; a tier value Shopify has that isn't listed here yet still
+// shows (appended after the known ones) instead of silently vanishing.
+const TIER_ORDER = [
+  "Starter", "Performance", "Pro Gamer", "Elite", "Ultimate",
+  "Workstation", "Creator", "Power Studio", "Render Pro", "Titan",
+];
+const NO_TIER = "Ostalo";
+const tierOf = (p: ProductNode): string => p.metafields?.find((m) => m && m.key === "tier")?.value?.trim() || NO_TIER;
 
 export default function CollectionGrid({
   products,
@@ -32,15 +39,16 @@ export default function CollectionGrid({
   const linkFor = (p: ProductNode) => (section ? `/${section}/${p.category}/${p.handle}` : `/${p.handle}`);
   const [activeTier, setActiveTier] = useState<string | null>(null);
 
-  // distinct tiers, in first-seen order — only worth showing as a filter if the
-  // titles actually group into a handful of tiers (not just N unrelated products)
-  const tiers: string[] = [];
-  products.forEach((p) => {
-    const t = tierOf(p.title);
-    if (!tiers.includes(t)) tiers.push(t);
-  });
-  const showTierFilter = tiers.length >= 2 && tiers.length < products.length;
-  const visibleProducts = showTierFilter && activeTier ? products.filter((p) => tierOf(p.title) === activeTier) : products;
+  // known tiers first (in TIER_ORDER), then any tier value present in the data
+  // that isn't in TIER_ORDER yet, then the no-tier fallback last
+  const presentTiers = new Set(products.map(tierOf));
+  const tiers = [
+    ...TIER_ORDER.filter((t) => presentTiers.has(t)),
+    ...[...presentTiers].filter((t) => t !== NO_TIER && !TIER_ORDER.includes(t)),
+    ...(presentTiers.has(NO_TIER) ? [NO_TIER] : []),
+  ];
+  const showTierFilter = tiers.length >= 2;
+  const visibleProducts = showTierFilter && activeTier ? products.filter((p) => tierOf(p) === activeTier) : products;
 
   return (
     <>

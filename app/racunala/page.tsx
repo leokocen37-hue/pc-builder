@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import CollectionView from "@/components/CollectionView";
 import { getCollectionProducts } from "@/lib/collections";
+import { SECTIONS } from "@/lib/product-page";
 
 const TITLE = "Gotova računala — Gaming PC i radne stanice";
 const DESCRIPTION =
@@ -18,11 +19,11 @@ export default async function RacunalaPage() {
   const products = await getCollectionProducts(["gaming", "radne-stanice"]);
   return (
     <CollectionView
-      heading="Gotova računala"
+      heading={SECTIONS.racunala.heading}
       activeHref="/racunala"
       products={products}
       section="racunala"
-      breadcrumbs={[{ label: "Početna", href: "/" }, { label: "Računala" }]}
+      breadcrumbs={[{ label: "Početna", href: "/" }, { label: SECTIONS.racunala.heading }]}
     />
   );
 }

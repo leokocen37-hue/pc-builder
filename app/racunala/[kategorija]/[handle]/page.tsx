@@ -61,7 +61,7 @@ export default async function Page({ params }: { params: Promise<{ kategorija: s
   const breadcrumbJsonLd = buildBreadcrumbJsonLd(
     [
       { label: "Početna", href: "/" },
-      { label: "Računala", href: "/racunala" },
+      { label: SECTIONS.racunala.heading, href: "/racunala" },
       { label: categoryLabel, href: `/racunala/${kategorija}` },
       { label: product.title },
     ],
@@ -77,7 +77,7 @@ export default async function Page({ params }: { params: Promise<{ kategorija: s
           <Breadcrumbs
             items={[
               { label: "Početna", href: "/" },
-              { label: "Računala", href: "/racunala" },
+              { label: SECTIONS.racunala.heading, href: "/racunala" },
               { label: categoryLabel, href: `/racunala/${kategorija}` },
               { label: product.title },
             ]}

@@ -67,7 +67,7 @@ export const stripHtml = (html: string) => html.replace(/<[^>]+>/g, " ").replace
 export const SECTIONS = {
   racunala: {
     base: "/racunala",
-    heading: "Računala",
+    heading: "Gotova računala",
     categories: {
       gaming: "Gaming računala",
       "radne-stanice": "Radne stanice",

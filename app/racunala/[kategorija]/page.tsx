@@ -48,7 +48,7 @@ export default async function RacunalaKategorijaPage({ params }: { params: Promi
       activeHref={`/racunala/${kategorija}`}
       products={products}
       section="racunala"
-      breadcrumbs={[{ label: "Početna", href: "/" }, { label: "Računala", href: "/racunala" }, { label }]}
+      breadcrumbs={[{ label: "Početna", href: "/" }, { label: SECTIONS.racunala.heading, href: "/racunala" }, { label }]}
     />
   );
 }
