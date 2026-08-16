@@ -218,6 +218,11 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
   // F1: Pohrana step's optional secondary (HDD) slot — separate from the
   // review screen's "add a 2nd drive" upsells above (addingExtra)
   const [pohranaPickerOpen, setPohranaPickerOpen] = useState(false);
+  // G: compare — up to 3 product ids for the current step; comparePanelClosed
+  // hides the panel without clearing the checkboxes (checking/unchecking
+  // anything re-opens it), separate from clearCompare which resets both
+  const [compareIds, setCompareIds] = useState<string[]>([]);
+  const [comparePanelClosed, setComparePanelClosed] = useState(false);
 
   const currentStep = STEPS[stepIndex];
   const isReviewStep = currentStep === "review";
@@ -323,6 +328,18 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
     setDetailsProduct(p);
   };
   const closeDetails = () => setDetailsProduct(null);
+
+  // G: compare — cap at 3, checking/unchecking always re-opens a dismissed panel
+  const toggleCompare = (id: string) => {
+    setComparePanelClosed(false);
+    setCompareIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : prev.length >= 3 ? prev : [...prev, id]
+    );
+  };
+  const clearCompare = () => {
+    setCompareIds([]);
+    setComparePanelClosed(false);
+  };
 
   // map of current selections, keyed the same way as BUILD_PART_KEYS — shared
   // by the URL auto-sync effect below and by shareBuild()
@@ -435,6 +452,9 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
     setActiveIndex(0);
     setDragOffset(0);
     setHelpOpen(false);
+    // comparing across different component types doesn't make sense
+    setCompareIds([]);
+    setComparePanelClosed(false);
   }, [stepIndex]);
 
   // --- FILTERING (unchanged business logic) ---
@@ -698,8 +718,8 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
 
   // --- INTERACTION & DRAG PHYSICS (robust on touch + mouse) ---
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    // let the arrow buttons work normally
-    if ((e.target as HTMLElement).closest("button")) return;
+    // let the arrow buttons and the "Usporedi" checkbox work normally
+    if ((e.target as HTMLElement).closest("button, input, label")) return;
     // remember which card the press started on (for tap-to-select / tap-to-center)
     const cardEl = (e.target as HTMLElement).closest("[data-cardidx]") as HTMLElement | null;
     downIdxRef.current = cardEl ? Number(cardEl.dataset.cardidx) : null;
@@ -1458,6 +1478,18 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                             <div style={{ width: "100%", height: "54%" }}>
                               <ImageBlock src={dv.img} h="100%" />
                             </div>
+                            {isActive && (
+                              <label style={compareLabelStyle}>
+                                <input
+                                  type="checkbox"
+                                  checked={compareIds.includes(p.id)}
+                                  disabled={!compareIds.includes(p.id) && compareIds.length >= 3}
+                                  onChange={() => toggleCompare(p.id)}
+                                  style={compareCheckboxStyle}
+                                />
+                                Usporedi
+                              </label>
+                            )}
                             <div style={{ marginTop: "auto", paddingTop: "13px", pointerEvents: "none" }}>
                               {tierLabel(p.pcfQuality?.value) && (
                                 <div style={{ fontFamily: MONO, fontSize: "9.5px", fontWeight: 600, letterSpacing: "1px", color: COLORS.textMain, opacity: 0.6, marginBottom: "3px" }}>
@@ -1614,6 +1646,16 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                                 </span>
                               )}
                             </div>
+                            <label style={compareLabelStyle}>
+                              <input
+                                type="checkbox"
+                                checked={compareIds.includes(p.id)}
+                                disabled={!compareIds.includes(p.id) && compareIds.length >= 3}
+                                onChange={() => toggleCompare(p.id)}
+                                style={compareCheckboxStyle}
+                              />
+                              Usporedi
+                            </label>
                             {tierLabel(p.pcfQuality?.value) && (
                               <div style={{ fontFamily: MONO, fontSize: "9px", fontWeight: 600, letterSpacing: "1px", color: COLORS.textMain, opacity: 0.6, marginBottom: "3px" }}>
                                 {tierLabel(p.pcfQuality?.value)}
@@ -2404,6 +2446,16 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
       )}
 
       <SpecsDrawer product={lastDetailsProduct} open={!!detailsProduct} onClose={closeDetails} isMobile={isMobile} />
+
+      {compareIds.length >= 2 && !comparePanelClosed && (
+        <ComparePanel
+          products={currentProducts.filter((p) => compareIds.includes(p.id))}
+          onRemove={toggleCompare}
+          onClear={clearCompare}
+          onClose={() => setComparePanelClosed(true)}
+          bottomOffset={isMobile ? 68 : 0}
+        />
+      )}
     </div>
   );
 }
@@ -2700,6 +2752,153 @@ function SpecsDrawer({
   );
 }
 
+// Phase G: comparison table sliding up from the bottom. Rows are the union of
+// every compared product's pcf.specs labels; a row whose values aren't all
+// identical (a product missing the spec counts as different) is highlighted.
+function ComparePanel({
+  products,
+  onRemove,
+  onClear,
+  onClose,
+  bottomOffset,
+}: {
+  products: ProductNode[];
+  onRemove: (id: string) => void;
+  onClear: () => void;
+  onClose: () => void;
+  // keeps the panel clear of Builder's mobile sticky total bar, which is
+  // also fixed to the bottom of the screen
+  bottomOffset: number;
+}) {
+  const rows = (() => {
+    const labels: string[] = [];
+    const perProduct = new Map<string, Map<string, string>>();
+    products.forEach((p) => {
+      const map = new Map<string, string>();
+      (p.pcfSpecs?.value || "")
+        .split("\n")
+        .map((l) => l.trim())
+        .filter(Boolean)
+        .forEach((line) => {
+          const ix = line.indexOf(":");
+          if (ix === -1) return;
+          const label = line.slice(0, ix).trim();
+          const value = line.slice(ix + 1).trim();
+          if (!label) return;
+          map.set(label, value);
+          if (!labels.includes(label)) labels.push(label);
+        });
+      perProduct.set(p.id, map);
+    });
+    return labels.map((label) => {
+      const values = products.map((p) => perProduct.get(p.id)?.get(label) ?? null);
+      const differs = new Set(values.map((v) => v ?? " ")).size > 1;
+      return { label, values, differs };
+    });
+  })();
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        left: 0,
+        right: 0,
+        bottom: `${bottomOffset}px`,
+        zIndex: 200,
+        maxHeight: "60vh",
+        overflowY: "auto",
+        background: COLORS.bgCard,
+        borderTop: `1px solid ${COLORS.border}`,
+        boxShadow: "0 -20px 50px -20px rgba(0,0,0,.7)",
+      }}
+    >
+      <div
+        style={{
+          position: "sticky",
+          top: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "12px",
+          padding: "14px 20px",
+          background: COLORS.bgCard,
+          borderBottom: `1px solid ${COLORS.border}`,
+        }}
+      >
+        <div style={{ fontFamily: MONO, fontSize: "11px", letterSpacing: "1.5px", color: COLORS.accent }}>
+          USPOREDBA ({products.length})
+        </div>
+        <div style={{ display: "flex", gap: "10px" }}>
+          <button onClick={onClear} style={{ ...navBtnStyle, padding: "7px 12px", fontSize: "12px" }}>
+            Ukloni sve
+          </button>
+          <button
+            onClick={onClose}
+            aria-label="Zatvori usporedbu"
+            style={{ background: "none", border: "none", color: COLORS.textMuted, fontSize: "18px", lineHeight: 1, cursor: "pointer" }}
+          >
+            ✕
+          </button>
+        </div>
+      </div>
+      <div style={{ overflowX: "auto", padding: "0 20px 20px" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: `${products.length * 160}px` }}>
+          <thead>
+            <tr>
+              <th style={{ borderBottom: `1px solid ${COLORS.border}` }} />
+              {products.map((p) => (
+                <th key={p.id} style={{ textAlign: "left", padding: "10px 12px", borderBottom: `1px solid ${COLORS.border}`, minWidth: "150px" }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "8px" }}>
+                    <span style={{ fontWeight: 600, fontSize: "13px", lineHeight: 1.3 }}>{p.title}</span>
+                    <button
+                      onClick={() => onRemove(p.id)}
+                      aria-label={`Ukloni ${p.title} iz usporedbe`}
+                      style={{ background: "none", border: "none", color: COLORS.textFaint, cursor: "pointer", fontSize: "13px", flexShrink: 0 }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length === 0 ? (
+              <tr>
+                <td colSpan={products.length + 1} style={{ padding: "18px 12px", color: COLORS.textMuted, fontSize: "13px" }}>
+                  Nema podataka o specifikacijama za usporedbu.
+                </td>
+              </tr>
+            ) : (
+              rows.map((row) => (
+                <tr key={row.label} style={{ background: row.differs ? "rgba(216,31,216,.06)" : "transparent" }}>
+                  <td style={{ padding: "9px 12px", fontSize: "12.5px", color: COLORS.textMuted, borderBottom: `1px solid ${COLORS.border}`, whiteSpace: "nowrap" }}>
+                    {row.label}
+                  </td>
+                  {row.values.map((v, i) => (
+                    <td
+                      key={i}
+                      style={{
+                        padding: "9px 12px",
+                        fontSize: "12.5px",
+                        borderBottom: `1px solid ${COLORS.border}`,
+                        color: row.differs ? COLORS.accent : COLORS.textMain,
+                        fontWeight: row.differs ? 600 : 400,
+                      }}
+                    >
+                      {v ?? "—"}
+                    </td>
+                  ))}
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 // --- STYLES ---
 const kickerStyle: CSSProperties = {
   fontFamily: MONO,
@@ -2821,6 +3020,27 @@ const cardDetailsBtnStyle: CSSProperties = {
   letterSpacing: ".5px",
   cursor: "pointer",
   boxShadow: "0 2px 8px rgba(0,0,0,.4)",
+};
+
+// G: "Usporedi" checkbox, sits in normal flow right under the image (not an
+// absolutely-positioned corner chip — that real estate is already spoken for
+// by the badges and Detalji)
+const compareLabelStyle: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: "6px",
+  marginTop: "10px",
+  cursor: "pointer",
+  fontFamily: MONO,
+  fontSize: "11px",
+  color: COLORS.textMuted,
+  userSelect: "none",
+};
+const compareCheckboxStyle: CSSProperties = {
+  width: "13px",
+  height: "13px",
+  accentColor: COLORS.accent,
+  cursor: "pointer",
 };
 
 const arrowStyle: CSSProperties = {
