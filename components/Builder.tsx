@@ -453,47 +453,14 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
     initialized.current = true;
   }, [searchParams, products]);
 
-  // The state variable a given step's carousel selection writes to — used to
-  // detect "the user (or a restored permalink) already decided this step" so
-  // opening it doesn't override their choice with the recommended item.
-  const selectedItemForStep = (step: Step): ProductNode | null => {
-    switch (step) {
-      case "cpu": return cpu;
-      case "motherboard": return mb;
-      case "ram": return ram;
-      case "gpu": return gpu;
-      case "pohrana": return ssd;
-      case "case": return pcCase;
-      case "psu": return psu;
-      case "cooler": return cooler;
-      case "os": return os;
-      default: return null; // brand, review — no carousel
-    }
-  };
-
   useEffect(() => {
-    // Focus, don't select: this only moves which card is centered in the
-    // carousel. Landing on it never calls handleSelection, so it can't add
-    // anything to the build or change the total.
-    const existing = selectedItemForStep(currentStep);
-    const existingIdx = existing ? currentProducts.findIndex((p) => p.id === existing.id) : -1;
-    if (existingIdx >= 0) {
-      // already decided (picked earlier, or restored from a build permalink) — focus THAT
-      setActiveIndex(existingIdx);
-    } else if (currentProducts.length > 0) {
-      const recIdx = currentProducts.findIndex((p) => (p.pcfRecommended?.value || "").toLowerCase() === "true");
-      const pickIdx = recIdx === -1 ? currentProducts.findIndex((p) => (p.pcfPick?.value || "").toLowerCase() === "true") : -1;
-      setActiveIndex(recIdx >= 0 ? recIdx : pickIdx >= 0 ? pickIdx : Math.floor((currentProducts.length - 1) / 2));
-    } else {
-      setActiveIndex(0);
-    }
+    setActiveIndex(0);
     setDragOffset(0);
     setHelpOpen(false);
     // comparing across different component types doesn't make sense
     setCompareIds([]);
     setComparePanelClosed(false);
     setCompareLimitHint(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stepIndex]);
 
   // --- FILTERING (unchanged business logic) ---
