@@ -1,5 +1,5 @@
 "use client";
-import { CSSProperties, useEffect, useState, Suspense, useRef } from "react";
+import { CSSProperties, useEffect, useState, useMemo, Suspense, useRef } from "react";
 import { useCart } from "@/lib/cart";
 import { ASSEMBLY_FEE } from "@/lib/pricing";
 import { SITE } from "@/lib/site-config";
@@ -169,6 +169,10 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
   const downIdxRef = useRef<number | null>(null);
   const dragStartTimeRef = useRef(0);
   const wheelLockRef = useRef(false);
+  // steps whose initial carousel focus has already been seeded — see the
+  // render-time block below currentProducts
+  const seededStepsRef = useRef<Set<Step>>(new Set());
+  const isProgrammaticScrollRef = useRef(false);
 
   // --- STATE ---
   const [stepIndex, setStepIndex] = useState(0);
@@ -293,10 +297,29 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // keep the active step pill in view on the horizontally-scrolling rail
+  // keep the active step pill in view on the horizontally-scrolling rail.
+  // Guarded with isProgrammaticScrollRef even though nothing currently reads
+  // the rail's scroll position back into state (verified: neither the rail
+  // nor the card carousel has an onScroll handler today — the carousel is
+  // pointer-drag-driven, not native scroll) — this is the one real
+  // scrollIntoView call in the file, so it's where that kind of feedback
+  // would first appear if a future change ever wires scroll position back
+  // into state here.
   useEffect(() => {
     const el = railRef.current?.querySelector<HTMLElement>(`[data-step-idx="${stepIndex}"]`);
-    el?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+    if (!el) return;
+    const railEl = railRef.current;
+    isProgrammaticScrollRef.current = true;
+    el.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+    const clear = () => {
+      isProgrammaticScrollRef.current = false;
+    };
+    railEl?.addEventListener("scrollend", clear, { once: true });
+    const fallback = setTimeout(clear, 700); // scrollend isn't supported everywhere yet
+    return () => {
+      railEl?.removeEventListener("scrollend", clear);
+      clearTimeout(fallback);
+    };
   }, [stepIndex]);
 
   // E6: grid/carousel preference persists across steps (already true, same
@@ -454,7 +477,6 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
   }, [searchParams, products]);
 
   useEffect(() => {
-    setActiveIndex(0);
     setDragOffset(0);
     setHelpOpen(false);
     // comparing across different component types doesn't make sense
@@ -464,7 +486,13 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
   }, [stepIndex]);
 
   // --- FILTERING (unchanged business logic) ---
-  const currentProducts = products
+  // Memoized on its actual inputs — not recomputed into a fresh array
+  // reference on every render. This matters beyond performance: the
+  // step-entry seeding effect below depends on this array, and an
+  // unstable reference there is exactly the kind of thing that caused the
+  // last freeze (an effect re-running on every render instead of only when
+  // something real changed).
+  const currentProducts = useMemo(() => products
     .filter((p) => {
       const type = p.pcfType?.value;
 
@@ -565,7 +593,60 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
       const priceA = Number(a.variants.edges[0]?.node.price.amount || 0);
       const priceB = Number(b.variants.edges[0]?.node.price.amount || 0);
       return priceA - priceB;
-    });
+    }), [products, currentStep, brand, cpu, mb, ram, gpu, gpu2, pcCase, cooler]);
+
+  // which state variable a given step's carousel selection writes to — used
+  // below to detect "the user (or a restored permalink) already decided
+  // this step" so seeding never overrides an existing choice
+  const selectedItemForStep = (step: Step): ProductNode | null => {
+    switch (step) {
+      case "cpu": return cpu;
+      case "motherboard": return mb;
+      case "ram": return ram;
+      case "gpu": return gpu;
+      case "pohrana": return ssd;
+      case "case": return pcCase;
+      case "psu": return psu;
+      case "cooler": return cooler;
+      case "os": return os;
+      default: return null; // brand, review — no carousel
+    }
+  };
+
+  // Seed each step's initial carousel focus on the recommended item (falling
+  // back to pick, then the sorted list's middle) instead of always index 0 —
+  // but never override a choice the user already made, or one restored from
+  // a build permalink.
+  //
+  // This runs during render (React's sanctioned "adjust state" pattern —
+  // same one SiteHeader.tsx already uses), not in a useEffect, specifically
+  // so activeIndex is already correct on the FIRST committed render for a
+  // step. Doing it in an effect means one render commits with the previous
+  // step's stale activeIndex against the new step's product list first, then
+  // a second render corrects it — two distinct activeProduct values, each
+  // one firing the pre-existing `}, [activeProduct])` effect below. That
+  // double transition is what actually froze the browser last time; this
+  // sidesteps it entirely rather than trying to out-guard it.
+  //
+  // Guard 1 (run once per step, ever): seededStepsRef is a ref, not state,
+  // so checking/recording it never itself triggers a render, and it's
+  // immune to re-renders that don't change currentStep.
+  // Guard 4 (no-op when unchanged): setActiveIndex is only called if the
+  // computed target actually differs from the current value.
+  if (!seededStepsRef.current.has(currentStep)) {
+    seededStepsRef.current.add(currentStep);
+    const existing = selectedItemForStep(currentStep);
+    const existingIdx = existing ? currentProducts.findIndex((p) => p.id === existing.id) : -1;
+    let seedTarget = existingIdx;
+    if (seedTarget < 0 && currentProducts.length > 0) {
+      const recIdx = currentProducts.findIndex((p) => (p.pcfRecommended?.value || "").toLowerCase() === "true");
+      const pickIdx = recIdx === -1 ? currentProducts.findIndex((p) => (p.pcfPick?.value || "").toLowerCase() === "true") : -1;
+      seedTarget = recIdx >= 0 ? recIdx : pickIdx >= 0 ? pickIdx : Math.floor((currentProducts.length - 1) / 2);
+    }
+    if (seedTarget >= 0 && seedTarget !== activeIndex) {
+      setActiveIndex(seedTarget);
+    }
+  }
 
   // The data already guarantees at most one pcf.recommended / pcf.pick per
   // component type, but cap it in code too and warn instead of silently
@@ -1423,6 +1504,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                             key={p.id}
                             className="rs-cf-card"
                             data-cardidx={idx}
+                            data-testid={isActive ? "active-card" : undefined}
                             tabIndex={0}
                             role="button"
                             aria-label={`${p.title}${isActive ? " — u fokusu, pritisnite Enter za odabir" : ""}`}
@@ -1589,6 +1671,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                         return (
                           <div
                             key={p.id}
+                            data-testid={selected ? "active-card" : undefined}
                             onClick={() => {
                               if (selected) handleSelection(currentStep, p);
                               else setActiveIndex(idx);
