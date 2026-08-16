@@ -151,7 +151,10 @@
 .rs-ph-fallback{width:100%;height:100%;background:linear-gradient(135deg,#1a1230,#0a0c12)}
 .rs-badge{position:absolute;top:12px;left:12px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;padding:5px 10px;border-radius:7px;color:#fff;font-weight:600;background:rgba(0,0,0,.55);backdrop-filter:blur(4px)}
 .rs-card-body{padding:15px 16px 17px}
-.rs-card-body h4{font-size:16px;font-weight:600;margin-bottom:10px}
+.rs-card-body h4{font-size:16px;font-weight:600;margin-bottom:6px}
+/* CPU/GPU/RAM (pre-built cards) or first 3 pcf.specs lines (configurator) —
+   muted, mono, single line, sits between the name and the price */
+.rs-card-specs{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);margin-bottom:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rs-price-row{display:flex;align-items:baseline;justify-content:space-between}
 .rs-price{font-size:18px;font-weight:700}
 .rs-buy{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent)}

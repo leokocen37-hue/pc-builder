@@ -6,7 +6,7 @@ import { shopifyFetch } from "@/lib/shopify";
 import { formatMoney, formatEUR } from "@/lib/cart";
 import Reveal from "@/components/Reveal";
 import BrandMarquee from "@/components/BrandMarquee";
-import type { ProductNode } from "@/lib/collections";
+import { specLine, type ProductNode } from "@/lib/collections";
 import { SITE } from "@/lib/site-config";
 
 const CONFIGURATOR_PATH = "/konfigurator";
@@ -190,6 +190,7 @@ function CollectionRow({ title, href, products, subtitle }: { title: string; hre
                 </div>
                 <div className="rs-card-body">
                   <h4>{p.title}</h4>
+                  {specLine(p) && <div className="rs-card-specs">{specLine(p)}</div>}
                   <div className="rs-price-row">
                     <span className="rs-price">{formatMoney(p.priceRange?.minVariantPrice)}</span>
                     <span className="rs-buy">Detalji →</span>

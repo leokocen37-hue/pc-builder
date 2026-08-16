@@ -12,6 +12,7 @@ const PRODUCTS_QUERY = `
           id
           handle
           title
+          description
           tags
           availableForSale
           featuredImage { url altText }

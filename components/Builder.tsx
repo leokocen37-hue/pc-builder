@@ -11,6 +11,7 @@ export type ProductNode = {
   id: string;
   handle: string;
   title: string;
+  description?: string;
   tags: string[];
   availableForSale?: boolean;
   featuredImage?: { url: string; altText?: string };
@@ -181,7 +182,11 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
   const [hoverBrand, setHoverBrand] = useState<string | null>(null);
   const [hoverCard, setHoverCard] = useState<number | null>(null);
   const [hoverReviewRow, setHoverReviewRow] = useState<string | null>(null);
-  const [specsOpen, setSpecsOpen] = useState(false);
+  // detail drawer: detailsProduct drives the open/closed state, lastDetailsProduct
+  // keeps the content populated while it slides shut so it doesn't flash empty
+  const [detailsProduct, setDetailsProduct] = useState<ProductNode | null>(null);
+  const [lastDetailsProduct, setLastDetailsProduct] = useState<ProductNode | null>(null);
+  const detailsTriggerRef = useRef<HTMLElement | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
   const [contactForm, setContactForm] = useState({ name: "", email: "", phone: "", budget: "", message: "" });
@@ -281,6 +286,20 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
     const el = railRef.current?.querySelector<HTMLElement>(`[data-step-idx="${stepIndex}"]`);
     el?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
   }, [stepIndex]);
+
+  // detail drawer: keep content populated during the close animation, and
+  // return focus to whichever "Detalji" button opened it once it's shut
+  useEffect(() => {
+    if (detailsProduct) setLastDetailsProduct(detailsProduct);
+    else detailsTriggerRef.current?.focus();
+  }, [detailsProduct]);
+
+  const openDetails = (p: ProductNode, e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    detailsTriggerRef.current = e.currentTarget;
+    setDetailsProduct(p);
+  };
+  const closeDetails = () => setDetailsProduct(null);
 
   // map of current selections, keyed the same way as BUILD_PART_KEYS — shared
   // by the URL auto-sync effect below and by shareBuild()
@@ -526,6 +545,22 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
       price: Number(node.price.amount),
       img: node.image?.url || p.featuredImage?.url,
     };
+  };
+
+  // first three pcf.specs lines, values only, "·"-joined — the card's compact
+  // spec row. Fewer than three lines shows what exists; no lines shows nothing.
+  const cardSpecLine = (specs?: string): string => {
+    if (!specs) return "";
+    return specs
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean)
+      .slice(0, 3)
+      .map((line) => {
+        const ix = line.indexOf(":");
+        return ix === -1 ? line : line.slice(ix + 1).trim();
+      })
+      .join(" · ");
   };
 
   // --- COVERFLOW GEOMETRY ---
@@ -1262,6 +1297,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                         if (nearest > 3.2) return <div key={p.id} style={{ display: "none" }} />;
 
                         const dv = displayVariant(p, idx === activeIndex);
+                        const specText = cardSpecLine(p.pcfSpecs?.value);
                         const cardW = isMobile ? 196 : 284;
                         const cardH = isMobile ? 256 : 360;
 
@@ -1299,11 +1335,30 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                             {(p.pcfRecommended?.value || "").toLowerCase() === "true" && (
                               <span title="Naša preporuka" style={{ position: "absolute", top: "10px", right: "10px", zIndex: 5, width: "26px", height: "26px", borderRadius: "50%", background: "linear-gradient(135deg,#ffd36b,#ffb84d)", color: "#0a0a0a", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px", boxShadow: "0 4px 12px rgba(255,184,77,.5)" }}>★</span>
                             )}
+                            {isActive && (
+                              <button
+                                onClick={(e) => openDetails(p, e)}
+                                style={{
+                                  position: "absolute", top: "10px", left: "10px", zIndex: 5,
+                                  padding: "4px 9px", borderRadius: "7px", border: `1px solid ${COLORS.border}`,
+                                  background: "rgba(7,8,12,.72)", backdropFilter: "blur(4px)", color: COLORS.textMain,
+                                  fontFamily: MONO, fontSize: "9.5px", fontWeight: 600, letterSpacing: ".5px",
+                                  cursor: "pointer",
+                                }}
+                              >
+                                DETALJI
+                              </button>
+                            )}
                             <div style={{ width: "100%", height: "54%" }}>
                               <ImageBlock src={dv.img} h="100%" />
                             </div>
                             <div style={{ marginTop: "auto", paddingTop: "13px", pointerEvents: "none" }}>
                               <div style={{ fontWeight: 600, fontSize: "16px", lineHeight: 1.25 }}>{p.title}</div>
+                              {specText && (
+                                <div style={{ fontFamily: MONO, fontSize: "11px", color: COLORS.textMuted, marginTop: "6px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                  {specText}
+                                </div>
+                              )}
                               <div style={{ fontWeight: 700, fontSize: "22px", color: "#fff", marginTop: "10px", letterSpacing: "-.3px" }}>
                                 €{dv.price.toFixed(2)}
                               </div>
@@ -1352,6 +1407,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                       {currentProducts.map((p, idx) => {
                         const selected = idx === activeIndex;
                         const dv = displayVariant(p, selected);
+                        const specText = cardSpecLine(p.pcfSpecs?.value);
                         return (
                           <div
                             key={p.id}
@@ -1380,6 +1436,18 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                             {(p.pcfRecommended?.value || "").toLowerCase() === "true" && (
                               <span title="Naša preporuka" style={{ position: "absolute", top: "10px", right: "10px", zIndex: 5, width: "26px", height: "26px", borderRadius: "50%", background: "linear-gradient(135deg,#ffd36b,#ffb84d)", color: "#0a0a0a", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px", boxShadow: "0 4px 12px rgba(255,184,77,.5)" }}>★</span>
                             )}
+                            <button
+                              onClick={(e) => openDetails(p, e)}
+                              style={{
+                                position: "absolute", top: "10px", left: "10px", zIndex: 5,
+                                padding: "4px 9px", borderRadius: "7px", border: `1px solid ${COLORS.border}`,
+                                background: "rgba(7,8,12,.72)", backdropFilter: "blur(4px)", color: COLORS.textMain,
+                                fontFamily: MONO, fontSize: "9.5px", fontWeight: 600, letterSpacing: ".5px",
+                                cursor: "pointer",
+                              }}
+                            >
+                              DETALJI
+                            </button>
                             <div style={{ position: "relative", width: "100%", aspectRatio: "4/3", marginBottom: "14px" }}>
                               <ImageBlock src={dv.img} h="100%" />
                               {selected && (
@@ -1403,6 +1471,11 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                               )}
                             </div>
                             <div style={{ fontWeight: 600, fontSize: "14px", lineHeight: 1.25 }}>{p.title}</div>
+                            {specText && (
+                              <div style={{ fontFamily: MONO, fontSize: "10.5px", color: COLORS.textMuted, marginTop: "5px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                {specText}
+                              </div>
+                            )}
                             <div style={{ fontWeight: 700, fontSize: "18px", marginTop: "10px", letterSpacing: "-.3px" }}>
                               €{dv.price.toFixed(2)}
                             </div>
@@ -1434,35 +1507,14 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                         <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "4px", position: "relative" }}>
                           <span style={{ fontWeight: 600, fontSize: "17px" }}>{activeProduct?.title}</span>
                           {activeProduct?.pcfSpecs?.value && (
-                            <span
-                              style={{ position: "relative", display: "inline-flex" }}
-                              onMouseEnter={() => setSpecsOpen(true)}
-                              onMouseLeave={() => setSpecsOpen(false)}
+                            <button
+                              onClick={(e) => openDetails(activeProduct, e)}
+                              aria-label="Specifikacije"
+                              title="Specifikacije"
+                              style={{ width: "18px", height: "18px", borderRadius: "50%", border: `1px solid ${COLORS.accent}`, background: "none", color: COLORS.accent, fontSize: "11px", fontFamily: MONO, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1, flexShrink: 0 }}
                             >
-                              <button
-                                onClick={() => setSpecsOpen((o) => !o)}
-                                aria-label="Specifikacije"
-                                style={{ width: "18px", height: "18px", borderRadius: "50%", border: `1px solid ${COLORS.accent}`, background: "none", color: COLORS.accent, fontSize: "11px", fontFamily: MONO, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1, flexShrink: 0 }}
-                              >
-                                i
-                              </button>
-                              {specsOpen && (
-                                <div style={{ position: "absolute", top: "26px", left: "0", zIndex: 20, width: "260px", background: COLORS.bgDark, border: `1px solid ${COLORS.border}`, borderRadius: "12px", padding: "13px 15px", boxShadow: "0 20px 50px -18px rgba(0,0,0,.9)" }}>
-                                  <div style={{ fontFamily: MONO, fontSize: "10px", letterSpacing: "1.5px", color: COLORS.accent, marginBottom: "9px" }}>SPECIFIKACIJE</div>
-                                  {activeProduct.pcfSpecs.value.split("\n").map((line) => line.trim()).filter(Boolean).map((line, i) => {
-                                    const ix = line.indexOf(":");
-                                    const lbl = ix === -1 ? "" : line.slice(0, ix).trim();
-                                    const val = ix === -1 ? line : line.slice(ix + 1).trim();
-                                    return (
-                                      <div key={i} style={{ display: "flex", justifyContent: "space-between", gap: "12px", fontSize: "12.5px", padding: "4px 0", borderBottom: i < activeProduct.pcfSpecs!.value.split("\n").filter((l) => l.trim()).length - 1 ? `1px solid ${COLORS.border}` : "none" }}>
-                                        {lbl && <span style={{ color: COLORS.textMuted }}>{lbl}</span>}
-                                        <span style={{ color: COLORS.textMain, fontWeight: 500, textAlign: "right" }}>{val}</span>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              )}
-                            </span>
+                              i
+                            </button>
                           )}
                         </div>
                         <div style={{ display: "flex", alignItems: "center", gap: "12px", marginTop: "9px", flexWrap: "wrap" }}>
@@ -2131,6 +2183,8 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
           </div>
         </div>
       )}
+
+      <SpecsDrawer product={lastDetailsProduct} open={!!detailsProduct} onClose={closeDetails} isMobile={isMobile} />
     </div>
   );
 }
@@ -2244,6 +2298,186 @@ function UpsellRow({
         ✖ Ukloni
       </button>
     </div>
+  );
+}
+
+// Slide-in detail panel (right on desktop, full-height bottom sheet on
+// mobile) — full pcf.specs table, description, image. Always mounted so the
+// close animation can play; `product` is the last-opened one and keeps
+// showing while `open` flips to false and the panel slides/drops out.
+function SpecsDrawer({
+  product,
+  open,
+  onClose,
+  isMobile,
+}: {
+  product: ProductNode | null;
+  open: boolean;
+  onClose: () => void;
+  isMobile: boolean;
+}) {
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const panel = panelRef.current;
+    const getFocusable = () =>
+      Array.from(panel?.querySelectorAll<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])') ?? []);
+
+    // move focus into the drawer once it's open
+    getFocusable()[0]?.focus();
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const items = getFocusable();
+      if (items.length === 0) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [open, onClose]);
+
+  const specRows = (product?.pcfSpecs?.value || "")
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const ix = line.indexOf(":");
+      return { label: ix === -1 ? "" : line.slice(0, ix).trim(), value: ix === -1 ? line : line.slice(ix + 1).trim() };
+    });
+
+  return (
+    <>
+      <div
+        onClick={onClose}
+        aria-hidden="true"
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 300,
+          background: "rgba(2,3,6,.6)",
+          backdropFilter: "blur(4px)",
+          opacity: open ? 1 : 0,
+          pointerEvents: open ? "auto" : "none",
+          transition: "opacity .25s",
+        }}
+      />
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-hidden={!open}
+        aria-label={product ? `Detalji — ${product.title}` : "Detalji"}
+        style={
+          isMobile
+            ? {
+                position: "fixed",
+                left: 0,
+                right: 0,
+                bottom: 0,
+                top: "10vh",
+                zIndex: 301,
+                background: COLORS.bgCard,
+                borderTop: `1px solid ${COLORS.border}`,
+                borderRadius: "18px 18px 0 0",
+                display: "flex",
+                flexDirection: "column",
+                overflowY: "auto",
+                transform: open ? "translateY(0)" : "translateY(100%)",
+                transition: "transform .3s cubic-bezier(.16,1,.3,1)",
+              }
+            : {
+                position: "fixed",
+                top: 0,
+                right: 0,
+                bottom: 0,
+                width: "440px",
+                maxWidth: "92vw",
+                zIndex: 301,
+                background: COLORS.bgCard,
+                borderLeft: `1px solid ${COLORS.border}`,
+                display: "flex",
+                flexDirection: "column",
+                overflowY: "auto",
+                transform: open ? "translateX(0)" : "translateX(100%)",
+                transition: "transform .3s cubic-bezier(.16,1,.3,1)",
+              }
+        }
+      >
+        <div
+          style={{
+            position: "sticky",
+            top: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "12px",
+            padding: "16px 20px",
+            background: COLORS.bgCard,
+            borderBottom: `1px solid ${COLORS.border}`,
+          }}
+        >
+          <div style={{ fontWeight: 600, fontSize: "16px", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {product?.title}
+          </div>
+          <button
+            onClick={onClose}
+            aria-label="Zatvori"
+            style={{ background: "none", border: "none", color: COLORS.textMuted, fontSize: "20px", lineHeight: 1, cursor: "pointer", flexShrink: 0 }}
+          >
+            ✕
+          </button>
+        </div>
+
+        <div style={{ padding: "20px" }}>
+          {product?.featuredImage?.url && (
+            <div style={{ marginBottom: "20px", borderRadius: "13px", overflow: "hidden", background: "linear-gradient(160deg,#1b2030,#0b0d14)" }}>
+              <img src={product.featuredImage.url} alt="" style={{ width: "100%", height: "220px", objectFit: "contain" }} />
+            </div>
+          )}
+
+          {product?.description && (
+            <p style={{ fontSize: "13.5px", lineHeight: 1.65, color: COLORS.textMuted, marginBottom: "24px" }}>{product.description}</p>
+          )}
+
+          {specRows.length > 0 && (
+            <div>
+              <div style={{ fontFamily: MONO, fontSize: "10px", letterSpacing: "1.5px", color: COLORS.accent, marginBottom: "10px" }}>
+                SPECIFIKACIJE
+              </div>
+              {specRows.map((r, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: "12px",
+                    fontSize: "13px",
+                    padding: "9px 0",
+                    borderBottom: i < specRows.length - 1 ? `1px solid ${COLORS.border}` : "none",
+                  }}
+                >
+                  {r.label && <span style={{ color: COLORS.textMuted }}>{r.label}</span>}
+                  <span style={{ color: COLORS.textMain, fontWeight: 500, textAlign: "right" }}>{r.value}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </>
   );
 }
 

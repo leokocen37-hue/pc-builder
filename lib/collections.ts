@@ -44,6 +44,12 @@ const QUERY = `
   }
 `;
 
+// CPU/GPU/RAM card spec line for pre-built PCs — values only, "·"-joined.
+// Whichever of the three are missing are just left out, never padded.
+export function specLine(p: Pick<ProductNode, "specCpu" | "specGpu" | "specRam">): string {
+  return [p.specCpu?.value, p.specGpu?.value, p.specRam?.value].filter(Boolean).join(" · ");
+}
+
 // fetches one or more collections and merges/dedupes them by product id —
 // pass a single handle to keep a collection's results separate (e.g. homepage rows).
 export async function getCollectionProducts(handles: string[], first = 30): Promise<ProductNode[]> {

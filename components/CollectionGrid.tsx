@@ -7,7 +7,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { formatMoney } from "@/lib/cart";
-import type { ProductNode } from "@/lib/collections";
+import { specLine, type ProductNode } from "@/lib/collections";
 import type { SectionKey } from "@/lib/product-page";
 
 type Tab = { label: string; href: string };
@@ -98,6 +98,7 @@ export default function CollectionGrid({
                 </div>
                 <div className="rs-card-body">
                   <h4>{p.title}</h4>
+                  {specLine(p) && <div className="rs-card-specs">{specLine(p)}</div>}
                   <div className="rs-price-row">
                     <span className="rs-price">{formatMoney(p.priceRange?.minVariantPrice)}</span>
                     <span className="rs-buy">Detalji →</span>
