@@ -5,7 +5,10 @@ import type { ProductNode } from "@/lib/collections";
 import type { SectionKey } from "@/lib/product-page";
 import CollectionGrid from "@/components/CollectionGrid";
 import Breadcrumbs from "@/components/Breadcrumbs";
-import type { Crumb } from "@/lib/product-page";
+import JsonLd from "@/components/JsonLd";
+import { buildBreadcrumbJsonLd, type Crumb } from "@/lib/product-page";
+
+const SITE_URL = "https://racunalo.hr";
 
 type Tab = { label: string; href: string };
 
@@ -54,7 +57,12 @@ export default function CollectionView({
     <div className="rs-root">
       <section className="rs-coll">
         <div className="rs-wrap">
-          {breadcrumbs && <Breadcrumbs items={breadcrumbs} />}
+          {breadcrumbs && (
+            <>
+              <Breadcrumbs items={breadcrumbs} />
+              <JsonLd data={buildBreadcrumbJsonLd(breadcrumbs, SITE_URL)} />
+            </>
+          )}
           <div className="rs-coll-head">
             {kicker && <div className="rs-kicker">{kicker}</div>}
             <h1>{heading}</h1>

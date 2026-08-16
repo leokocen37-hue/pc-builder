@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import ProductClient from "@/components/ProductClient";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import JsonLd from "@/components/JsonLd";
 import { getCollectionProducts } from "@/lib/collections";
 import {
   getProductByHandle,
@@ -69,8 +70,8 @@ export default async function Page({ params }: { params: Promise<{ kategorija: s
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd).replace(/</g, "\\u003c") }} />
+      <JsonLd data={jsonLd} />
+      <JsonLd data={breadcrumbJsonLd} />
       <div className="rs-root">
         <div className="rs-wrap">
           <Breadcrumbs

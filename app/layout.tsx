@@ -8,6 +8,7 @@ import SiteHeader from "@/components/SiteHeader";
 import CartDrawer from "@/components/CartDrawer";
 import Footer from "@/components/Footer";
 import CookieConsent from "@/components/CookieConsent";
+import JsonLd from "@/components/JsonLd";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -61,6 +62,9 @@ export const metadata: Metadata = {
 
 // site-wide structured data (Organization + WebSite) — helps Google understand
 // who/what this site is, independent of any single page's content.
+// TODO: add `logo` once a dedicated logo image asset exists (currently the site
+// only has a text wordmark, no image file) and `sameAs` once official social
+// profile URLs are confirmed — leaving both out rather than guessing at either.
 const ORG_JSON_LD = {
   "@context": "https://schema.org",
   "@type": "Organization",
@@ -94,14 +98,8 @@ export default async function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
           rel="stylesheet"
         />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(ORG_JSON_LD).replace(/</g, "\\u003c") }}
-        />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(WEBSITE_JSON_LD).replace(/</g, "\\u003c") }}
-        />
+        <JsonLd data={ORG_JSON_LD} />
+        <JsonLd data={WEBSITE_JSON_LD} />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         {locked ? (

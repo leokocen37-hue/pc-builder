@@ -9,6 +9,7 @@ export type Variant = {
   price: Money;
   selectedOptions: { name: string; value: string }[];
   image?: { url: string; altText?: string | null } | null;
+  sku?: string | null;
 };
 export type Metafield = { key: string; value: string } | null;
 export type Product = {
@@ -20,6 +21,7 @@ export type Product = {
   metafields: Metafield[];
   priceRange: { minVariantPrice: Money };
   availableForSale: boolean;
+  vendor: string;
   // which collections this product belongs to — used to validate the URL's
   // [kategorija] segment actually matches a real collection for this product.
   collections: { edges: { node: { handle: string } }[] };
@@ -28,12 +30,12 @@ export type Product = {
 const QUERY = `
   query Product($handle: String!) {
     product(handle: $handle) {
-      id title descriptionHtml
+      id title descriptionHtml vendor
       featuredImage { url altText }
       images(first: 10) { edges { node { url altText } } }
       options { name values }
       variants(first: 50) { edges { node {
-        id title availableForSale
+        id title availableForSale sku
         price { amount currencyCode }
         selectedOptions { name value }
         image { url altText }
@@ -93,18 +95,22 @@ export function productBelongsToCategory(product: Product, kategorija: string): 
 }
 
 export function buildProductJsonLd(product: Product, url: string) {
+  const sku = product.variants.edges.find((e) => e.node.sku)?.node.sku ?? undefined;
   return {
     "@context": "https://schema.org",
     "@type": "Product",
     name: product.title,
     description: stripHtml(product.descriptionHtml) || undefined,
     image: product.featuredImage?.url ? [product.featuredImage.url] : undefined,
+    sku,
+    brand: product.vendor ? { "@type": "Brand", name: product.vendor } : undefined,
     offers: {
       "@type": "Offer",
       url,
       priceCurrency: product.priceRange.minVariantPrice.currencyCode,
       price: product.priceRange.minVariantPrice.amount,
       availability: product.availableForSale ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+      itemCondition: "https://schema.org/NewCondition",
     },
   };
 }
