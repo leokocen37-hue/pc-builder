@@ -164,6 +164,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
   const router = useRouter();
   const initialized = useRef(false);
   const railRef = useRef<HTMLDivElement>(null);
+  const coverflowRef = useRef<HTMLDivElement>(null);
   const movedRef = useRef(false);
   const capturedRef = useRef(false);
   const downIdxRef = useRef<number | null>(null);
@@ -177,6 +178,10 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
   // carousel card count tier: 5 cards only above ~1600px, 3 from 900-1600px,
   // 1 below 900px (same boundary as isMobile)
   const [cardTier, setCardTier] = useState<"mobile" | "compact" | "wide">("wide");
+  // measured (not assumed) width of the coverflow container, so the track can
+  // be kept clear of the sidebar regardless of exactly how the surrounding
+  // layout resolves — see the trackShift calc below
+  const [coverflowWidth, setCoverflowWidth] = useState(0);
   const [activeIndex, setActiveIndex] = useState(0);
   const [selectedVarId, setSelectedVarId] = useState("");
   const [startX, setStartX] = useState<number | null>(null);
@@ -223,6 +228,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
   // anything re-opens it), separate from clearCompare which resets both
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [comparePanelClosed, setComparePanelClosed] = useState(false);
+  const [compareLimitHint, setCompareLimitHint] = useState(false);
 
   const currentStep = STEPS[stepIndex];
   const isReviewStep = currentStep === "review";
@@ -305,6 +311,20 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
     el?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
   }, [stepIndex]);
 
+  // measure the coverflow's real rendered width (accounts for the sidebar,
+  // any max-width, etc. automatically) so the track can be clamped against
+  // it — re-observes when the coverflow mounts/unmounts (view toggle, step change)
+  useEffect(() => {
+    const el = coverflowRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect.width;
+      if (w) setCoverflowWidth(w);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [viewMode, currentStep]);
+
   // E6: grid/carousel preference persists across steps (already true, same
   // state the whole session) and across visits, via localStorage
   useEffect(() => {
@@ -332,14 +352,25 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
   // G: compare — cap at 3, checking/unchecking always re-opens a dismissed panel
   const toggleCompare = (id: string) => {
     setComparePanelClosed(false);
-    setCompareIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : prev.length >= 3 ? prev : [...prev, id]
-    );
+    setCompareIds((prev) => {
+      if (prev.includes(id)) return prev.filter((x) => x !== id);
+      if (prev.length >= 3) {
+        setCompareLimitHint(true);
+        return prev;
+      }
+      return [...prev, id];
+    });
   };
   const clearCompare = () => {
     setCompareIds([]);
     setComparePanelClosed(false);
   };
+  // auto-dismiss the "max 3" hint
+  useEffect(() => {
+    if (!compareLimitHint) return;
+    const t = setTimeout(() => setCompareLimitHint(false), 2600);
+    return () => clearTimeout(t);
+  }, [compareLimitHint]);
 
   // map of current selections, keyed the same way as BUILD_PART_KEYS — shared
   // by the URL auto-sync effect below and by shareBuild()
@@ -455,6 +486,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
     // comparing across different component types doesn't make sense
     setCompareIds([]);
     setComparePanelClosed(false);
+    setCompareLimitHint(false);
   }, [stepIndex]);
 
   // --- FILTERING (unchanged business logic) ---
@@ -627,16 +659,24 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
   };
 
   // --- COVERFLOW GEOMETRY ---
-  // Card size + center-to-center spacing (bx) per tier. bx is chosen so that,
-  // at peripheral scale .92, adjacent cards' bounding boxes never touch:
-  //   wide:    half(220)=110, half(220*.92)=101.2 -> needs bx >= 211.2 (have 240)
-  //            and a1/a2 gap needs bx >= 2*101.2=202.4 (have 240)
-  //   compact: half(250)=125, half(250*.92)=115   -> needs bx >= 240 (have 260)
-  //   mobile:  only the focused card is visible (VISIBLE_RANGE 0), no adjacency to check
+  // Card size + center-to-center spacing (bx) per tier. Two constraints, both
+  // checked against the coverflow's REAL available half-width (~417px on
+  // desktop: the outer wrapper caps at 1340px total, so the left column
+  // plateaus at 1340-362(sidebar)-24(gap)=954px no matter how wide the
+  // viewport gets beyond ~1384px — "wide" tier doesn't actually get more
+  // room than that, which is why its dims are much smaller than compact's
+  // despite showing more cards):
+  //  1. adjacent cards' bounding boxes must not touch, at peripheral scale .92
+  //  2. the outermost visible card must fit inside the available half-width
+  //   wide:    half(160)=80, half(160*.92)=73.6 -> bx>=153.6 (have 165);
+  //            outer edge 2*165+73.6=403.6 <= ~417 available
+  //   compact: half(250)=125, half(250*.92)=115 -> bx>=240 (have 260);
+  //            outer edge 260+115=375 <= ~417 available
+  //   mobile:  only the focused card is visible (VISIBLE_RANGE 0), neither constraint applies
   const CARD_DIMS: Record<"mobile" | "compact" | "wide", { w: number; h: number; bx: number }> = {
     mobile: { w: 196, h: 256, bx: 150 },
     compact: { w: 250, h: 330, bx: 260 },
-    wide: { w: 220, h: 300, bx: 240 },
+    wide: { w: 160, h: 220, bx: 165 },
   };
   // how many cards show on each side of the focused one: wide=5 total, compact=3, mobile=1
   const VISIBLE_RANGE = cardTier === "wide" ? 2 : cardTier === "compact" ? 1 : 0;
@@ -647,11 +687,52 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
   // other side of the (quality-sorted) list.
   const getOffset = (index: number) => index - activeIndex;
 
+  // Track-level shift applied to every card, on top of its own per-offset tx,
+  // so the track behaves like a normal clamped scroller instead of always
+  // centering the focused card:
+  //  - near the list's start/end (fewer than VISIBLE_RANGE real cards on that
+  //    side), pull the cluster so the outermost REAL card sits flush against
+  //    the available edge, reclaiming the space phantom neighbors would have
+  //    wasted — this is what removes the empty gap at index 0
+  //  - a safety net afterward clamps the (possibly already-shifted) cluster
+  //    against the measured container width unconditionally, so cards can't
+  //    render under the sidebar at ANY index, not just the ends
+  const EDGE_PADDING = 60; // clears the arrow buttons on each side
+  const trackShift = (() => {
+    const N = currentProducts.length;
+    if (N === 0 || coverflowWidth === 0) return 0;
+    const bx = CARD_DIMS[cardTier].bx;
+    const w = CARD_DIMS[cardTier].w;
+    const halfAt = (offset: number) => (offset === 0 ? w / 2 : (w * 0.92) / 2);
+
+    const firstOffset = Math.max(-VISIBLE_RANGE, -activeIndex);
+    const lastOffset = Math.min(VISIBLE_RANGE, N - 1 - activeIndex);
+    const naturalLeft = firstOffset * bx - halfAt(firstOffset);
+    const naturalRight = lastOffset * bx + halfAt(lastOffset);
+    const halfAvail = coverflowWidth / 2 - EDGE_PADDING;
+
+    let shift = 0;
+    if (activeIndex < VISIBLE_RANGE) shift = -halfAvail - naturalLeft;
+    else if (N - 1 - activeIndex < VISIBLE_RANGE) shift = halfAvail - naturalRight;
+
+    // safety net: clamp into the range of shifts that keep BOTH edges within
+    // bounds at once. A sequential "fix right then fix left" correction can
+    // oscillate when the cluster is wider than the container (each fix
+    // reintroduces the other side's overflow) — Math.max/min into a single
+    // precomputed range doesn't have that failure mode. If no shift can
+    // satisfy both edges (cluster genuinely wider than the container), fall
+    // back to un-shifted centering so at least the focused card stays centered.
+    const minShift = -halfAvail - naturalLeft;
+    const maxShift = halfAvail - naturalRight;
+    shift = minShift <= maxShift ? Math.max(minShift, Math.min(maxShift, shift)) : 0;
+    return shift;
+  })();
+
   // coverflow card transform. Peripheral cards (anything not focused, within
   // VISIBLE_RANGE) all get the same flat depth cue — scale .92, opacity .75,
   // a light ±12° tilt for character — instead of a steep per-distance falloff,
   // so a card two positions out reads exactly as well as one position out.
-  const getCardStyle = (o: number, tier: "mobile" | "compact" | "wide") => {
+  const getCardStyle = (o: number, tier: "mobile" | "compact" | "wide", shift: number) => {
     const a = Math.abs(o);
     const sign = o === 0 ? 0 : o < 0 ? -1 : 1;
     const bx = CARD_DIMS[tier].bx;
@@ -676,6 +757,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
       op = 0;
       z = 0;
     }
+    tx += shift;
     return {
       transform: `translateX(${tx}px) scale(${sc}) rotateY(${rot}deg)`,
       opacity: Math.max(0, op),
@@ -1372,6 +1454,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                   {/* COVERFLOW */}
                   {viewMode === "coverflow" && (
                     <div
+                      ref={coverflowRef}
                       className="rs-cf-container"
                       tabIndex={0}
                       role="region"
@@ -1411,7 +1494,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                       {currentProducts.map((p, idx) => {
                         const baseOffset = getOffset(idx);
                         const exactOffset = baseOffset + dragOffset / SLIDE;
-                        const cs = getCardStyle(exactOffset, cardTier);
+                        const cs = getCardStyle(exactOffset, cardTier, trackShift);
                         const isActive = Math.abs(exactOffset) < 0.5;
                         // keep cards near both the resting and the dragged-to center mounted,
                         // so the settle animation always has neighbors to ease in
@@ -1479,12 +1562,13 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                               <ImageBlock src={dv.img} h="100%" />
                             </div>
                             {isActive && (
-                              <label style={compareLabelStyle}>
+                              <label style={compareLabelStyle} onClick={(e) => e.stopPropagation()}>
                                 <input
                                   type="checkbox"
                                   checked={compareIds.includes(p.id)}
                                   disabled={!compareIds.includes(p.id) && compareIds.length >= 3}
                                   onChange={() => toggleCompare(p.id)}
+                                  onClick={(e) => e.stopPropagation()}
                                   style={compareCheckboxStyle}
                                 />
                                 Usporedi
@@ -1646,12 +1730,13 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                                 </span>
                               )}
                             </div>
-                            <label style={compareLabelStyle}>
+                            <label style={compareLabelStyle} onClick={(e) => e.stopPropagation()}>
                               <input
                                 type="checkbox"
                                 checked={compareIds.includes(p.id)}
                                 disabled={!compareIds.includes(p.id) && compareIds.length >= 3}
                                 onChange={() => toggleCompare(p.id)}
+                                onClick={(e) => e.stopPropagation()}
                                 style={compareCheckboxStyle}
                               />
                               Usporedi
@@ -2454,6 +2539,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
           onClear={clearCompare}
           onClose={() => setComparePanelClosed(true)}
           bottomOffset={isMobile ? 68 : 0}
+          limitHint={compareLimitHint}
         />
       )}
     </div>
@@ -2761,6 +2847,7 @@ function ComparePanel({
   onClear,
   onClose,
   bottomOffset,
+  limitHint,
 }: {
   products: ProductNode[];
   onRemove: (id: string) => void;
@@ -2769,6 +2856,10 @@ function ComparePanel({
   // keeps the panel clear of Builder's mobile sticky total bar, which is
   // also fixed to the bottom of the screen
   bottomOffset: number;
+  // briefly shown when a 4th checkbox is clicked — the cap itself was
+  // already silent (disabled, no visual change), so without this there was
+  // no feedback at all that anything happened
+  limitHint: boolean;
 }) {
   const rows = (() => {
     const labels: string[] = [];
@@ -2841,6 +2932,19 @@ function ComparePanel({
           </button>
         </div>
       </div>
+      {limitHint && (
+        <div
+          style={{
+            padding: "9px 20px",
+            fontSize: "12.5px",
+            color: "#ffb84d",
+            background: "rgba(255,184,77,.08)",
+            borderBottom: `1px solid ${COLORS.border}`,
+          }}
+        >
+          Možete usporediti najviše 3 proizvoda.
+        </div>
+      )}
       <div style={{ overflowX: "auto", padding: "0 20px 20px" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", minWidth: `${products.length * 160}px` }}>
           <thead>

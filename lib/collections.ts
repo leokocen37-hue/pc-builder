@@ -45,17 +45,27 @@ const QUERY = `
 `;
 
 // Vendor/family prefixes stripped from spec values so the card line fits —
-// "NVIDIA GeForce RTX3050" -> "RTX3050", "Intel Core i5 14600K" -> "i5 14600K".
-// Applied in sequence; each is a no-op if its prefix isn't present.
+// "NVIDIA GeForce RTX3050" -> "RTX 3050", "Intel Core i5 14600K" -> "i5 14600K".
+// Applied in sequence; each is a no-op if its prefix isn't present. The
+// generic "AMD " pattern runs after the more specific "AMD Radeon" one, so
+// it only fires on CPU values ("AMD Ryzen ...") and leaves "Ryzen" itself —
+// unlike "Core"/"GeForce"/"Radeon", "Ryzen" isn't a fused, self-explanatory
+// token without its number (there's no AMD equivalent of "i5"), so stripping
+// it would leave a bare, meaningless digit.
 const SPEC_VENDOR_PREFIXES = [
   /^NVIDIA\s+GeForce\s+/i,
   /^GeForce\s+/i,
   /^AMD\s+Radeon\s+/i,
   /^Radeon\s+/i,
   /^Intel\s+Core\s+/i,
+  /^AMD\s+/i,
 ];
 function shortenSpecValue(value: string): string {
-  return SPEC_VENDOR_PREFIXES.reduce((v, re) => v.replace(re, ""), value.trim());
+  const stripped = SPEC_VENDOR_PREFIXES.reduce((v, re) => v.replace(re, ""), value.trim());
+  // "Ultra7" -> "Ultra 7", "RTX3050" -> "RTX 3050" — but not "i5"/"i7"/"i9",
+  // Intel's own fused single-letter+number convention (only 2+ letter runs
+  // immediately before a digit get split)
+  return stripped.replace(/([A-Za-z]{2,})(\d)/g, "$1 $2");
 }
 
 // CPU/GPU/RAM card spec line for pre-built PCs — values only, "·"-joined.
