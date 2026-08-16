@@ -8,6 +8,14 @@ const COOKIE = "rs_site_unlock";
 export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
+  // No unlock token configured for this environment → the lock is simply off here.
+  // This lets a Vercel Preview deployment (a different branch, its own private URL)
+  // run fully open by leaving SITE_UNLOCK_TOKEN unset for the Preview environment,
+  // while Production (www.racunalo.hr) keeps it set and stays locked.
+  if (!process.env.SITE_UNLOCK_TOKEN) {
+    return NextResponse.next();
+  }
+
   // Always allow: the unlock API, Next internals, and static/asset files.
   if (
     pathname.startsWith("/api/unlock") ||
