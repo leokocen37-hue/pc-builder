@@ -3,19 +3,23 @@ import { CSSProperties, useEffect, useState, Suspense, useRef } from "react";
 import { useCart } from "@/lib/cart";
 import { ASSEMBLY_FEE } from "@/lib/pricing";
 import { SITE } from "@/lib/site-config";
+import { BUILD_PART_KEYS, BUILD_PART_LABEL, encodeBuild, decodeBuild, type BuildPartKey, type EncodedBuild } from "@/lib/build-share";
 import { useSearchParams, useRouter } from "next/navigation";
 
 // --- TYPES ---
 export type ProductNode = {
   id: string;
+  handle: string;
   title: string;
   tags: string[];
+  availableForSale?: boolean;
   featuredImage?: { url: string; altText?: string };
   variants: {
     edges: {
       node: {
         id: string;
         title: string;
+        availableForSale?: boolean;
         price: { amount: string };
         image?: { url: string; altText?: string };
       };
@@ -173,6 +177,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
   const [isDragging, setIsDragging] = useState(false);
   const [viewMode, setViewMode] = useState<"coverflow" | "grid">("coverflow");
   const [shareCopied, setShareCopied] = useState(false);
+  const [shareNotice, setShareNotice] = useState<string[]>([]);
   const [hoverBrand, setHoverBrand] = useState<string | null>(null);
   const [hoverCard, setHoverCard] = useState<number | null>(null);
   const [hoverReviewRow, setHoverReviewRow] = useState<string | null>(null);
@@ -301,33 +306,78 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // map of current selections, keyed the same way as BUILD_PART_KEYS — shared
+  // by the URL auto-sync effect below and by shareBuild()
+  const currentParts = (): Record<BuildPartKey, ProductNode | null> => ({
+    cpu, mb, ram, gpu, gpu2, ssd, ssd2, hdd, hdd2, case: pcCase, psu, cooler, os,
+  });
+
+  const buildEncodedBuild = (): EncodedBuild => {
+    const partsMap = currentParts();
+    const parts: EncodedBuild["parts"] = {};
+    for (const key of BUILD_PART_KEYS) {
+      const item = partsMap[key];
+      if (!item) continue;
+      const vTitle = item.selectedVariant?.title;
+      parts[key] = vTitle && vTitle !== "Default Title" ? [item.handle, vTitle] : [item.handle];
+    }
+    return brand ? { brand, parts } : { parts };
+  };
+
   useEffect(() => {
     if (isReviewStep) {
-      const params = new URLSearchParams();
-      if (brand) params.set("brand", brand);
-      if (cpu) params.set("cpu", cpu.selectedVariant?.id || cpu.id);
-      if (mb) params.set("mb", mb.selectedVariant?.id || mb.id);
-      if (ram) params.set("ram", ram.selectedVariant?.id || ram.id);
-      if (gpu) params.set("gpu", gpu.selectedVariant?.id || gpu.id);
-      if (gpu2) params.set("gpu2", gpu2.selectedVariant?.id || gpu2.id);
-      if (ssd) params.set("ssd", ssd.selectedVariant?.id || ssd.id);
-      if (ssd2) params.set("ssd2", ssd2.selectedVariant?.id || ssd2.id);
-      if (hdd) params.set("hdd", hdd.selectedVariant?.id || hdd.id);
-      if (hdd2) params.set("hdd2", hdd2.selectedVariant?.id || hdd2.id);
-      if (pcCase) params.set("case", pcCase.selectedVariant?.id || pcCase.id);
-      if (psu) params.set("psu", psu.selectedVariant?.id || psu.id);
-      if (cooler) params.set("cooler", cooler.selectedVariant?.id || cooler.id);
-      if (os) params.set("os", os.selectedVariant?.id || os.id);
-
-      router.replace(`?${params.toString()}`, { scroll: false });
+      const b = encodeBuild(buildEncodedBuild());
+      router.replace(`?b=${b}`, { scroll: false });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stepIndex, brand, cpu, mb, ram, gpu, gpu2, ssd, ssd2, hdd, hdd2, pcCase, psu, cooler, os, router, isReviewStep]);
 
   // products now arrive pre-fetched as a prop (server-rendered) — this effect
-  // only restores a shared build from the URL's search params, same as before.
+  // only restores a shared build (?b=<encoded>) from the URL. Parts are matched
+  // by Shopify handle (not id), so a link keeps working after a catalog refresh;
+  // anything missing or out of stock is skipped and named in shareNotice.
   useEffect(() => {
     if (initialized.current) return;
 
+    const encoded = searchParams.get("b");
+    const decoded = encoded ? decodeBuild(encoded) : null;
+
+    if (decoded) {
+      if (decoded.brand) setBrand(decoded.brand);
+
+      const SETTERS: Record<BuildPartKey, (p: ProductNode) => void> = {
+        cpu: setCpu, mb: setMb, ram: setRam, gpu: setGpu, gpu2: setGpu2,
+        ssd: setSsd, ssd2: setSsd2, hdd: setHdd, hdd2: setHdd2,
+        case: setPcCase, psu: setPsu, cooler: setCooler, os: setOs,
+      };
+
+      const changed: string[] = [];
+      for (const key of BUILD_PART_KEYS) {
+        const enc = decoded.parts[key];
+        if (!enc) continue;
+        const [handle, variantTitle] = enc;
+        const found = products.find((p) => p.handle === handle);
+        if (!found || found.availableForSale === false) {
+          changed.push(BUILD_PART_LABEL[key]);
+          continue;
+        }
+        const varNode = (variantTitle && found.variants.edges.find((v) => v.node.title === variantTitle)?.node)
+          || found.variants.edges.find((v) => v.node.availableForSale !== false)?.node
+          || found.variants.edges[0]?.node;
+        if (!varNode || varNode.availableForSale === false) {
+          changed.push(BUILD_PART_LABEL[key]);
+          continue;
+        }
+        SETTERS[key]({ ...found, selectedVariant: varNode });
+      }
+      if (changed.length > 0) setShareNotice(changed);
+      if (decoded.parts.cpu && decoded.parts.case) setStepIndex(STEPS.indexOf("review"));
+      initialized.current = true;
+      return;
+    }
+
+    // legacy per-param links (brand/cpu/mb/...), matched by variant id — kept
+    // only so older shared links (pre-dating the ?b= scheme) still restore.
     const loadParam = (param: string, setter: any) => {
       const val = searchParams.get(param);
       if (!val) return;
@@ -673,26 +723,12 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
     // Build the URL from the current configuration directly, so it always contains
     // the full build even if the address bar was cleaned (e.g. after clicking the
     // header "Konfigurator" link, which strips the query params).
-    const params = new URLSearchParams();
-    if (brand) params.set("brand", brand);
-    if (cpu) params.set("cpu", cpu.selectedVariant?.id || cpu.id);
-    if (mb) params.set("mb", mb.selectedVariant?.id || mb.id);
-    if (ram) params.set("ram", ram.selectedVariant?.id || ram.id);
-    if (gpu) params.set("gpu", gpu.selectedVariant?.id || gpu.id);
-    if (gpu2) params.set("gpu2", gpu2.selectedVariant?.id || gpu2.id);
-    if (ssd) params.set("ssd", ssd.selectedVariant?.id || ssd.id);
-    if (ssd2) params.set("ssd2", ssd2.selectedVariant?.id || ssd2.id);
-    if (hdd) params.set("hdd", hdd.selectedVariant?.id || hdd.id);
-    if (hdd2) params.set("hdd2", hdd2.selectedVariant?.id || hdd2.id);
-    if (pcCase) params.set("case", pcCase.selectedVariant?.id || pcCase.id);
-    if (psu) params.set("psu", psu.selectedVariant?.id || psu.id);
-    if (cooler) params.set("cooler", cooler.selectedVariant?.id || cooler.id);
-    if (os) params.set("os", os.selectedVariant?.id || os.id);
-
-    const url = `${window.location.origin}/konfigurator?${params.toString()}`;
+    const b = encodeBuild(buildEncodedBuild());
+    const query = `?b=${b}`;
+    const url = `${window.location.origin}/konfigurator${query}`;
     navigator.clipboard.writeText(url);
     // keep the address bar in sync too
-    window.history.replaceState(null, "", `/konfigurator?${params.toString()}`);
+    window.history.replaceState(null, "", `/konfigurator${query}`);
     setShareCopied(true);
     setTimeout(() => setShareCopied(false), 1800);
   };
@@ -972,6 +1008,40 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
         Konfigurator računala — sastavi PC po mjeri
       </h1>
       <div style={{ maxWidth: "1340px", margin: "0 auto" }}>
+        {/* a shared build link can point at parts that were deleted or went
+            out of stock since it was created — say so instead of silently
+            dropping them */}
+        {shareNotice.length > 0 && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "flex-start",
+              justifyContent: "space-between",
+              gap: "12px",
+              padding: "12px 15px",
+              marginBottom: "18px",
+              background: "rgba(255,184,77,.08)",
+              border: "1px solid rgba(255,184,77,.25)",
+              borderRadius: "10px",
+              fontSize: "12.5px",
+              color: "#ffb84d",
+              lineHeight: 1.5,
+            }}
+          >
+            <span>
+              Neke stavke iz podijeljene konfiguracije više nisu dostupne pa nisu uključene:{" "}
+              <b>{shareNotice.join(", ")}</b>.
+            </span>
+            <button
+              onClick={() => setShareNotice([])}
+              aria-label="Zatvori"
+              style={{ background: "none", border: "none", color: "#ffb84d", cursor: "pointer", fontSize: "15px", lineHeight: 1, flexShrink: 0 }}
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
         {/* === STEP RAIL === */}
         {renderRail()}
 
@@ -1891,7 +1961,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                     </div>
                   )}
                   <button onClick={shareBuild} style={ghostBtnStyle}>
-                    {shareCopied ? "✓ Link kopiran" : "🔗 Podijeli konfiguraciju"}
+                    {shareCopied ? "✓ Link kopiran" : "🔗 Kopiraj link"}
                   </button>
                 </>
               ) : (
