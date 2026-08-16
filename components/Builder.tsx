@@ -521,6 +521,29 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
       return priceB - priceA;
     });
 
+  // The data already guarantees at most one pcf.recommended / pcf.pick per
+  // component type, but cap it in code too and warn instead of silently
+  // showing badges on more than one card if that ever slips.
+  const capOneFlag = (flagKey: "pcfRecommended" | "pcfPick", label: string): string | null => {
+    const flagged = currentProducts.filter((p) => (p[flagKey]?.value || "").toLowerCase() === "true");
+    if (flagged.length > 1 && process.env.NODE_ENV !== "production") {
+      console.warn(`[Builder] more than one product flagged "${label}" for step "${currentStep}":`, flagged.map((p) => p.title));
+    }
+    return flagged[0]?.id ?? null;
+  };
+  const recommendedId = capOneFlag("pcfRecommended", "pcf.recommended");
+  const pickId = capOneFlag("pcfPick", "pcf.pick");
+
+  // pcf.quality (5 raw values) -> 3 display tiers. Unmapped/empty renders nothing.
+  const QUALITY_TIER_LABEL: Record<string, string> = {
+    average: "ULAZNI",
+    good: "ULAZNI",
+    "very good": "SREDNJI",
+    excellent: "VRHUNSKI",
+    flagship: "VRHUNSKI",
+  };
+  const tierLabel = (quality?: string): string | null => QUALITY_TIER_LABEL[(quality || "").toLowerCase()] || null;
+
   const activeProduct = currentProducts[activeIndex];
 
   useEffect(() => {
@@ -1332,14 +1355,17 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                               transition: cs.transition,
                             }}
                           >
-                            {(p.pcfRecommended?.value || "").toLowerCase() === "true" && (
-                              <span title="Naša preporuka" style={{ position: "absolute", top: "10px", right: "10px", zIndex: 5, width: "26px", height: "26px", borderRadius: "50%", background: "linear-gradient(135deg,#ffd36b,#ffb84d)", color: "#0a0a0a", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px", boxShadow: "0 4px 12px rgba(255,184,77,.5)" }}>★</span>
+                            {p.id === recommendedId && (
+                              <span style={{ ...cardBadgeBase, top: "10px", background: COLORS.accent, color: "#fff" }}>PREPORUČUJEMO</span>
+                            )}
+                            {p.id === pickId && (
+                              <span style={{ ...cardBadgeBase, top: p.id === recommendedId ? "34px" : "10px", background: "transparent", border: `1px solid ${COLORS.accent}`, color: COLORS.accent }}>NAJBOLJI OMJER</span>
                             )}
                             {isActive && (
                               <button
                                 onClick={(e) => openDetails(p, e)}
                                 style={{
-                                  position: "absolute", top: "10px", left: "10px", zIndex: 5,
+                                  position: "absolute", top: "10px", right: "10px", zIndex: 5,
                                   padding: "4px 9px", borderRadius: "7px", border: `1px solid ${COLORS.border}`,
                                   background: "rgba(7,8,12,.72)", backdropFilter: "blur(4px)", color: COLORS.textMain,
                                   fontFamily: MONO, fontSize: "9.5px", fontWeight: 600, letterSpacing: ".5px",
@@ -1353,6 +1379,11 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                               <ImageBlock src={dv.img} h="100%" />
                             </div>
                             <div style={{ marginTop: "auto", paddingTop: "13px", pointerEvents: "none" }}>
+                              {tierLabel(p.pcfQuality?.value) && (
+                                <div style={{ fontFamily: MONO, fontSize: "9.5px", fontWeight: 600, letterSpacing: "1px", color: COLORS.textMain, opacity: 0.6, marginBottom: "3px" }}>
+                                  {tierLabel(p.pcfQuality?.value)}
+                                </div>
+                              )}
                               <div style={{ fontWeight: 600, fontSize: "16px", lineHeight: 1.25 }}>{p.title}</div>
                               {specText && (
                                 <div style={{ fontFamily: MONO, fontSize: "11px", color: COLORS.textMuted, marginTop: "6px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -1433,13 +1464,16 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                                 : "none",
                             }}
                           >
-                            {(p.pcfRecommended?.value || "").toLowerCase() === "true" && (
-                              <span title="Naša preporuka" style={{ position: "absolute", top: "10px", right: "10px", zIndex: 5, width: "26px", height: "26px", borderRadius: "50%", background: "linear-gradient(135deg,#ffd36b,#ffb84d)", color: "#0a0a0a", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px", boxShadow: "0 4px 12px rgba(255,184,77,.5)" }}>★</span>
+                            {p.id === recommendedId && (
+                              <span style={{ ...cardBadgeBase, top: "10px", background: COLORS.accent, color: "#fff" }}>PREPORUČUJEMO</span>
+                            )}
+                            {p.id === pickId && (
+                              <span style={{ ...cardBadgeBase, top: p.id === recommendedId ? "34px" : "10px", background: "transparent", border: `1px solid ${COLORS.accent}`, color: COLORS.accent }}>NAJBOLJI OMJER</span>
                             )}
                             <button
                               onClick={(e) => openDetails(p, e)}
                               style={{
-                                position: "absolute", top: "10px", left: "10px", zIndex: 5,
+                                position: "absolute", top: "10px", right: "10px", zIndex: 5,
                                 padding: "4px 9px", borderRadius: "7px", border: `1px solid ${COLORS.border}`,
                                 background: "rgba(7,8,12,.72)", backdropFilter: "blur(4px)", color: COLORS.textMain,
                                 fontFamily: MONO, fontSize: "9.5px", fontWeight: 600, letterSpacing: ".5px",
@@ -1470,6 +1504,11 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                                 </span>
                               )}
                             </div>
+                            {tierLabel(p.pcfQuality?.value) && (
+                              <div style={{ fontFamily: MONO, fontSize: "9px", fontWeight: 600, letterSpacing: "1px", color: COLORS.textMain, opacity: 0.6, marginBottom: "3px" }}>
+                                {tierLabel(p.pcfQuality?.value)}
+                              </div>
+                            )}
                             <div style={{ fontWeight: 600, fontSize: "14px", lineHeight: 1.25 }}>{p.title}</div>
                             {specText && (
                               <div style={{ fontFamily: MONO, fontSize: "10.5px", color: COLORS.textMuted, marginTop: "5px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -1534,11 +1573,6 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                           })()}
                           {currentStep === "case" && (
                             <span style={{ fontFamily: MONO, fontSize: "11px", color: COLORS.textMuted, letterSpacing: ".5px" }}>Stvar osobnog ukusa — sva su kvalitetna</span>
-                          )}
-                          {(activeProduct?.pcfRecommended?.value || "").toLowerCase() === "true" && (
-                            <span style={{ fontFamily: MONO, fontSize: "10px", fontWeight: 700, letterSpacing: "1px", color: "#0a0a0a", background: "linear-gradient(90deg,#ffd36b,#ffb84d)", padding: "4px 9px", borderRadius: "20px" }}>
-                              ★ NAŠA PREPORUKA
-                            </span>
                           )}
                         </div>
                       </div>
@@ -2560,6 +2594,22 @@ const primaryBtnStyle: CSSProperties = {
   background: "linear-gradient(135deg,#d81fd8,#a020f0)",
   boxShadow: "0 12px 30px -10px rgba(216,31,216,.7)",
   transition: "filter .2s",
+};
+
+// D1: shared shape for the two card badges — fill/border set per-badge at
+// the call site (solid magenta for "recommended", outline for "pick")
+const cardBadgeBase: CSSProperties = {
+  position: "absolute",
+  left: "10px",
+  zIndex: 6,
+  padding: "4px 9px",
+  borderRadius: "7px",
+  fontFamily: MONO,
+  fontSize: "9px",
+  fontWeight: 700,
+  letterSpacing: ".5px",
+  textTransform: "uppercase",
+  whiteSpace: "nowrap",
 };
 
 const arrowStyle: CSSProperties = {
