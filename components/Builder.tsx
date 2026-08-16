@@ -161,6 +161,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const initialized = useRef(false);
+  const railRef = useRef<HTMLDivElement>(null);
   const movedRef = useRef(false);
   const capturedRef = useRef(false);
   const downIdxRef = useRef<number | null>(null);
@@ -305,6 +306,12 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  // keep the active step pill in view on the horizontally-scrolling rail
+  useEffect(() => {
+    const el = railRef.current?.querySelector<HTMLElement>(`[data-step-idx="${stepIndex}"]`);
+    el?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+  }, [stepIndex]);
 
   // map of current selections, keyed the same way as BUILD_PART_KEYS — shared
   // by the URL auto-sync effect below and by shareBuild()
@@ -903,62 +910,69 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
 
   // --- STEP RAIL ---
   const renderRail = () => (
-    <div
-      style={{
-        display: "flex",
-        gap: "7px",
-        overflowX: "auto",
-        paddingBottom: "10px",
-        marginBottom: "22px",
-      }}
-    >
-      {STEPS.map((s, i) => {
-        const state = i < stepIndex ? "done" : i === stepIndex ? "active" : "todo";
-        const clickable = i <= stepIndex;
-        return (
-          <div
-            key={s}
-            onClick={() => {
-              if (clickable) setStepIndex(i);
-            }}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              flexShrink: 0,
-              padding: "8px 14px 8px 8px",
-              borderRadius: "10px",
-              fontSize: "12px",
-              fontWeight: 600,
-              whiteSpace: "nowrap",
-              cursor: clickable ? "pointer" : "default",
-              transition: "all .2s",
-              background: state === "active" ? "rgba(216,31,216,.13)" : "transparent",
-              border: state === "active" ? "1px solid rgba(216,31,216,.5)" : `1px solid ${COLORS.border}`,
-              color: state === "active" ? "#fff" : state === "done" ? "#9499ac" : "#4a4f63",
-            }}
-          >
-            <span
+    <div className="rs-rail-wrap">
+      <div
+        ref={railRef}
+        className="rs-rail"
+        style={{
+          display: "flex",
+          gap: "7px",
+          overflowX: "auto",
+          paddingBottom: "10px",
+          marginBottom: "22px",
+          scrollSnapType: "x proximity",
+        }}
+      >
+        {STEPS.map((s, i) => {
+          const state = i < stepIndex ? "done" : i === stepIndex ? "active" : "todo";
+          const clickable = i <= stepIndex;
+          return (
+            <div
+              key={s}
+              data-step-idx={i}
+              onClick={() => {
+                if (clickable) setStepIndex(i);
+              }}
               style={{
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "center",
-                width: "20px",
-                height: "20px",
-                borderRadius: "50%",
-                fontFamily: MONO,
-                fontSize: "10px",
+                gap: "8px",
+                flexShrink: 0,
+                padding: "8px 14px 8px 8px",
+                borderRadius: "10px",
+                fontSize: "12px",
                 fontWeight: 600,
-                background: state === "active" ? COLORS.accent : "rgba(255,255,255,.06)",
+                whiteSpace: "nowrap",
+                cursor: clickable ? "pointer" : "default",
+                transition: "all .2s",
+                scrollSnapAlign: "center",
+                background: state === "active" ? "rgba(216,31,216,.13)" : "transparent",
+                border: state === "active" ? "1px solid rgba(216,31,216,.5)" : `1px solid ${COLORS.border}`,
                 color: state === "active" ? "#fff" : state === "done" ? "#9499ac" : "#4a4f63",
               }}
             >
-              {state === "done" ? "✓" : String(i + 1).padStart(2, "0")}
-            </span>
-            <span>{RAIL_LABELS[s]}</span>
-          </div>
-        );
-      })}
+              <span
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "20px",
+                  height: "20px",
+                  borderRadius: "50%",
+                  fontFamily: MONO,
+                  fontSize: "10px",
+                  fontWeight: 600,
+                  background: state === "active" ? COLORS.accent : "rgba(255,255,255,.06)",
+                  color: state === "active" ? "#fff" : state === "done" ? "#9499ac" : "#4a4f63",
+                }}
+              >
+                {state === "done" ? "✓" : String(i + 1).padStart(2, "0")}
+              </span>
+              <span>{RAIL_LABELS[s]}</span>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 

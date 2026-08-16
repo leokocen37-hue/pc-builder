@@ -67,11 +67,17 @@
 
 /* hero */
 .rs-hero{position:relative;min-height:92vh;min-height:92svh;display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden;background:#0a0816 center/cover no-repeat;background-image:url('/hero-banner.jpg')}
-.rs-hero::before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(58% 60% at 50% 50%,rgba(7,8,12,.66),rgba(7,8,12,.28) 55%,transparent 80%),linear-gradient(180deg,rgba(7,8,12,.5) 0%,transparent 20%,transparent 64%,rgba(7,8,12,.95) 100%)}
+.rs-hero::before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(56% 62% at 50% 50%,rgba(7,8,12,.8),rgba(7,8,12,.4) 55%,transparent 80%),linear-gradient(180deg,rgba(7,8,12,.5) 0%,transparent 20%,transparent 64%,rgba(7,8,12,.95) 100%)}
 .rs-hero-inner{position:relative;z-index:2;max-width:780px;padding:0 24px}
 .rs-hero-inner .rs-kicker{display:inline-block}
+/* desktop eyebrow — white, not the accent magenta (illegible on the hero's
+   light-purple region); the "·" separator keeps the accent color */
+.rs-hero-inner .rs-hero-kicker{color:rgba(255,255,255,.7)}
+.rs-hero-kicker-dot{color:var(--accent)}
 .rs-hero-inner h1{font-size:clamp(46px,8.5vw,104px);line-height:.9;font-weight:700;letter-spacing:-2.5px;text-transform:uppercase;margin:16px 0 0;text-shadow:0 8px 50px rgba(0,0,0,.6)}
-.rs-hero-inner h1 em{font-style:normal;display:block;color:transparent;-webkit-text-stroke:1.6px #fff}
+/* solid gradient fill (matches the primary buttons) instead of an outline —
+   color is the fallback for browsers without background-clip:text support */
+.rs-hero-inner h1 em{font-style:normal;display:block;color:var(--accent);background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
 .rs-hero-inner p{margin:24px auto 32px;color:#ece8f3;font-size:17px;line-height:1.6;max-width:470px;text-shadow:0 2px 16px rgba(0,0,0,.65)}
 .rs-hero-cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
 .rs-stats{display:flex;gap:42px;margin-top:44px;justify-content:center}
@@ -86,9 +92,9 @@
   .rs-hero{background-position:74% center;min-height:74vh;min-height:74svh;padding:0 24px}
   .rs-hero::before{background:radial-gradient(65% 60% at 50% 55%,rgba(7,8,12,.72),rgba(7,8,12,.4) 55%,transparent 82%),linear-gradient(180deg,rgba(7,8,12,.6) 0%,rgba(7,8,12,.25) 22%,rgba(7,8,12,.35) 60%,rgba(7,8,12,.96) 100%)}
   .rs-hero-inner{padding:0}
-  .rs-hero-inner .rs-kicker{color:#fff;font-size:10px;text-shadow:0 2px 10px rgba(0,0,0,.85),0 0 16px rgba(0,0,0,.6)}
+  .rs-hero-inner .rs-hero-kicker{color:#fff;font-size:10px;text-shadow:0 2px 10px rgba(0,0,0,.85),0 0 16px rgba(0,0,0,.6)}
+  .rs-hero-kicker-dot{text-shadow:none}
   .rs-hero-inner h1{font-size:28px;line-height:1.08;letter-spacing:-.3px;margin-top:12px;text-shadow:0 3px 18px rgba(0,0,0,.85),0 1px 4px rgba(0,0,0,.9)}
-  .rs-hero-inner h1 em{-webkit-text-stroke:1px #fff}
   .rs-hero-inner p{font-size:13.5px;margin:14px auto 22px;line-height:1.5}
   .rs-hero-cta{flex-direction:column;align-items:stretch;gap:10px}
   .rs-hero-cta .rs-btn{justify-content:center;padding:13px 22px;font-size:13.5px}
@@ -475,11 +481,15 @@
 .rs-marquee::after{right:0;background:linear-gradient(270deg,#050609,transparent)}
 .rs-marquee-track{display:flex;width:max-content;animation:rs-marquee-scroll 45s linear infinite}
 .rs-marquee:hover .rs-marquee-track{animation-play-state:paused}
-.rs-marquee-item{flex:0 0 auto;width:130px;height:52px;margin:0 8px;display:flex;align-items:center;justify-content:center}
-.rs-marquee-item img{max-width:100%;max-height:100%;object-fit:contain;opacity:.55;filter:grayscale(100%);transition:opacity .25s,filter .25s}
-.rs-marquee-item img:hover{opacity:1;filter:grayscale(0)}
+/* fixed HEIGHT on the image itself (not a max-height inside a fixed box) so every
+   logo renders at the same optical size regardless of its own aspect ratio —
+   a wide/short wordmark and a tall/narrow mark previously ended up very
+   differently sized because object-fit:contain only bounds within the box */
+.rs-marquee-item{flex:0 0 auto;height:52px;margin:0 8px;display:flex;align-items:center;justify-content:center}
+.rs-marquee-item img{height:32px;width:auto;max-width:160px;object-fit:contain;opacity:.6;filter:grayscale(1) brightness(1.8);transition:opacity .25s,filter .25s}
+.rs-marquee-item img:hover{opacity:1;filter:none}
 @keyframes rs-marquee-scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-@media(max-width:600px){.rs-marquee-item{width:100px;height:42px;margin:0 6px}}
+@media(max-width:600px){.rs-marquee-item{height:42px;margin:0 6px}.rs-marquee-item img{height:24px}}
 
 /* category tile background image + head CTA */
 .rs-cat{position:relative;overflow:hidden}
@@ -531,4 +541,13 @@
 .rs-card-fin .rs-card-body h4{letter-spacing:-.2px}
 /* mono, techy price with glowing tick */
 .rs-card-fin .rs-price{font-family:'IBM Plex Mono',monospace;font-size:15.5px;font-weight:600;letter-spacing:-.3px;display:inline-flex;align-items:center;gap:8px}
+
+/* configurator step rail — hide the native scrollbar (still scrollable),
+   fade the edges so it still reads as scrollable without one */
+.rs-rail-wrap{position:relative}
+.rs-rail-wrap::before,.rs-rail-wrap::after{content:"";position:absolute;top:0;bottom:10px;width:28px;z-index:2;pointer-events:none}
+.rs-rail-wrap::before{left:0;background:linear-gradient(90deg,#07080c,transparent)}
+.rs-rail-wrap::after{right:0;background:linear-gradient(270deg,#07080c,transparent)}
+.rs-rail{scrollbar-width:none;-ms-overflow-style:none}
+.rs-rail::-webkit-scrollbar{display:none}
 .rs-card-fin .rs-price::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);flex:0 0 auto}

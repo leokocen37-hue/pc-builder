@@ -17,7 +17,7 @@ export default function HomeClient({ gaming, stanice }: { gaming: ProductNode[];
       {/* hero */}
       <section className="rs-hero">
         <div className="rs-hero-inner">
-          <div className="rs-kicker">Custom PC · ručno sastavljeno u Hrvatskoj</div>
+          <div className="rs-kicker rs-hero-kicker">Custom PC <span className="rs-hero-kicker-dot">·</span> ručno sastavljeno u Hrvatskoj</div>
           <h1>Tvoje računalo,<em>tvoja pravila</em></h1>
           <p>Složi svaku komponentu uz provjeru kompatibilnosti u stvarnom vremenu — ili odaberi gotovu, testiranu konfiguraciju.</p>
           <div className="rs-hero-cta">
