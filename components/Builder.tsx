@@ -166,6 +166,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
   const capturedRef = useRef(false);
   const downIdxRef = useRef<number | null>(null);
   const dragStartTimeRef = useRef(0);
+  const wheelLockRef = useRef(false);
 
   // --- STATE ---
   const [stepIndex, setStepIndex] = useState(0);
@@ -286,6 +287,16 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
     const el = railRef.current?.querySelector<HTMLElement>(`[data-step-idx="${stepIndex}"]`);
     el?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
   }, [stepIndex]);
+
+  // E6: grid/carousel preference persists across steps (already true, same
+  // state the whole session) and across visits, via localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem("rs_view_mode");
+    if (saved === "coverflow" || saved === "grid") setViewMode(saved);
+  }, []);
+  useEffect(() => {
+    localStorage.setItem("rs_view_mode", viewMode);
+  }, [viewMode]);
 
   // detail drawer: keep content populated during the close animation, and
   // return focus to whichever "Detalji" button opened it once it's shut
@@ -507,18 +518,16 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
       return false;
     })
     .sort((a, b) => {
-      // recommended picks float to the front (shown first)
-      const recA = (a.pcfRecommended?.value || "").toLowerCase() === "true" ? 1 : 0;
-      const recB = (b.pcfRecommended?.value || "").toLowerCase() === "true" ? 1 : 0;
-      if (recB !== recA) return recB - recA;
-
-      const wA = getQualityScore(a.pcfQuality?.value);
-      const wB = getQualityScore(b.pcfQuality?.value);
-      if (wB !== wA) return wB - wA;
+      // ascending by the full 5-level pcf.quality scale, so moving right in the
+      // carousel always means moving up — no-quality (score 0) sorts last, not
+      // first, so it's treated as beyond "flagship" rather than before "average"
+      const wA = getQualityScore(a.pcfQuality?.value) || 999;
+      const wB = getQualityScore(b.pcfQuality?.value) || 999;
+      if (wA !== wB) return wA - wB;
 
       const priceA = Number(a.variants.edges[0]?.node.price.amount || 0);
       const priceB = Number(b.variants.edges[0]?.node.price.amount || 0);
-      return priceB - priceA;
+      return priceA - priceB;
     });
 
   // The data already guarantees at most one pcf.recommended / pcf.pick per
@@ -587,7 +596,9 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
   };
 
   // --- COVERFLOW GEOMETRY ---
-  const SLIDE = isMobile ? 150 : 300;
+  // desktop shows 5 cards (focused + 2 each side); mobile shows 1 (focused only)
+  const VISIBLE_RANGE = isMobile ? 0 : 2;
+  const SLIDE = isMobile ? 150 : 230;
 
   const getOffset = (index: number) => {
     const N = currentProducts.length;
@@ -597,29 +608,32 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
     return offset;
   };
 
-  // 3D coverflow card transform (from the new design)
+  // coverflow card transform. Peripheral cards (anything not focused, within
+  // VISIBLE_RANGE) all get the same flat depth cue — scale .92, opacity .75,
+  // a light ±12° tilt for character — instead of a steep per-distance falloff,
+  // so a card two positions out reads exactly as well as one position out.
   const getCardStyle = (o: number, mobile: boolean) => {
     const a = Math.abs(o);
     const sign = o === 0 ? 0 : o < 0 ? -1 : 1;
-    const bx = mobile ? 150 : 300;
+    const bx = mobile ? 150 : 230;
     let tx: number, sc: number, rot: number, op: number, z: number;
-    if (a <= 1) {
-      tx = o * bx;
-      sc = 1 - 0.16 * a;
-      rot = -o * 28;
-      op = 1 - 0.52 * a;
+    if (a === 0) {
+      tx = 0;
+      sc = 1;
+      rot = 0;
+      op = 1;
+      z = 30;
+    } else if (a <= VISIBLE_RANGE) {
+      tx = sign * a * bx;
+      sc = 0.92;
+      rot = -sign * 12;
+      op = 0.75;
       z = 30 - Math.round(a * 8);
-    } else if (a <= 2) {
-      const f = a - 1;
-      tx = sign * (bx + f * (mobile ? 80 : 175));
-      sc = 0.84 - 0.14 * f;
-      rot = -sign * (28 + 12 * f);
-      op = 0.48 - 0.42 * f;
-      z = Math.round(20 - 10 * f);
     } else {
-      tx = sign * (bx + (mobile ? 80 : 175) + (a - 2) * 120);
+      const edge = Math.max(VISIBLE_RANGE, 1);
+      tx = sign * (edge * bx + (a - VISIBLE_RANGE) * 120);
       sc = 0.6;
-      rot = -sign * 42;
+      rot = -sign * 12;
       op = 0;
       z = 0;
     }
@@ -631,6 +645,34 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
         ? "none"
         : "transform .55s cubic-bezier(.22,.61,.36,1), opacity .45s ease, box-shadow .3s ease",
     };
+  };
+
+  const goPrev = () => setActiveIndex((i) => (i - 1 + currentProducts.length) % currentProducts.length);
+  const goNext = () => setActiveIndex((i) => (i + 1) % currentProducts.length);
+
+  // arrow keys navigate whenever the carousel itself (or something inside it,
+  // e.g. an arrow button) has focus
+  const handleCarouselKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      goPrev();
+    } else if (e.key === "ArrowRight") {
+      e.preventDefault();
+      goNext();
+    }
+  };
+
+  // trackpad horizontal swipe — throttled, since a single gesture fires many
+  // wheel events and would otherwise blow through several cards at once
+  const handleCarouselWheel = (e: React.WheelEvent) => {
+    if (Math.abs(e.deltaX) <= Math.abs(e.deltaY) || Math.abs(e.deltaX) < 24) return;
+    if (wheelLockRef.current) return;
+    wheelLockRef.current = true;
+    if (e.deltaX > 0) goNext();
+    else goPrev();
+    setTimeout(() => {
+      wheelLockRef.current = false;
+    }, 350);
   };
 
   // --- INTERACTION & DRAG PHYSICS (robust on touch + mouse) ---
@@ -1282,6 +1324,12 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                   {/* COVERFLOW */}
                   {viewMode === "coverflow" && (
                     <div
+                      className="rs-cf-container"
+                      tabIndex={0}
+                      role="region"
+                      aria-label="Karusel komponenti — lijeva/desna strelica za navigaciju"
+                      onKeyDown={handleCarouselKeyDown}
+                      onWheel={handleCarouselWheel}
                       onPointerDown={handlePointerDown}
                       onPointerMove={handlePointerMove}
                       onPointerUp={handlePointerUp}
@@ -1302,10 +1350,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                         marginBottom: "4px",
                       } as CSSProperties}
                     >
-                      <button
-                        onClick={() => setActiveIndex((activeIndex - 1 + currentProducts.length) % currentProducts.length)}
-                        style={{ ...arrowStyle, left: "2px" }}
-                      >
+                      <button className="rs-cf-arrow" onClick={goPrev} style={{ ...arrowStyle, left: "2px" }}>
                         ‹
                       </button>
 
@@ -1327,7 +1372,17 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                         return (
                           <div
                             key={p.id}
+                            className="rs-cf-card"
                             data-cardidx={idx}
+                            tabIndex={0}
+                            role="button"
+                            aria-label={`${p.title}${isActive ? " — u fokusu, pritisnite Enter za odabir" : ""}`}
+                            onKeyDown={(e) => {
+                              if (e.key !== "Enter" && e.key !== " ") return;
+                              e.preventDefault();
+                              if (isActive) handleSelection(currentStep, p);
+                              else setActiveIndex(idx);
+                            }}
                             onMouseEnter={() => setHoverCard(idx)}
                             onMouseLeave={() => setHoverCard((c) => (c === idx ? null : c))}
                             style={{
@@ -1416,12 +1471,45 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                         );
                       })}
 
-                      <button
-                        onClick={() => setActiveIndex((activeIndex + 1) % currentProducts.length)}
-                        style={{ ...arrowStyle, right: "2px" }}
-                      >
+                      <button className="rs-cf-arrow" onClick={goNext} style={{ ...arrowStyle, right: "2px" }}>
                         ›
                       </button>
+                    </div>
+                  )}
+
+                  {viewMode === "coverflow" && currentProducts.length > 0 && (
+                    <div style={{ textAlign: "center", fontFamily: MONO, fontSize: "12px", color: COLORS.textMuted, letterSpacing: "1px", marginBottom: "18px" }}>
+                      {activeIndex + 1} / {currentProducts.length}
+                    </div>
+                  )}
+
+                  {/* E2: tier axis — hidden entirely unless at least one product
+                      in this step has a quality value; the marker itself only
+                      shows when the focused product specifically has one */}
+                  {viewMode === "coverflow" && currentProducts.some((p) => getQualityScore(p.pcfQuality?.value) > 0) && (
+                    <div style={{ maxWidth: "360px", margin: "0 auto 28px", padding: "0 12px" }}>
+                      <div style={{ position: "relative", height: "3px", borderRadius: "2px", background: "rgba(255,255,255,.1)" }}>
+                        {getQualityScore(activeProduct?.pcfQuality?.value) > 0 && (
+                          <div
+                            style={{
+                              position: "absolute",
+                              top: "50%",
+                              left: `${((getQualityScore(activeProduct?.pcfQuality?.value) - 1) / 4) * 100}%`,
+                              width: "10px",
+                              height: "10px",
+                              borderRadius: "50%",
+                              background: COLORS.accent,
+                              boxShadow: `0 0 10px ${COLORS.accent}`,
+                              transform: "translate(-50%,-50%)",
+                              transition: "left .3s ease",
+                            }}
+                          />
+                        )}
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginTop: "9px", fontFamily: MONO, fontSize: "9.5px", letterSpacing: "1px", color: COLORS.textFaint }}>
+                        <span>ULAZNI</span>
+                        <span>VRHUNSKI</span>
+                      </div>
                     </div>
                   )}
 

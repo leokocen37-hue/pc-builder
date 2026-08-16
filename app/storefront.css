@@ -545,6 +545,11 @@
 /* mono, techy price with glowing tick */
 .rs-card-fin .rs-price{font-family:'IBM Plex Mono',monospace;font-size:15.5px;font-weight:600;letter-spacing:-.3px;display:inline-flex;align-items:center;gap:8px}
 
+/* configurator carousel — visible keyboard focus on cards + arrows (E5).
+   Builder.tsx is otherwise all inline styles, but :focus-visible can't be. */
+.rs-cf-card:focus-visible,.rs-cf-arrow:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.rs-cf-container:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;border-radius:18px}
+
 /* configurator step rail — hide the native scrollbar (still scrollable),
    fade the edges so it still reads as scrollable without one */
 .rs-rail-wrap{position:relative}
