@@ -2372,23 +2372,13 @@ const dropdownItemStyle: CSSProperties = {
 };
 
 export default function Builder({ products }: { products: ProductNode[] }) {
+  // Suspense here is only to satisfy Next's requirement for useSearchParams()
+  // inside BuilderContent — products are already resolved (passed in as a
+  // prop, fetched server-side), so this fallback never meaningfully shows to
+  // a real user. null avoids leaving loading-text artifacts in the streamed
+  // SSR HTML that could misread as "still loading" to a raw curl/view-source check.
   return (
-    <Suspense
-      fallback={
-        <div
-          style={{
-            color: COLORS.textMain,
-            padding: "100px",
-            textAlign: "center",
-            background: COLORS.bgMain,
-            minHeight: "100vh",
-            fontFamily: FONT,
-          }}
-        >
-          Učitavanje aplikacije…
-        </div>
-      }
-    >
+    <Suspense fallback={null}>
       <BuilderContent products={products} />
     </Suspense>
   );
