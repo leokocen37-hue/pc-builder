@@ -54,8 +54,7 @@ type Step =
   | "motherboard"
   | "ram"
   | "gpu"
-  | "ssd"
-  | "hdd"
+  | "pohrana"
   | "case"
   | "psu"
   | "cooler"
@@ -68,8 +67,7 @@ const STEPS: Step[] = [
   "motherboard",
   "ram",
   "gpu",
-  "ssd",
-  "hdd",
+  "pohrana",
   "case",
   "psu",
   "cooler",
@@ -77,14 +75,20 @@ const STEPS: Step[] = [
   "review",
 ];
 
+// Steps whose primary choice can be skipped outright (not just "has an
+// optional secondary slot", like Pohrana does) — marked lighter in the rail
+// with an "opcionalno" tag. Hladnjak stays required: nothing in the data
+// says whether a CPU ships with a stock cooler, so there's no safe way to
+// tell when skipping it would actually leave the build without one.
+const OPTIONAL_STEPS: Step[] = ["os"];
+
 const STEP_LABELS: Record<Step, string> = {
   brand: "Platforma",
   cpu: "Procesor",
   motherboard: "Matična ploča",
   ram: "Radna memorija",
   gpu: "Grafička kartica",
-  ssd: "Glavni SSD",
-  hdd: "Tvrdi disk (Opcionalno)",
+  pohrana: "Pohrana",
   case: "Kućište",
   psu: "Napajanje",
   cooler: "Hladnjak procesora",
@@ -99,8 +103,7 @@ const RAIL_LABELS: Record<Step, string> = {
   motherboard: "Matična",
   ram: "Memorija",
   gpu: "Grafička",
-  ssd: "SSD",
-  hdd: "HDD",
+  pohrana: "Pohrana",
   case: "Kućište",
   psu: "Napajanje",
   cooler: "Hladnjak",
@@ -132,8 +135,7 @@ const STEP_HELP: Record<string, string> = {
   motherboard: "Matična ploča povezuje sve komponente. Sve ponuđene odgovaraju vašem procesoru. Skuplje ploče nude više priključaka (USB, M.2), bolje napajanje za overclock i jače WiFi — za većinu korisnika i povoljnija ploča radi jednako pouzdano." + REC_LINE,
   ram: "RAM je radna memorija — kratkoročni prostor u kojem računalo drži ono na čemu trenutno radi. Najvažnije je koliko GB ima: 16 GB je dovoljno za većinu, 32 GB za igre i posao, a 64 GB+ za profesionalni rad poput montaže ili 3D-a. Brojevi uz to govore o brzini: MHz (npr. 6000) — veći broj je brži; i CL (npr. CL30) — kod njega je manji broj bolji. Sve opcije su provjereno kompatibilne s vašom pločom." + REC_LINE,
   gpu: "Grafička kartica crta sliku i najviše utječe na igre. Varijante dijele isti čip, a razlikuju se po proizvođaču i hlađenju." + REC_LINE,
-  ssd: "SSD je glavni disk — tu se instaliraju Windows, igre i programi, i on čini računalo brzim pri pokretanju. Birate kapacitet: što je veći broj (TB), to više stane. Svi su brzi (NVMe), razlika je uglavnom u prostoru." + REC_LINE,
-  hdd: "Tvrdi disk (HDD) je jeftin dodatni prostor za pohranu — filmovi, slike, sigurnosne kopije. Veći broj TB = više prostora. Sporiji je od SSD-a pa služi za arhivu, ne za igre." + REC_LINE,
+  pohrana: "SSD je glavni disk — tu se instaliraju Windows, igre i programi, i on čini računalo brzim pri pokretanju. Birate kapacitet: što je veći broj (TB), to više stane. Svi su brzi (NVMe), razlika je uglavnom u prostoru. Tvrdi disk (HDD) je jeftin dodatni prostor za pohranu — filmovi, slike, sigurnosne kopije — sporiji je od SSD-a pa služi za arhivu, ne za igre. Potpuno je opcionalan." + REC_LINE,
   psu: "Napajanje opskrbljuje cijelo računalo strujom. Veći broj W (vati) znači više snage u rezervi; konfigurator već pazi da bude dovoljno za vaše komponente. Kvalitetnije napajanje (80+ Gold i više) radi tiše i pouzdanije." + REC_LINE,
   cooler: "Hladnjak drži procesor na sigurnoj temperaturi da radi mirno i tiho. Sve ponuđene opcije pristaju na vaš procesor i kućište. Zračni hladnjaci su jednostavni i pouzdani, a vodeni (AIO) tiši uz jače procesore." + REC_LINE,
   case: "Kućište je najviše stvar osobnog ukusa — sva su kvalitetna i vaše odabrane komponente stanu u svako od njih. Razlikuju se po izgledu, protoku zraka i staklenim stranicama. Odaberite ono koje vam se najviše sviđa." + REC_LINE,
@@ -210,6 +212,9 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
   const [os, setOs] = useState<ProductNode | null>(null);
 
   const [addingExtra, setAddingExtra] = useState<"gpu2" | "ssd2" | "hdd2" | null>(null);
+  // F1: Pohrana step's optional secondary (HDD) slot — separate from the
+  // review screen's "add a 2nd drive" upsells above (addingExtra)
+  const [pohranaPickerOpen, setPohranaPickerOpen] = useState(false);
 
   const currentStep = STEPS[stepIndex];
   const isReviewStep = currentStep === "review";
@@ -460,11 +465,10 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
       if (currentStep === "gpu") {
         return type === "gpu";
       }
-      if (currentStep === "ssd") {
+      if (currentStep === "pohrana") {
+        // the step's main carousel is the required "Glavni disk (SSD)" slot;
+        // the optional secondary (HDD) slot has its own small picker below it
         return type === "ssd";
-      }
-      if (currentStep === "hdd") {
-        return type === "hdd";
       }
       if (currentStep === "case") {
         if (type !== "case") return false;
@@ -756,8 +760,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
     } else if (type === "motherboard") setMb(productWithVariant);
     else if (type === "ram") setRam(productWithVariant);
     else if (type === "gpu") setGpu(productWithVariant);
-    else if (type === "ssd") setSsd(productWithVariant);
-    else if (type === "hdd") setHdd(productWithVariant);
+    else if (type === "pohrana") setSsd(productWithVariant);
     else if (type === "case") setPcCase(productWithVariant);
     else if (type === "psu") setPsu(productWithVariant);
     else if (type === "cooler") setCooler(productWithVariant);
@@ -768,7 +771,6 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
   };
 
   const handleSkip = () => {
-    if (currentStep === "hdd") setHdd(null);
     if (currentStep === "os") setOs(null);
     setStepIndex((prev) => prev + 1);
     setActiveIndex(0);
@@ -924,7 +926,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
     { step: "motherboard", item: mb },
     { step: "ram", item: ram },
     { step: "gpu", item: gpu },
-    { step: "ssd", item: ssd },
+    { step: "pohrana", item: ssd },
     { step: "case", item: pcCase },
     { step: "psu", item: psu },
     { step: "cooler", item: cooler },
@@ -957,7 +959,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
   // that step to swap them; the three upsell slots (no dedicated step) get an
   // inline remove instead, since re-adding is how you'd "change" those anyway.
   const KEY_TO_STEP: Partial<Record<string, Step>> = {
-    cpu: "cpu", gpu: "gpu", mb: "motherboard", ram: "ram", ssd: "ssd", hdd: "hdd",
+    cpu: "cpu", gpu: "gpu", mb: "motherboard", ram: "ram", ssd: "pohrana", hdd: "pohrana",
     case: "case", psu: "psu", cooler: "cooler", os: "os",
   };
   const KEY_TO_REMOVE: Partial<Record<string, () => void>> = {
@@ -995,6 +997,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
         {STEPS.map((s, i) => {
           const state = i < stepIndex ? "done" : i === stepIndex ? "active" : "todo";
           const clickable = i <= stepIndex;
+          const optional = OPTIONAL_STEPS.includes(s);
           return (
             <div
               key={s}
@@ -1015,8 +1018,9 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                 cursor: clickable ? "pointer" : "default",
                 transition: "all .2s",
                 scrollSnapAlign: "center",
+                opacity: optional && state !== "active" ? 0.7 : 1,
                 background: state === "active" ? "rgba(216,31,216,.13)" : "transparent",
-                border: state === "active" ? "1px solid rgba(216,31,216,.5)" : `1px solid ${COLORS.border}`,
+                border: state === "active" ? "1px solid rgba(216,31,216,.5)" : optional ? `1px dashed ${COLORS.border}` : `1px solid ${COLORS.border}`,
                 color: state === "active" ? "#fff" : state === "done" ? "#9499ac" : "#4a4f63",
               }}
             >
@@ -1037,7 +1041,14 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
               >
                 {state === "done" ? "✓" : String(i + 1).padStart(2, "0")}
               </span>
-              <span>{RAIL_LABELS[s]}</span>
+              <span>
+                {RAIL_LABELS[s]}
+                {optional && (
+                  <span style={{ display: "block", fontSize: "9px", fontWeight: 500, letterSpacing: ".5px", color: COLORS.textFaint, marginTop: "1px" }}>
+                    opcionalno
+                  </span>
+                )}
+              </span>
             </div>
           );
         })}
@@ -1149,7 +1160,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                     Ispočetka
                   </button>
                 </div>
-                {["hdd", "os"].includes(currentStep) && (
+                {currentStep === "os" && (
                   <button onClick={handleSkip} style={{ ...navBtnStyle, color: COLORS.textMuted }}>
                     Preskoči ⏭
                   </button>
@@ -1612,6 +1623,87 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                     </div>
                   )}
 
+                  {/* F1: Pohrana's optional secondary (HDD) slot — shown inline
+                      next to the required SSD carousel above, not hidden behind
+                      a separate step. Defaults to an explicit "no drive" choice
+                      rather than an ambiguous unselected state. */}
+                  {currentStep === "pohrana" && (
+                    <div style={{ marginTop: "26px", paddingTop: "22px", borderTop: `1px solid ${COLORS.border}` }}>
+                      <div style={{ fontWeight: 600, fontSize: "15px" }}>Dodatni disk</div>
+                      <div style={{ color: COLORS.textMuted, fontSize: "12.5px", marginTop: "2px", marginBottom: "14px" }}>
+                        Opcionalno — dodatni prostor za pohranu (HDD)
+                      </div>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", alignItems: "center" }}>
+                        <button
+                          onClick={() => {
+                            setHdd(null);
+                            setPohranaPickerOpen(false);
+                          }}
+                          style={{
+                            padding: "9px 14px",
+                            borderRadius: "10px",
+                            fontSize: "13px",
+                            fontWeight: 600,
+                            cursor: "pointer",
+                            fontFamily: FONT,
+                            background: !hdd ? "rgba(216,31,216,.13)" : "transparent",
+                            border: !hdd ? "1px solid rgba(216,31,216,.5)" : `1px solid ${COLORS.border}`,
+                            color: !hdd ? "#fff" : COLORS.textMuted,
+                          }}
+                        >
+                          ✕ Bez dodatnog diska
+                        </button>
+                        {hdd && (
+                          <span
+                            style={{
+                              padding: "9px 14px",
+                              borderRadius: "10px",
+                              fontSize: "13px",
+                              fontWeight: 600,
+                              fontFamily: FONT,
+                              background: "rgba(216,31,216,.13)",
+                              border: "1px solid rgba(216,31,216,.5)",
+                              color: "#fff",
+                            }}
+                          >
+                            {hdd.title} · €{(hdd.selectedVariant?.price?.amount ?? hdd.variants.edges[0]?.node.price.amount)}
+                          </span>
+                        )}
+                        <button
+                          onClick={() => setPohranaPickerOpen((o) => !o)}
+                          style={{ ...navBtnStyle, padding: "9px 14px", fontSize: "13px" }}
+                        >
+                          {pohranaPickerOpen ? "Odustani" : hdd ? "Promijeni disk" : "+ Dodaj disk"}
+                        </button>
+                      </div>
+                      {pohranaPickerOpen && (
+                        <div style={{ ...dropdownStyle, marginTop: "10px" }}>
+                          {products
+                            .filter((p) => p.pcfType?.value === "hdd")
+                            .map((p) => (
+                              <div key={p.id}>
+                                {p.variants.edges.map((v) => (
+                                  <button
+                                    key={v.node.id}
+                                    style={dropdownItemStyle}
+                                    onClick={() => {
+                                      setHdd({ ...p, selectedVariant: v.node });
+                                      setPohranaPickerOpen(false);
+                                    }}
+                                  >
+                                    <span>
+                                      {p.title} {v.node.title !== "Default Title" ? `(${v.node.title})` : ""}
+                                    </span>
+                                    <span style={{ color: COLORS.accent, fontWeight: "bold" }}>€{v.node.price.amount}</span>
+                                  </button>
+                                ))}
+                              </div>
+                            ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* CONFIRM BAR */}
                   <div
                     style={{
@@ -1750,7 +1842,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                     <button onClick={() => setStepIndex(stepIndex - 1)} style={navBtnStyle}>
                       ← Nazad
                     </button>
-                    {["hdd", "os"].includes(currentStep) && (
+                    {currentStep === "os" && (
                       <button onClick={handleSkip} style={navBtnStyle}>
                         Preskoči ⏭
                       </button>
