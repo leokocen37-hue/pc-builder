@@ -172,12 +172,17 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
   const capturedRef = useRef(false);
   const downIdxRef = useRef<number | null>(null);
   const dragStartTimeRef = useRef(0);
+  // gesture direction lock: a touch that starts on the carousel but moves
+  // mostly vertically must fall through to the page's own scroll, not get
+  // eaten by the horizontal-swipe logic below
+  const startYRef = useRef<number | null>(null);
+  const gestureDirRef = useRef<"none" | "horizontal" | "vertical">("none");
   const wheelLockRef = useRef(false);
   // steps whose initial carousel focus has already been seeded — see the
   // render-time block below currentProducts
   const seededStepsRef = useRef<Set<Step>>(new Set());
-  // last stepIndex the mobile rail's expand/collapse state was resolved for —
-  // see the render-time collapse block below currentStep
+  // last stepIndex compare mode was reset for — see the render-time block
+  // below currentStep
   const lastRailStepRef = useRef<number | null>(null);
   const isProgrammaticScrollRef = useRef(false);
 
@@ -194,10 +199,6 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [viewMode, setViewMode] = useState<"coverflow" | "grid">("coverflow");
-  // B (round 2): mobile swaps the 11-pill rail for a one-line progress
-  // summary; tapping it reveals the full pill rail underneath, collapsed
-  // again on the next step change so it doesn't silently stay expanded
-  const [mobileRailExpanded, setMobileRailExpanded] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const [shareNotice, setShareNotice] = useState<string[]>([]);
   const [hoverBrand, setHoverBrand] = useState<string | null>(null);
@@ -248,18 +249,15 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
   const isReviewStep = currentStep === "review";
   const isBrandStep = currentStep === "brand";
 
-  // B (round 2): collapse the mobile rail back down on every step change,
-  // so expanding it to jump somewhere doesn't leave it expanded afterward.
-  // D (round 2): also drop out of compare mode on step change — compareIds
-  // are product ids from the PREVIOUS step's list, which don't exist in the
-  // new step's currentProducts, so leaving them set would either show an
-  // empty comparison sheet or (worse) silently compare unrelated products
-  // if an id ever collided. Render-time adjustment (not an effect) — same
-  // pattern as the carousel seeding below, so it's already correct on the
-  // first committed render.
+  // D (round 2): drop out of compare mode on step change — compareIds are
+  // product ids from the PREVIOUS step's list, which don't exist in the new
+  // step's currentProducts, so leaving them set would either show an empty
+  // comparison sheet or (worse) silently compare unrelated products if an
+  // id ever collided. Render-time adjustment (not an effect) — same pattern
+  // as the carousel seeding below, so it's already correct on the first
+  // committed render.
   if (lastRailStepRef.current !== stepIndex) {
     lastRailStepRef.current = stepIndex;
-    if (mobileRailExpanded) setMobileRailExpanded(false);
     if (compareMode) setCompareMode(false);
     if (compareIds.length > 0) setCompareIds([]);
     if (comparePanelClosed) setComparePanelClosed(false);
@@ -776,11 +774,13 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
   // clipping does that job, not scale/opacity.
   //
   // bx (center-to-center offset, in vw) derived from: focused card spans
-  // [11vw, 89vw] (centered, 78vw wide); want the neighbor's near edge at
-  // 92vw so exactly 8vw of it shows before the viewport edge at 100vw:
-  //   neighborNearEdge = 50 + bx - 39 = 92  =>  bx = 81
-  const MOBILE_CARD_VW = 0.78;
-  const MOBILE_BX_VW = 0.81;
+  // [15vw, 85vw] (centered, 70vw wide); want the neighbor's near edge at
+  // 86vw so 14vw of it shows before the viewport edge at 100vw — round 2
+  // follow-up: narrower card (was 78vw/8vw peek) so the neighbor is
+  // actually recognizable as "there's more here", not just a sliver:
+  //   neighborNearEdge = 50 + bx - 35 = 86  =>  bx = 71
+  const MOBILE_CARD_VW = 0.70;
+  const MOBILE_BX_VW = 0.71;
   const SLIDE = isMobile ? viewportWidth * MOBILE_BX_VW : 300;
 
   // Non-circular: offset is a plain difference, no wraparound — kept from the
@@ -797,20 +797,22 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
     if (mobile) {
       const bx = viewportWidth * MOBILE_BX_VW;
       let tx: number, op: number;
-      if (a === 0) {
-        tx = 0;
-        op = 1;
-      } else if (a === 1) {
-        tx = sign * bx;
-        op = 0.5; // peek affordance, not a fully-readable neighbor
+      // continuous in `a` (not discrete a===0/a===1 buckets) so the card
+      // tracks the finger 1:1 while dragging — the old discrete version only
+      // matched its exact rest positions, so mid-drag every card fell into
+      // the "else" branch (fully offscreen, opacity 0) and only snapped into
+      // place on release, which read as a flash/non-seamless swipe
+      if (a <= 1) {
+        tx = o * bx;
+        op = 1 - 0.5 * a; // 1 at rest -> 0.5 once fully in the next slot (peek)
       } else {
-        tx = sign * (bx + (a - 1) * bx); // pushed well past the clipped edge
-        op = 0;
+        tx = sign * (bx + (a - 1) * bx);
+        op = Math.max(0, 0.5 - 0.5 * (a - 1));
       }
       return {
         transform: `translateX(${tx}px)`, // no scale/rotate on mobile — flat peek, not a 3D tilt
         opacity: op,
-        zIndex: 30 - a,
+        zIndex: 30 - Math.round(a * 8),
         transition: isDragging ? "none" : "transform .4s cubic-bezier(.22,.61,.36,1), opacity .3s ease",
       };
     }
@@ -887,7 +889,12 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
     downIdxRef.current = cardEl ? Number(cardEl.dataset.cardidx) : null;
     movedRef.current = false;
     dragStartTimeRef.current = performance.now();
-    // capture immediately so the browser can never steal the gesture for scrolling (fixes mobile)
+    // direction not decided yet — see handlePointerMove. Not deciding on
+    // touchAction alone: touch-action:pan-y lets the page scroll natively
+    // for a vertical gesture, but without this lock a diagonal-ish touch
+    // could still register X movement and get misread as a horizontal swipe.
+    gestureDirRef.current = "none";
+    startYRef.current = e.clientY;
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
       capturedRef.current = true;
@@ -897,13 +904,24 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
     setIsDragging(false);
   };
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (startX === null) return;
-    const diff = e.clientX - startX;
-    if (Math.abs(diff) > 6) {
-      movedRef.current = true;
-      setIsDragging(true);
-      setDragOffset(diff);
+    if (startX === null || startYRef.current === null) return;
+    if (gestureDirRef.current === "vertical") return; // page is scrolling, not us
+    const diffX = e.clientX - startX;
+    const diffY = e.clientY - startYRef.current;
+    if (gestureDirRef.current === "none") {
+      if (Math.abs(diffX) < 6 && Math.abs(diffY) < 6) return; // still undecided
+      gestureDirRef.current = Math.abs(diffX) > Math.abs(diffY) ? "horizontal" : "vertical";
+      if (gestureDirRef.current === "vertical") {
+        // mark the gesture as "moved" so pointerup treats it as a non-tap
+        // no-op instead of accidentally selecting/toggling the card under
+        // the finger — the page itself has already started scrolling
+        movedRef.current = true;
+        return;
+      }
     }
+    movedRef.current = true;
+    setIsDragging(true);
+    setDragOffset(diffX);
   };
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
     if (capturedRef.current) {
@@ -912,6 +930,8 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
       } catch {}
       capturedRef.current = false;
     }
+    gestureDirRef.current = "none";
+    startYRef.current = null;
     if (startX === null) return;
     const N = currentProducts.length;
     if (movedRef.current) {
@@ -1182,60 +1202,30 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
     padding: isMobile ? "22px 14px 120px" : "26px 22px 64px",
     overflowX: "hidden",
     fontFamily: FONT,
-    background:
-      "radial-gradient(1100px 560px at 72% -14%,rgba(216,31,216,.11),transparent 62%)," + COLORS.bgMain,
+    // D (round 2) follow-up: compare mode swaps the ambient glow from
+    // magenta to green — a whole-page cue (not just the per-card rings) so
+    // it's unambiguous whether you're in this mode, transitioned instead of
+    // snapped so it reads as a state change rather than a flicker
+    background: compareMode
+      ? "radial-gradient(1100px 560px at 72% -14%,rgba(34,197,94,.11),transparent 62%)," + COLORS.bgMain
+      : "radial-gradient(1100px 560px at 72% -14%,rgba(216,31,216,.11),transparent 62%)," + COLORS.bgMain,
+    transition: "background .3s ease",
   };
 
   // --- STEP RAIL ---
-  // B (round 2): the 11-pill rail costs ~40px+ of vertical budget mobile
-  // can't spare above the fold. Mobile instead shows a one-line "Korak
-  // N/11 · Label" summary with a thin progress bar; tapping it expands the
-  // full pill rail underneath (collapsed again on the next step change, see
-  // the render-time block near currentStep above). Desktop is unchanged —
-  // the pill rail always renders, this toggle never applies to it.
+  // B (round 2) replaced this with a compact "Korak N/11" line on mobile to
+  // save vertical space, but that removed the ability to jump straight to
+  // e.g. Motherboard from anywhere — reverted back to the always-visible
+  // scrollable pill rail on mobile too, same as desktop. The smaller
+  // platform cards and hidden announce bar/eyebrow/subtitle from that same
+  // phase are kept; only the rail itself goes back to the original.
   const renderRail = () => (
     <div className="rs-rail-wrap">
-      {isMobile && (
-        <button
-          onClick={() => setMobileRailExpanded((v) => !v)}
-          aria-expanded={mobileRailExpanded}
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "6px",
-            width: "100%",
-            background: "none",
-            border: "none",
-            padding: "0",
-            marginBottom: mobileRailExpanded ? "12px" : "18px",
-            cursor: "pointer",
-            textAlign: "left",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontFamily: MONO, fontSize: "11.5px", letterSpacing: ".5px", color: COLORS.textMuted }}>
-            <span>
-              Korak {stepIndex + 1}/{STEPS.length} · {RAIL_LABELS[currentStep]}
-            </span>
-            <span style={{ color: COLORS.textFaint, fontSize: "13px" }}>{mobileRailExpanded ? "▲" : "▼"}</span>
-          </div>
-          <div style={{ height: "3px", borderRadius: "2px", background: "rgba(255,255,255,.08)", overflow: "hidden" }}>
-            <div
-              style={{
-                height: "100%",
-                width: `${((stepIndex + 1) / STEPS.length) * 100}%`,
-                background: COLORS.accent,
-                borderRadius: "2px",
-                transition: "width .3s ease",
-              }}
-            />
-          </div>
-        </button>
-      )}
       <div
         ref={railRef}
         className="rs-rail"
         style={{
-          display: isMobile && !mobileRailExpanded ? "none" : "flex",
+          display: "flex",
           gap: "7px",
           overflowX: "auto",
           paddingBottom: "10px",
@@ -1628,6 +1618,32 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                     </div>
                   </div>
 
+                  {/* D (round 2) follow-up: an explicit, unmissable "you are
+                      in this mode" banner — the background tint and per-card
+                      green rings alone weren't enough of a signal on their own */}
+                  {compareMode && (
+                    <div
+                      style={{
+                        marginBottom: "20px",
+                        padding: "11px 16px",
+                        background: "rgba(34,197,94,.1)",
+                        border: "1px solid rgba(34,197,94,.35)",
+                        borderRadius: "12px",
+                        fontSize: "13px",
+                        color: "#4ade80",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                      }}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                        <rect x="3" y="4" width="7" height="16" rx="1.5" />
+                        <rect x="14" y="4" width="7" height="16" rx="1.5" />
+                      </svg>
+                      Način usporedbe — dodirni komponente za usporedbu umjesto odabira.
+                    </div>
+                  )}
+
                   {currentStep === "os" && (
                     <div
                       style={{
@@ -1676,7 +1692,11 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        touchAction: "none",
+                        // pan-y (not none): lets the page scroll natively when a
+                        // touch on the carousel turns out to be vertical — "none"
+                        // blocked ALL native touch handling here, which is what
+                        // made the page feel stuck/unscrollable under this card
+                        touchAction: "pan-y",
                         userSelect: "none",
                         WebkitUserSelect: "none",
                         WebkitTouchCallout: "none",
@@ -2778,7 +2798,14 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
           products={currentProducts.filter((p) => compareIds.includes(p.id))}
           onRemove={toggleCompare}
           onClear={clearCompare}
-          onClose={() => setComparePanelClosed(true)}
+          // round 2 follow-up: closing the sheet now exits compare mode
+          // entirely (not just hides the sheet) — leaving cards selectable
+          // with no visible sheet was exactly the "am I still in this mode?"
+          // confusion being fixed here
+          onClose={() => {
+            setCompareMode(false);
+            clearCompare();
+          }}
           bottomOffset={isMobile ? 68 : 0}
           limitHint={compareLimitHint}
         />
@@ -3348,32 +3375,31 @@ const cardBadgeBase: CSSProperties = {
   whiteSpace: "nowrap",
 };
 
-// "Detalji" trigger, top-right of a card — a brighter border + stronger
-// backing than the old version, which used the barely-visible COLORS.border
-// (7% white) and read as a label rather than a clickable control over a
-// dark product photo.
-// E (round 2): icon only, no text — a circular 44x44 hit target instead of
-// a text pill, so it can't collide with the badges sharing the top of the
-// card on narrow screens
+// "Detalji" trigger, top-right of a card.
+// E (round 2): icon only, no text.
+// Round 2 follow-up: the ⓘ glyph already draws its own circle — wrapping it
+// in a second circular border+background read as two nested circles.
+// Dropped the button's own chrome entirely; a drop-shadow on the glyph
+// keeps it legible over both light and dark product photos instead. The
+// hit box stays comfortably tappable even though the visible icon is
+// smaller than the old plate.
 const cardDetailsBtnStyle: CSSProperties = {
   position: "absolute",
-  top: "10px",
-  right: "10px",
+  top: "8px",
+  right: "8px",
   zIndex: 5,
-  width: "44px",
-  height: "44px",
+  width: "38px",
+  height: "38px",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  borderRadius: "50%",
-  border: "1px solid rgba(255,255,255,.4)",
-  background: "rgba(7,8,12,.82)",
-  backdropFilter: "blur(6px)",
+  border: "none",
+  background: "none",
   color: "#fff",
-  fontSize: "17px",
+  fontSize: "18px",
   lineHeight: 1,
   cursor: "pointer",
-  boxShadow: "0 2px 8px rgba(0,0,0,.4)",
+  filter: "drop-shadow(0 1px 3px rgba(0,0,0,.9)) drop-shadow(0 0 5px rgba(0,0,0,.7))",
 };
 
 const arrowStyle: CSSProperties = {

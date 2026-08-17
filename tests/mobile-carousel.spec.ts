@@ -95,5 +95,15 @@ for (const viewport of [
       // the summary label itself must sit above the sticky bar's top edge
       expect(summaryBox!.y + summaryBox!.height).toBeLessThanOrEqual(stickyBox.y + 2);
     });
+
+    // Round 2 follow-up: the pill rail was briefly replaced with a
+    // tap-to-expand summary line on mobile to save vertical space, but that
+    // removed the ability to jump straight to e.g. Matična ploča from
+    // anywhere — reverted to always-visible, same as desktop.
+    test("step rail is always visible on mobile, not collapsed behind a tap", async ({ page }) => {
+      await enterRamStep(page);
+      await expect(page.locator(".rs-rail")).toBeVisible();
+      await expect(page.getByText("Matična", { exact: false }).first()).toBeVisible();
+    });
   });
 }
