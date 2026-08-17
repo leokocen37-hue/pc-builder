@@ -105,5 +105,36 @@ for (const viewport of [
       await expect(page.locator(".rs-rail")).toBeVisible();
       await expect(page.getByText("Matična", { exact: false }).first()).toBeVisible();
     });
+
+    // Round 2 follow-up: mobile neighbor cards used to render at the exact
+    // same size as the focused card (just translated), which read as a
+    // same-size crop rather than a smaller "ghost" card the way desktop's
+    // scaled/rotated neighbors do. They should now be visibly smaller.
+    test("neighbor cards are visibly smaller than the focused card, like desktop's ghosts", async ({ page }) => {
+      await enterRamStep(page);
+      const activeBox = await page.locator('[data-testid="active-card"]').first().boundingBox();
+      expect(activeBox).not.toBeNull();
+      const neighbor = page.locator('[data-cardidx]').filter({ hasNot: page.locator('[data-testid="active-card"]') }).first();
+      const neighborBox = await neighbor.boundingBox();
+      expect(neighborBox).not.toBeNull();
+      if (neighborBox!.width > 0) {
+        expect(neighborBox!.width).toBeLessThan(activeBox!.width * 0.95);
+      }
+    });
   });
 }
+
+// Round 2 follow-up: the step rail's scroll-fade masks are a "there's more
+// to scroll" cue — showing the left one while already at the very start
+// (the default view) is both semantically wrong and visually dulls the
+// first pill's own number badge sitting right under it.
+test.describe("step rail scroll-fade mask", () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test("left mask is hidden at rest (nothing to scroll back to)", async ({ page }) => {
+    await page.goto("/konfigurator");
+    const acceptBtn = page.getByText("Prihvaćam");
+    if (await acceptBtn.isVisible().catch(() => false)) await acceptBtn.click();
+    await expect(page.locator(".rs-rail-wrap")).toHaveClass(/rail-at-start/);
+  });
+});

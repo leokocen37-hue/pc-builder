@@ -341,6 +341,30 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
   // scrollIntoView call in the file, so it's where that kind of feedback
   // would first appear if a future change ever wires scroll position back
   // into state here.
+  // the left/right scroll-fade masks are a "there's more to scroll" cue —
+  // showing the left one while already scrolled all the way to the start
+  // (the common default view) doesn't just look wrong semantically, it
+  // visually dulls the first pill's own number badge sitting right under
+  // it. Toggle plain DOM classes instead of React state so this doesn't
+  // trigger a re-render on every scroll tick.
+  useEffect(() => {
+    const el = railRef.current;
+    const wrap = el?.parentElement;
+    if (!el || !wrap) return;
+    const updateEdges = () => {
+      wrap.classList.toggle("rail-at-start", el.scrollLeft <= 1);
+      wrap.classList.toggle("rail-at-end", el.scrollLeft >= el.scrollWidth - el.clientWidth - 1);
+    };
+    updateEdges();
+    el.addEventListener("scroll", updateEdges, { passive: true });
+    const ro = new ResizeObserver(updateEdges);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener("scroll", updateEdges);
+      ro.disconnect();
+    };
+  }, []);
+
   useEffect(() => {
     const el = railRef.current?.querySelector<HTMLElement>(`[data-step-idx="${stepIndex}"]`);
     if (!el) return;
@@ -764,23 +788,28 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
   // the ±2 ghosts down to .06 opacity are deliberate depth, not a bug).
   // SIGNED OFF — untouched below for the mobile=false branch.
   //
-  // Mobile (round 2, A): a completely different, mobile-only geometry, not a
-  // scaled-down desktop one — the old shared bx/scale formula put neighbor
-  // cards at ~84% scale only 150px away, which overlapped the focused card's
-  // text on a 390px screen. Now: one card at 78vw, centered; the immediate
-  // neighbor peeks ~8vw at the very edge as a scroll affordance, and the
-  // TRACK is clipped with overflow:hidden (see the container style below) so
-  // nothing can ever visually reach the focused card's content box —
-  // clipping does that job, not scale/opacity.
+  // Mobile (round 2, A, then a follow-up redesign): started as a completely
+  // flat geometry (no scale/rotate, hard overflow:hidden clipping to
+  // guarantee no overlap) because the old *shared* bx/scale formula put
+  // neighbor cards at ~84% scale only 150px away, which overlapped the
+  // focused card's text on a 390px screen. That flat version worked but
+  // looked wrong two ways: neighbors read as same-size crops instead of
+  // smaller "ghost" cards, and hard-clipping the track cut off the focused
+  // card's own glow/shadow along with it. Redesigned as a properly
+  // scaled-down mirror of the desktop formula instead: smaller card,
+  // neighbors visibly scaled+tilted like desktop's ghosts, and enough real
+  // geometric clearance that overlap is prevented by distance/scale (same
+  // as desktop) rather than by clipping — so overflow can go back to
+  // visible and the glow renders normally.
   //
   // bx (center-to-center offset, in vw) derived from: focused card spans
-  // [15vw, 85vw] (centered, 70vw wide); want the neighbor's near edge at
-  // 86vw so 14vw of it shows before the viewport edge at 100vw — round 2
-  // follow-up: narrower card (was 78vw/8vw peek) so the neighbor is
-  // actually recognizable as "there's more here", not just a sliver:
-  //   neighborNearEdge = 50 + bx - 35 = 86  =>  bx = 71
-  const MOBILE_CARD_VW = 0.70;
-  const MOBILE_BX_VW = 0.71;
+  // [20vw, 80vw] (centered, 60vw wide); neighbor scales to 82% at a=1, so
+  // its own half-width is 60*0.82/2=24.6vw; want its near edge comfortably
+  // past the focused card's right edge (80vw) with a real gap, landing its
+  // visible peek around 13-14vw of it before the viewport edge:
+  //   neighborNearEdge = 50 + bx - 24.6 ≈ 86  =>  bx ≈ 61
+  const MOBILE_CARD_VW = 0.60;
+  const MOBILE_BX_VW = 0.61;
   const SLIDE = isMobile ? viewportWidth * MOBILE_BX_VW : 300;
 
   // Non-circular: offset is a plain difference, no wraparound — kept from the
@@ -796,21 +825,28 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
 
     if (mobile) {
       const bx = viewportWidth * MOBILE_BX_VW;
-      let tx: number, op: number;
+      let tx: number, sc: number, rot: number, op: number;
       // continuous in `a` (not discrete a===0/a===1 buckets) so the card
-      // tracks the finger 1:1 while dragging — the old discrete version only
-      // matched its exact rest positions, so mid-drag every card fell into
-      // the "else" branch (fully offscreen, opacity 0) and only snapped into
-      // place on release, which read as a flash/non-seamless swipe
+      // tracks the finger 1:1 while dragging — an earlier discrete version
+      // only matched its exact rest positions, so mid-drag every card fell
+      // into the "else" branch (fully offscreen, opacity 0) and only
+      // snapped into place on release, which read as a flash/non-seamless
+      // swipe. Same shape as desktop's a<=1/else split, milder magnitudes
+      // (less scale drop, less tilt) to suit the smaller screen.
       if (a <= 1) {
         tx = o * bx;
-        op = 1 - 0.5 * a; // 1 at rest -> 0.5 once fully in the next slot (peek)
+        sc = 1 - 0.18 * a;
+        rot = -o * 20;
+        op = 1 - 0.45 * a;
       } else {
-        tx = sign * (bx + (a - 1) * bx);
-        op = Math.max(0, 0.5 - 0.5 * (a - 1));
+        const f = a - 1;
+        tx = sign * (bx + f * bx * 0.75);
+        sc = Math.max(0.55, 0.82 - 0.2 * f);
+        rot = -sign * (20 + 10 * f);
+        op = Math.max(0, 0.55 - 0.55 * f);
       }
       return {
-        transform: `translateX(${tx}px)`, // no scale/rotate on mobile — flat peek, not a 3D tilt
+        transform: `translateX(${tx}px) scale(${sc}) rotateY(${rot}deg)`,
         opacity: op,
         zIndex: 30 - Math.round(a * 8),
         transition: isDragging ? "none" : "transform .4s cubic-bezier(.22,.61,.36,1), opacity .3s ease",
@@ -1680,14 +1716,21 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                       onDragStart={(e) => e.preventDefault()}
                       style={{
                         position: "relative",
-                        // A (round 2): 310px min card height + room for the
-                        // "KLIKNI ZA ODABIR" caption (~41px) below it, doubled
-                        // since the card is vertically centered in this box
-                        height: isMobile ? "400px" : "440px",
-                        // clip peeking neighbors at the mobile card's edges — on
-                        // desktop the ghosts intentionally spill past the
-                        // container, signed off, untouched
-                        overflow: isMobile ? "hidden" : "visible",
+                        // A (round 2) + follow-up: mobile card shrunk to a
+                        // ~275px min-height, so 340px covers it plus the
+                        // "KLIKNI ZA ODABIR" caption below and some room for
+                        // the card's own glow to render without visually
+                        // feeling cramped against the next section
+                        height: isMobile ? "340px" : "440px",
+                        // round 2 follow-up: was overflow:hidden on mobile to
+                        // guarantee neighbors couldn't overlap the focused
+                        // card — that also clipped the focused card's own
+                        // glow/shadow at the container edge. Neighbors are
+                        // now kept clear of the focused card by scale+distance
+                        // instead (same approach desktop already used without
+                        // ever needing to clip), so this can go back to
+                        // visible on both.
+                        overflow: "visible",
                         perspective: "1700px",
                         display: "flex",
                         alignItems: "center",
@@ -1726,16 +1769,18 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
 
                         const dv = displayVariant(p, idx === activeIndex);
                         const specText = cardSpecLine(p.pcfSpecs?.value);
-                        // A (round 2): mobile width is viewport-relative (78vw, matching
-                        // MOBILE_CARD_VW above) and height is a MIN not a fixed value —
-                        // budget below is padding(28) + image(160) + text pad(13) +
-                        // 2-line title(40) + spec line(21) + price(36) = 298, rounded up
-                        // to 310 for margin. Verified against the two names named in the
-                        // brief ("ASUS ROG CROSSHAIR X870E HERO", "32GB Corsair Vengeance
-                        // DDR5") — both fit in <=2 lines at this card width.
+                        // A (round 2) + follow-up: mobile width is viewport-relative
+                        // (60vw, matching MOBILE_CARD_VW above — shrunk from 70vw so
+                        // the card itself doesn't dominate the screen) and height is
+                        // a MIN not a fixed value — budget below is padding(28) +
+                        // image(130) + text pad(13) + 2-line title(40) + spec line(21)
+                        // + price(36) = 268, rounded up to 275 for margin. Verified
+                        // against the two names named in the brief ("ASUS ROG
+                        // CROSSHAIR X870E HERO", "32GB Corsair Vengeance DDR5") — both
+                        // still fit in <=2 lines at this narrower card width.
                         const cardW = isMobile ? viewportWidth * MOBILE_CARD_VW : 284;
-                        const cardH = isMobile ? 328 : 360;
-                        const mobileImageH = 160;
+                        const cardH = isMobile ? 275 : 360;
+                        const mobileImageH = 130;
                         // D: compare-selected ring takes over the usual "focused"
                         // pink ring so the two states stay visually distinct
                         const compareSelected = compareMode && compareIds.includes(p.id);
@@ -1767,7 +1812,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                               minHeight: cardH + "px",
                               height: isMobile ? "auto" : cardH + "px",
                               borderRadius: "18px",
-                              padding: isMobile ? "14px 14px 18px" : "18px",
+                              padding: isMobile ? "12px 12px 16px" : "18px",
                               background: "linear-gradient(165deg,#171b27,#0d0f17)",
                               border: compareSelected
                                 ? "1px solid rgba(34,197,94,.85)"

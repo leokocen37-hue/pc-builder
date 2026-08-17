@@ -586,9 +586,15 @@
 /* configurator step rail — hide the native scrollbar (still scrollable),
    fade the edges so it still reads as scrollable without one */
 .rs-rail-wrap{position:relative}
-.rs-rail-wrap::before,.rs-rail-wrap::after{content:"";position:absolute;top:0;bottom:10px;width:28px;z-index:2;pointer-events:none}
+.rs-rail-wrap::before,.rs-rail-wrap::after{content:"";position:absolute;top:0;bottom:10px;width:28px;z-index:2;pointer-events:none;transition:opacity .15s}
 .rs-rail-wrap::before{left:0;background:linear-gradient(90deg,#07080c,transparent)}
 .rs-rail-wrap::after{right:0;background:linear-gradient(270deg,#07080c,transparent)}
+/* round 2 follow-up: a "more to scroll" fade shown while already at that
+   edge doesn't just mislead, it visually dulls the first/last pill's own
+   number badge sitting right under it — hide each mask once there's
+   nothing left in that direction (see the scroll listener on railRef) */
+.rs-rail-wrap.rail-at-start::before{opacity:0}
+.rs-rail-wrap.rail-at-end::after{opacity:0}
 .rs-rail{scrollbar-width:none;-ms-overflow-style:none}
 .rs-rail::-webkit-scrollbar{display:none}
 .rs-card-fin .rs-price::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);flex:0 0 auto}
