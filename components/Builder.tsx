@@ -239,6 +239,10 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [comparePanelClosed, setComparePanelClosed] = useState(false);
   const [compareLimitHint, setCompareLimitHint] = useState(false);
+  // D (round 2): compare mode — off by default, toggled from the toolbar.
+  // While on, tapping a card adds/removes it from the comparison instead of
+  // choosing it. Replaces the old always-visible per-card checkbox.
+  const [compareMode, setCompareMode] = useState(false);
 
   const currentStep = STEPS[stepIndex];
   const isReviewStep = currentStep === "review";
@@ -246,11 +250,19 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
 
   // B (round 2): collapse the mobile rail back down on every step change,
   // so expanding it to jump somewhere doesn't leave it expanded afterward.
-  // Render-time adjustment (not an effect) — same pattern as the carousel
-  // seeding below, so it's already correct on the first committed render.
+  // D (round 2): also drop out of compare mode on step change — compareIds
+  // are product ids from the PREVIOUS step's list, which don't exist in the
+  // new step's currentProducts, so leaving them set would either show an
+  // empty comparison sheet or (worse) silently compare unrelated products
+  // if an id ever collided. Render-time adjustment (not an effect) — same
+  // pattern as the carousel seeding below, so it's already correct on the
+  // first committed render.
   if (lastRailStepRef.current !== stepIndex) {
     lastRailStepRef.current = stepIndex;
     if (mobileRailExpanded) setMobileRailExpanded(false);
+    if (compareMode) setCompareMode(false);
+    if (compareIds.length > 0) setCompareIds([]);
+    if (comparePanelClosed) setComparePanelClosed(false);
   }
 
   // --- HARDWARE LOGIC ---
@@ -387,6 +399,14 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
   const clearCompare = () => {
     setCompareIds([]);
     setComparePanelClosed(false);
+  };
+  // D: turning compare mode off clears the selection and returns cards to
+  // normal tap-to-choose behaviour, per the brief
+  const toggleCompareMode = () => {
+    setCompareMode((v) => {
+      if (v) clearCompare();
+      return !v;
+    });
   };
   // auto-dismiss the "max 3" hint
   useEffect(() => {
@@ -859,7 +879,8 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
 
   // --- INTERACTION & DRAG PHYSICS (robust on touch + mouse) ---
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    // let the arrow buttons and the "Usporedi" checkbox work normally
+    // let the arrow buttons (and the Detalji icon button) work normally —
+    // compare mode toggles the whole card, not a separate control anymore
     if ((e.target as HTMLElement).closest("button, input, label")) return;
     // remember which card the press started on (for tap-to-select / tap-to-center)
     const cardEl = (e.target as HTMLElement).closest("[data-cardidx]") as HTMLElement | null;
@@ -906,11 +927,14 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
       }
       if (N > 0 && steps !== 0) setActiveIndex((prev) => Math.max(0, Math.min(N - 1, prev - steps)));
     } else {
-      // tapped (no real movement): center card selects, side card comes to center
+      // tapped (no real movement): center card selects (or, in compare mode,
+      // toggles it into the comparison instead), side card comes to center
       const i = downIdxRef.current;
       if (i != null && currentProducts[i]) {
-        if (i === activeIndex) handleSelection(currentStep, currentProducts[i]);
-        else setActiveIndex(i);
+        if (i === activeIndex) {
+          if (compareMode) toggleCompare(currentProducts[i].id);
+          else handleSelection(currentStep, currentProducts[i]);
+        } else setActiveIndex(i);
       }
     }
     setDragOffset(0);
@@ -1517,52 +1541,90 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                         </div>
                       )}
                     </div>
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: "4px",
-                        background: COLORS.bgCard,
-                        border: `1px solid ${COLORS.border}`,
-                        borderRadius: "13px",
-                        padding: "4px",
-                      }}
-                    >
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                      {/* D (round 2): compare mode toggle — off by default, no
+                          checkboxes anywhere until it's on. Turning it on makes
+                          every card selectable for comparison instead of choosing;
+                          turning it off clears the selection (see toggleCompareMode). */}
                       <button
-                        onClick={() => setViewMode("coverflow")}
-                        title="Listanje"
-                        aria-label="Listanje"
+                        onClick={toggleCompareMode}
+                        aria-pressed={compareMode}
+                        title="Usporedi komponente"
                         style={{
-                          ...segBtnStyle(viewMode === "coverflow"),
                           display: "flex",
                           alignItems: "center",
-                          justifyContent: "center",
-                          padding: "9px 11px",
+                          gap: "7px",
+                          height: "44px",
+                          padding: "0 14px",
+                          borderRadius: "13px",
+                          border: compareMode ? "1px solid rgba(216,31,216,.6)" : `1px solid ${COLORS.border}`,
+                          background: compareMode ? "rgba(216,31,216,.13)" : COLORS.bgCard,
+                          color: compareMode ? "#fff" : COLORS.textMuted,
+                          fontFamily: FONT,
+                          fontSize: "13px",
+                          fontWeight: 600,
+                          cursor: "pointer",
+                          transition: "all .15s",
                         }}
                       >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <rect x="8" y="5" width="8" height="14" rx="1.5" />
-                          <path d="M5 8v8M19 8v8" opacity="0.55" />
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="3" y="4" width="7" height="16" rx="1.5" />
+                          <rect x="14" y="4" width="7" height="16" rx="1.5" />
                         </svg>
+                        Usporedi
+                        {compareMode && (
+                          <span style={{ fontFamily: MONO, fontSize: "11.5px", color: COLORS.accent, letterSpacing: ".3px" }}>
+                            · {compareIds.length}/3
+                          </span>
+                        )}
                       </button>
-                      <button
-                        onClick={() => setViewMode("grid")}
-                        title="Sve odjednom"
-                        aria-label="Sve odjednom"
+                      <div
                         style={{
-                          ...segBtnStyle(viewMode === "grid"),
                           display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          padding: "9px 11px",
+                          gap: "4px",
+                          background: COLORS.bgCard,
+                          border: `1px solid ${COLORS.border}`,
+                          borderRadius: "13px",
+                          padding: "4px",
                         }}
                       >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <rect x="4" y="4" width="7" height="7" rx="1.5" />
-                          <rect x="13" y="4" width="7" height="7" rx="1.5" />
-                          <rect x="4" y="13" width="7" height="7" rx="1.5" />
-                          <rect x="13" y="13" width="7" height="7" rx="1.5" />
-                        </svg>
-                      </button>
+                        <button
+                          onClick={() => setViewMode("coverflow")}
+                          title="Listanje"
+                          aria-label="Listanje"
+                          style={{
+                            ...segBtnStyle(viewMode === "coverflow"),
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            padding: "9px 11px",
+                          }}
+                        >
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="8" y="5" width="8" height="14" rx="1.5" />
+                            <path d="M5 8v8M19 8v8" opacity="0.55" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => setViewMode("grid")}
+                          title="Sve odjednom"
+                          aria-label="Sve odjednom"
+                          style={{
+                            ...segBtnStyle(viewMode === "grid"),
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            padding: "9px 11px",
+                          }}
+                        >
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="4" y="4" width="7" height="7" rx="1.5" />
+                            <rect x="13" y="4" width="7" height="7" rx="1.5" />
+                            <rect x="4" y="13" width="7" height="7" rx="1.5" />
+                            <rect x="13" y="13" width="7" height="7" rx="1.5" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
                   </div>
 
@@ -1654,6 +1716,9 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                         const cardW = isMobile ? viewportWidth * MOBILE_CARD_VW : 284;
                         const cardH = isMobile ? 328 : 360;
                         const mobileImageH = 160;
+                        // D: compare-selected ring takes over the usual "focused"
+                        // pink ring so the two states stay visually distinct
+                        const compareSelected = compareMode && compareIds.includes(p.id);
 
                         return (
                           <div
@@ -1663,12 +1728,14 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                             data-testid={isActive ? "active-card" : undefined}
                             tabIndex={0}
                             role="button"
-                            aria-label={`${p.title}${isActive ? " — u fokusu, pritisnite Enter za odabir" : ""}`}
+                            aria-label={`${p.title}${isActive ? (compareMode ? " — u fokusu, pritisnite Enter za usporedbu" : " — u fokusu, pritisnite Enter za odabir") : ""}`}
                             onKeyDown={(e) => {
                               if (e.key !== "Enter" && e.key !== " ") return;
                               e.preventDefault();
-                              if (isActive) handleSelection(currentStep, p);
-                              else setActiveIndex(idx);
+                              if (isActive) {
+                                if (compareMode) toggleCompare(p.id);
+                                else handleSelection(currentStep, p);
+                              } else setActiveIndex(idx);
                             }}
                             onMouseEnter={() => setHoverCard(idx)}
                             onMouseLeave={() => setHoverCard((c) => (c === idx ? null : c))}
@@ -1682,8 +1749,16 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                               borderRadius: "18px",
                               padding: isMobile ? "14px 14px 18px" : "18px",
                               background: "linear-gradient(165deg,#171b27,#0d0f17)",
-                              border: isActive ? "1px solid rgba(216,31,216,.7)" : hoverCard === idx ? "1px solid rgba(216,31,216,.4)" : `1px solid ${COLORS.border}`,
-                              boxShadow: isActive
+                              border: compareSelected
+                                ? "1px solid rgba(34,197,94,.85)"
+                                : isActive
+                                ? "1px solid rgba(216,31,216,.7)"
+                                : hoverCard === idx
+                                ? "1px solid rgba(216,31,216,.4)"
+                                : `1px solid ${COLORS.border}`,
+                              boxShadow: compareSelected
+                                ? "0 0 0 1px rgba(34,197,94,.6), 0 30px 70px -22px rgba(34,197,94,.45)"
+                                : isActive
                                 ? "0 0 0 1px rgba(216,31,216,.55), 0 30px 70px -22px rgba(216,31,216,.5)"
                                 : "0 22px 44px -22px rgba(0,0,0,.85)",
                               display: "flex",
@@ -1712,19 +1787,6 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                             <div style={{ width: "100%", height: isMobile ? `${mobileImageH}px` : "54%", flexShrink: 0 }}>
                               <ImageBlock src={dv.img} h="100%" />
                             </div>
-                            {isActive && (
-                              <label style={compareLabelStyle} onClick={(e) => e.stopPropagation()}>
-                                <input
-                                  type="checkbox"
-                                  checked={compareIds.includes(p.id)}
-                                  disabled={!compareIds.includes(p.id) && compareIds.length >= 3}
-                                  onChange={() => toggleCompare(p.id)}
-                                  onClick={(e) => e.stopPropagation()}
-                                  style={compareCheckboxStyle}
-                                />
-                                Usporedi
-                              </label>
-                            )}
                             <div style={{ marginTop: "auto", paddingTop: "13px", pointerEvents: "none" }}>
                               {tierLabel(p.pcfQuality?.value) && (
                                 <div style={{ fontFamily: MONO, fontSize: "9.5px", fontWeight: 600, letterSpacing: "1px", color: COLORS.textMain, opacity: 0.6, marginBottom: "3px" }}>
@@ -1752,11 +1814,11 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                                   fontFamily: MONO,
                                   fontSize: "11px",
                                   letterSpacing: "1px",
-                                  color: COLORS.accent,
+                                  color: compareSelected ? "#22c55e" : COLORS.accent,
                                   pointerEvents: "none",
                                 }}
                               >
-                                KLIKNI ZA ODABIR
+                                {compareMode ? (compareSelected ? "✓ DODANO ZA USPOREDBU" : "KLIKNI ZA USPOREDBU") : "KLIKNI ZA ODABIR"}
                               </div>
                             )}
                           </div>
@@ -1825,11 +1887,20 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                         const selected = idx === activeIndex;
                         const dv = displayVariant(p, selected);
                         const specText = cardSpecLine(p.pcfSpecs?.value);
+                        // D: every grid card is already independently
+                        // clickable/visible, so compare mode toggles on any
+                        // tap directly — no need for the focus-then-act step
+                        // normal selection uses
+                        const compareSelected = compareMode && compareIds.includes(p.id);
                         return (
                           <div
                             key={p.id}
                             data-testid={selected ? "active-card" : undefined}
                             onClick={() => {
+                              if (compareMode) {
+                                toggleCompare(p.id);
+                                return;
+                              }
                               if (selected) handleSelection(currentStep, p);
                               else setActiveIndex(idx);
                             }}
@@ -1843,8 +1914,16 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                               cursor: "pointer",
                               transition: "all .18s",
                               transform: hoverCard === idx && !selected ? "translateY(-5px)" : "none",
-                              border: selected ? "1px solid rgba(216,31,216,.7)" : hoverCard === idx ? "1px solid rgba(216,31,216,.4)" : `1px solid ${COLORS.border}`,
-                              boxShadow: selected
+                              border: compareSelected
+                                ? "1px solid rgba(34,197,94,.85)"
+                                : selected
+                                ? "1px solid rgba(216,31,216,.7)"
+                                : hoverCard === idx
+                                ? "1px solid rgba(216,31,216,.4)"
+                                : `1px solid ${COLORS.border}`,
+                              boxShadow: compareSelected
+                                ? "0 0 0 1px rgba(34,197,94,.55), 0 20px 44px -24px rgba(34,197,94,.5)"
+                                : selected
                                 ? "0 0 0 1px rgba(216,31,216,.5), 0 20px 44px -24px rgba(216,31,216,.5)"
                                 : hoverCard === idx
                                 ? "0 18px 38px -22px rgba(0,0,0,.8)"
@@ -1862,7 +1941,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                             </button>
                             <div style={{ position: "relative", width: "100%", aspectRatio: "4/3", marginBottom: "14px" }}>
                               <ImageBlock src={dv.img} h="100%" />
-                              {selected && (
+                              {compareSelected ? (
                                 <span
                                   style={{
                                     position: "absolute",
@@ -1873,26 +1952,36 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                                     fontWeight: 600,
                                     letterSpacing: ".5px",
                                     color: "#fff",
-                                    background: COLORS.accent,
+                                    background: "#22c55e",
                                     padding: "3px 7px",
                                     borderRadius: "6px",
                                   }}
                                 >
-                                  ✓ ODABRANO
+                                  ✓ ZA USPOREDBU
                                 </span>
+                              ) : (
+                                !compareMode &&
+                                selected && (
+                                  <span
+                                    style={{
+                                      position: "absolute",
+                                      bottom: "10px",
+                                      right: "10px",
+                                      fontFamily: MONO,
+                                      fontSize: "9px",
+                                      fontWeight: 600,
+                                      letterSpacing: ".5px",
+                                      color: "#fff",
+                                      background: COLORS.accent,
+                                      padding: "3px 7px",
+                                      borderRadius: "6px",
+                                    }}
+                                  >
+                                    ✓ ODABRANO
+                                  </span>
+                                )
                               )}
                             </div>
-                            <label style={compareLabelStyle} onClick={(e) => e.stopPropagation()}>
-                              <input
-                                type="checkbox"
-                                checked={compareIds.includes(p.id)}
-                                disabled={!compareIds.includes(p.id) && compareIds.length >= 3}
-                                onChange={() => toggleCompare(p.id)}
-                                onClick={(e) => e.stopPropagation()}
-                                style={compareCheckboxStyle}
-                              />
-                              Usporedi
-                            </label>
                             {tierLabel(p.pcfQuality?.value) && (
                               <div style={{ fontFamily: MONO, fontSize: "9px", fontWeight: 600, letterSpacing: "1px", color: COLORS.textMain, opacity: 0.6, marginBottom: "3px" }}>
                                 {tierLabel(p.pcfQuality?.value)}
@@ -3285,27 +3374,6 @@ const cardDetailsBtnStyle: CSSProperties = {
   lineHeight: 1,
   cursor: "pointer",
   boxShadow: "0 2px 8px rgba(0,0,0,.4)",
-};
-
-// G: "Usporedi" checkbox, sits in normal flow right under the image (not an
-// absolutely-positioned corner chip — that real estate is already spoken for
-// by the badges and Detalji)
-const compareLabelStyle: CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  gap: "6px",
-  marginTop: "10px",
-  cursor: "pointer",
-  fontFamily: MONO,
-  fontSize: "11px",
-  color: COLORS.textMuted,
-  userSelect: "none",
-};
-const compareCheckboxStyle: CSSProperties = {
-  width: "13px",
-  height: "13px",
-  accentColor: COLORS.accent,
-  cursor: "pointer",
 };
 
 const arrowStyle: CSSProperties = {
