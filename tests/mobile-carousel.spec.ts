@@ -138,3 +138,28 @@ test.describe("step rail scroll-fade mask", () => {
     await expect(page.locator(".rs-rail-wrap")).toHaveClass(/rail-at-start/);
   });
 });
+
+// Round 2 follow-up: the left main content column had `flex: "1 1 580px"`,
+// tuned for desktop where this row is flexDirection:row (580px = a minimum
+// WIDTH). Mobile switches the same row to flexDirection:column, where the
+// same flex-basis silently becomes a minimum HEIGHT instead — forcing the
+// platform step's short content to be 580px tall regardless of how little
+// it actually contains, leaving a ~300px blank gap before the price sidebar.
+test.describe("brand step doesn't leave a big blank gap before the sidebar", () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test("sidebar starts close to where the platform cards end", async ({ page }) => {
+    await page.goto("/konfigurator");
+    const acceptBtn = page.getByText("Prihvaćam");
+    if (await acceptBtn.isVisible().catch(() => false)) await acceptBtn.click();
+    await page.waitForTimeout(200);
+
+    const amdBox = await page.getByAltText("AMD").first().locator("xpath=ancestor::button[1]").boundingBox();
+    expect(amdBox).not.toBeNull();
+    const sidebarBox = await page.getByText("UKUPNA CIJENA", { exact: true }).locator("xpath=ancestor::div[2]").boundingBox();
+    expect(sidebarBox).not.toBeNull();
+
+    const gap = sidebarBox!.y - (amdBox!.y + amdBox!.height);
+    expect(gap).toBeLessThan(100);
+  });
+});

@@ -1423,7 +1423,14 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
           }}
         >
           {/* === LEFT MAIN AREA === */}
-          <div style={{ flex: "1 1 580px", minWidth: 0, width: "100%" }}>
+          {/* flex-basis controls WIDTH when this row is flexDirection:row
+              (desktop) but silently becomes a minimum HEIGHT once mobile
+              switches the same row to flexDirection:column — 580px was
+              tuned for desktop's width and was forcing a 580px-tall left
+              column on mobile regardless of actual content, leaving a huge
+              blank gap above the sidebar on short steps like the platform
+              picker. Mobile drops the fixed basis entirely. */}
+          <div style={{ flex: isMobile ? "1 1 auto" : "1 1 580px", minWidth: 0, width: "100%" }}>
             {/* Nav row */}
             {stepIndex > 0 && !isReviewStep && (
               <div style={{ display: "flex", justifyContent: "space-between", gap: "10px", marginBottom: "18px", flexWrap: "wrap" }}>
