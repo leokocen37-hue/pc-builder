@@ -157,6 +157,10 @@ const COLORS = {
   textMuted: "#888da3",
   textFaint: "#5a5f73",
   accent: "#d81fd8",
+  // G (round 2): BEST BUY badge — amber, not the redder AMD brand orange
+  // (#ff5e00/#ff7a33) used on the platform card, and not the magenta used
+  // by PREPORUČUJEMO. ~8.2:1 contrast against bgCard (#f59e0b on #11131b).
+  bestBuy: "#f59e0b",
 };
 
 function BuilderContent({ products }: { products: ProductNode[] }) {
@@ -1546,11 +1550,11 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                               <span style={{ ...cardBadgeBase, top: "10px", background: COLORS.accent, color: "#fff" }}>PREPORUČUJEMO</span>
                             )}
                             {p.id === pickId && (
-                              <span style={{ ...cardBadgeBase, top: p.id === recommendedId ? "34px" : "10px", background: "transparent", border: `1px solid ${COLORS.accent}`, color: COLORS.accent }}>NAJBOLJI OMJER</span>
+                              <span style={{ ...cardBadgeBase, top: p.id === recommendedId ? "34px" : "10px", background: "transparent", border: `1px solid ${COLORS.bestBuy}`, color: COLORS.bestBuy }}>BEST BUY</span>
                             )}
                             {isActive && (
-                              <button onClick={(e) => openDetails(p, e)} style={cardDetailsBtnStyle}>
-                                <span aria-hidden="true">ⓘ</span> DETALJI
+                              <button onClick={(e) => openDetails(p, e)} style={cardDetailsBtnStyle} aria-label="Detalji" title="Detalji">
+                                <span aria-hidden="true">ⓘ</span>
                               </button>
                             )}
                             <div style={{ width: "100%", height: "54%" }}>
@@ -1699,10 +1703,10 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                               <span style={{ ...cardBadgeBase, top: "10px", background: COLORS.accent, color: "#fff" }}>PREPORUČUJEMO</span>
                             )}
                             {p.id === pickId && (
-                              <span style={{ ...cardBadgeBase, top: p.id === recommendedId ? "34px" : "10px", background: "transparent", border: `1px solid ${COLORS.accent}`, color: COLORS.accent }}>NAJBOLJI OMJER</span>
+                              <span style={{ ...cardBadgeBase, top: p.id === recommendedId ? "34px" : "10px", background: "transparent", border: `1px solid ${COLORS.bestBuy}`, color: COLORS.bestBuy }}>BEST BUY</span>
                             )}
-                            <button onClick={(e) => openDetails(p, e)} style={cardDetailsBtnStyle}>
-                              <span aria-hidden="true">ⓘ</span> DETALJI
+                            <button onClick={(e) => openDetails(p, e)} style={cardDetailsBtnStyle} aria-label="Detalji" title="Detalji">
+                              <span aria-hidden="true">ⓘ</span>
                             </button>
                             <div style={{ position: "relative", width: "100%", aspectRatio: "4/3", marginBottom: "14px" }}>
                               <ImageBlock src={dv.img} h="100%" />
@@ -3100,24 +3104,26 @@ const cardBadgeBase: CSSProperties = {
 // backing than the old version, which used the barely-visible COLORS.border
 // (7% white) and read as a label rather than a clickable control over a
 // dark product photo.
+// E (round 2): icon only, no text — a circular 44x44 hit target instead of
+// a text pill, so it can't collide with the badges sharing the top of the
+// card on narrow screens
 const cardDetailsBtnStyle: CSSProperties = {
   position: "absolute",
   top: "10px",
   right: "10px",
   zIndex: 5,
+  width: "44px",
+  height: "44px",
   display: "flex",
   alignItems: "center",
-  gap: "4px",
-  padding: "5px 10px",
-  borderRadius: "7px",
+  justifyContent: "center",
+  borderRadius: "50%",
   border: "1px solid rgba(255,255,255,.4)",
   background: "rgba(7,8,12,.82)",
   backdropFilter: "blur(6px)",
   color: "#fff",
-  fontFamily: MONO,
-  fontSize: "9.5px",
-  fontWeight: 600,
-  letterSpacing: ".5px",
+  fontSize: "17px",
+  lineHeight: 1,
   cursor: "pointer",
   boxShadow: "0 2px 8px rgba(0,0,0,.4)",
 };
