@@ -59,6 +59,42 @@ test("configurator advances through all 11 steps without freezing", async ({ pag
   }
 });
 
+// Regression test for round 2's bug F: seededStepsRef wasn't cleared by
+// "Ispočetka" (or by re-picking a platform), so every step counted as
+// already-seeded after a reset and silently kept whatever activeIndex it
+// last had. Deliberately perturbs the carousel position with the arrow
+// button (rather than relying on a DIFFERENT step's coincidentally-matching
+// seed target, which let two earlier, weaker versions of this test pass
+// against the deliberately-unfixed code — confirmed both times by actually
+// reverting the fix and re-running before settling on this version) so a
+// mismatch is guaranteed if the bug is present, not just likely.
+test("recommended-start index survives Ispočetka", async ({ page }) => {
+  test.setTimeout(60_000);
+
+  await page.goto("/konfigurator");
+  await page.getByAltText("Intel").first().click();
+  await expect(page.locator("h2", { hasText: "Procesor" }).first()).toBeVisible({ timeout: 8000 });
+
+  const freshCpuIdx = await page.locator('[data-testid="active-card"]').first().getAttribute("data-cardidx");
+
+  // move the carousel off its seeded position without selecting anything —
+  // guarantees activeIndex differs from the CPU step's seed target
+  const nextArrow = page.getByRole("button", { name: "Sljedeća komponenta" });
+  await nextArrow.click();
+  await nextArrow.click();
+  await page.waitForTimeout(300); // let the .55s slide transition settle
+  const perturbedIdx = await page.locator('[data-testid="active-card"]').first().getAttribute("data-cardidx");
+  expect(perturbedIdx).not.toBe(freshCpuIdx);
+
+  await page.getByText("Ispočetka").first().click();
+  await expect(page.getByAltText("Intel").first()).toBeVisible({ timeout: 8000 });
+  await page.getByAltText("Intel").first().click();
+  await expect(page.locator("h2", { hasText: "Procesor" }).first()).toBeVisible({ timeout: 8000 });
+
+  const resetCpuIdx = await page.locator('[data-testid="active-card"]').first().getAttribute("data-cardidx");
+  expect(resetCpuIdx).toBe(freshCpuIdx);
+});
+
 test("configurator advances through all 11 steps (AMD path) without freezing", async ({ page }) => {
   test.setTimeout(90_000);
 

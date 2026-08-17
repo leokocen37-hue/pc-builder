@@ -890,6 +890,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
   };
 
   const resetBuild = () => {
+    seededStepsRef.current.clear();
     setStepIndex(0);
     setBrand(null);
     setCpu(null);
@@ -1299,7 +1300,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                   }}
                 >
                   <button
-                    onClick={() => { setBrand("intel"); setStepIndex(1); }}
+                    onClick={() => { seededStepsRef.current.clear(); setBrand("intel"); setStepIndex(1); }}
                     onMouseEnter={() => setHoverBrand("intel")}
                     onMouseLeave={() => setHoverBrand(null)}
                     style={{
@@ -1324,7 +1325,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                     </div>
                   </button>
                   <button
-                    onClick={() => { setBrand("amd"); setStepIndex(1); }}
+                    onClick={() => { seededStepsRef.current.clear(); setBrand("amd"); setStepIndex(1); }}
                     onMouseEnter={() => setHoverBrand("amd")}
                     onMouseLeave={() => setHoverBrand(null)}
                     style={{
