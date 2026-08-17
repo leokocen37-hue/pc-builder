@@ -182,6 +182,9 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
   const [stepIndex, setStepIndex] = useState(0);
   const { addCustomBuild } = useCart();
   const [isMobile, setIsMobile] = useState(false);
+  // actual viewport width, for the mobile carousel's vw-relative sizing (A) —
+  // isMobile alone isn't enough since the card/peek math needs real pixels
+  const [viewportWidth, setViewportWidth] = useState(390);
   const [activeIndex, setActiveIndex] = useState(0);
   const [selectedVarId, setSelectedVarId] = useState("");
   const [startX, setStartX] = useState<number | null>(null);
@@ -295,7 +298,10 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
 
   // --- DATA FETCHING & EFFECTS ---
   useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 900);
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 900);
+      setViewportWidth(window.innerWidth);
+    };
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
@@ -718,11 +724,28 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
   };
 
   // --- COVERFLOW GEOMETRY ---
-  // Reverted to the original 3-prominent-cards-plus-ghosts design (the Phase E
+  // Desktop: the original 3-prominent-cards-plus-ghosts design (the Phase E
   // "5 flat cards" redesign traded away visual quality for an illegibility
   // problem that didn't actually exist — ±1 cards were always readable, and
   // the ±2 ghosts down to .06 opacity are deliberate depth, not a bug).
-  const SLIDE = isMobile ? 150 : 300;
+  // SIGNED OFF — untouched below for the mobile=false branch.
+  //
+  // Mobile (round 2, A): a completely different, mobile-only geometry, not a
+  // scaled-down desktop one — the old shared bx/scale formula put neighbor
+  // cards at ~84% scale only 150px away, which overlapped the focused card's
+  // text on a 390px screen. Now: one card at 78vw, centered; the immediate
+  // neighbor peeks ~8vw at the very edge as a scroll affordance, and the
+  // TRACK is clipped with overflow:hidden (see the container style below) so
+  // nothing can ever visually reach the focused card's content box —
+  // clipping does that job, not scale/opacity.
+  //
+  // bx (center-to-center offset, in vw) derived from: focused card spans
+  // [11vw, 89vw] (centered, 78vw wide); want the neighbor's near edge at
+  // 92vw so exactly 8vw of it shows before the viewport edge at 100vw:
+  //   neighborNearEdge = 50 + bx - 39 = 92  =>  bx = 81
+  const MOBILE_CARD_VW = 0.78;
+  const MOBILE_BX_VW = 0.81;
+  const SLIDE = isMobile ? viewportWidth * MOBILE_BX_VW : 300;
 
   // Non-circular: offset is a plain difference, no wraparound — kept from the
   // later fix, independent of the geometry revert. At the ends, cards past
@@ -730,11 +753,33 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
   // the (quality-sorted) list.
   const getOffset = (index: number) => index - activeIndex;
 
-  // 3D coverflow card transform (original design)
+  // 3D coverflow card transform (original design; desktop branch unchanged)
   const getCardStyle = (o: number, mobile: boolean) => {
     const a = Math.abs(o);
     const sign = o === 0 ? 0 : o < 0 ? -1 : 1;
-    const bx = mobile ? 150 : 300;
+
+    if (mobile) {
+      const bx = viewportWidth * MOBILE_BX_VW;
+      let tx: number, op: number;
+      if (a === 0) {
+        tx = 0;
+        op = 1;
+      } else if (a === 1) {
+        tx = sign * bx;
+        op = 0.5; // peek affordance, not a fully-readable neighbor
+      } else {
+        tx = sign * (bx + (a - 1) * bx); // pushed well past the clipped edge
+        op = 0;
+      }
+      return {
+        transform: `translateX(${tx}px)`, // no scale/rotate on mobile — flat peek, not a 3D tilt
+        opacity: op,
+        zIndex: 30 - a,
+        transition: isDragging ? "none" : "transform .4s cubic-bezier(.22,.61,.36,1), opacity .3s ease",
+      };
+    }
+
+    const bx = 300;
     let tx: number, sc: number, rot: number, op: number, z: number;
     if (a <= 1) {
       tx = o * bx;
@@ -744,13 +789,13 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
       z = 30 - Math.round(a * 8);
     } else if (a <= 2) {
       const f = a - 1;
-      tx = sign * (bx + f * (mobile ? 80 : 175));
+      tx = sign * (bx + f * 175);
       sc = 0.84 - 0.14 * f;
       rot = -sign * (28 + 12 * f);
       op = 0.48 - 0.42 * f;
       z = Math.round(20 - 10 * f);
     } else {
-      tx = sign * (bx + (mobile ? 80 : 175) + (a - 2) * 120);
+      tx = sign * (bx + 175 + (a - 2) * 120);
       sc = 0.6;
       rot = -sign * 42;
       op = 0;
@@ -1090,7 +1135,11 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
     minHeight: "100vh",
     width: "100%",
     color: COLORS.textMain,
-    padding: isMobile ? "22px 14px 92px" : "26px 22px 64px",
+    // A (round 2): the sticky total bar is ~61px tall (10px+10px padding +
+    // ~41px of two-line content); bumped from 92px to 120px for a clearer
+    // safety margin so the confirm-bar/summary panel's own bottom edge
+    // never sits flush against it
+    padding: isMobile ? "22px 14px 120px" : "26px 22px 64px",
     overflowX: "hidden",
     fontFamily: FONT,
     background:
@@ -1466,7 +1515,14 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                       onDragStart={(e) => e.preventDefault()}
                       style={{
                         position: "relative",
-                        height: isMobile ? "320px" : "440px",
+                        // A (round 2): 310px min card height + room for the
+                        // "KLIKNI ZA ODABIR" caption (~41px) below it, doubled
+                        // since the card is vertically centered in this box
+                        height: isMobile ? "400px" : "440px",
+                        // clip peeking neighbors at the mobile card's edges — on
+                        // desktop the ghosts intentionally spill past the
+                        // container, signed off, untouched
+                        overflow: isMobile ? "hidden" : "visible",
                         perspective: "1700px",
                         display: "flex",
                         alignItems: "center",
@@ -1501,8 +1557,16 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
 
                         const dv = displayVariant(p, idx === activeIndex);
                         const specText = cardSpecLine(p.pcfSpecs?.value);
-                        const cardW = isMobile ? 196 : 284;
-                        const cardH = isMobile ? 256 : 360;
+                        // A (round 2): mobile width is viewport-relative (78vw, matching
+                        // MOBILE_CARD_VW above) and height is a MIN not a fixed value —
+                        // budget below is padding(28) + image(160) + text pad(13) +
+                        // 2-line title(40) + spec line(21) + price(36) = 298, rounded up
+                        // to 310 for margin. Verified against the two names named in the
+                        // brief ("ASUS ROG CROSSHAIR X870E HERO", "32GB Corsair Vengeance
+                        // DDR5") — both fit in <=2 lines at this card width.
+                        const cardW = isMobile ? viewportWidth * MOBILE_CARD_VW : 284;
+                        const cardH = isMobile ? 328 : 360;
+                        const mobileImageH = 160;
 
                         return (
                           <div
@@ -1526,9 +1590,10 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                               left: "50%",
                               top: "50%",
                               width: cardW + "px",
-                              height: cardH + "px",
+                              minHeight: cardH + "px",
+                              height: isMobile ? "auto" : cardH + "px",
                               borderRadius: "18px",
-                              padding: isMobile ? "14px" : "18px",
+                              padding: isMobile ? "14px 14px 18px" : "18px",
                               background: "linear-gradient(165deg,#171b27,#0d0f17)",
                               border: isActive ? "1px solid rgba(216,31,216,.7)" : hoverCard === idx ? "1px solid rgba(216,31,216,.4)" : `1px solid ${COLORS.border}`,
                               boxShadow: isActive
@@ -1557,7 +1622,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                                 <span aria-hidden="true">ⓘ</span>
                               </button>
                             )}
-                            <div style={{ width: "100%", height: "54%" }}>
+                            <div style={{ width: "100%", height: isMobile ? `${mobileImageH}px` : "54%", flexShrink: 0 }}>
                               <ImageBlock src={dv.img} h="100%" />
                             </div>
                             {isActive && (
@@ -3089,6 +3154,13 @@ const primaryBtnStyle: CSSProperties = {
 const cardBadgeBase: CSSProperties = {
   position: "absolute",
   left: "10px",
+  // A (round 2): truncate rather than push into the 44px Detalji button's
+  // territory (which sits at right:10px) — 150px is comfortably clear of it
+  // even on the narrowest realistic phone width (78vw card at 360px = 281px
+  // wide, leaving 281-72=209px before the button; 150px < 209px)
+  maxWidth: "150px",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
   zIndex: 6,
   padding: "4px 9px",
   borderRadius: "7px",
