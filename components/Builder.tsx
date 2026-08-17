@@ -176,6 +176,9 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
   // steps whose initial carousel focus has already been seeded — see the
   // render-time block below currentProducts
   const seededStepsRef = useRef<Set<Step>>(new Set());
+  // last stepIndex the mobile rail's expand/collapse state was resolved for —
+  // see the render-time collapse block below currentStep
+  const lastRailStepRef = useRef<number | null>(null);
   const isProgrammaticScrollRef = useRef(false);
 
   // --- STATE ---
@@ -191,6 +194,10 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [viewMode, setViewMode] = useState<"coverflow" | "grid">("coverflow");
+  // B (round 2): mobile swaps the 11-pill rail for a one-line progress
+  // summary; tapping it reveals the full pill rail underneath, collapsed
+  // again on the next step change so it doesn't silently stay expanded
+  const [mobileRailExpanded, setMobileRailExpanded] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const [shareNotice, setShareNotice] = useState<string[]>([]);
   const [hoverBrand, setHoverBrand] = useState<string | null>(null);
@@ -236,6 +243,15 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
   const currentStep = STEPS[stepIndex];
   const isReviewStep = currentStep === "review";
   const isBrandStep = currentStep === "brand";
+
+  // B (round 2): collapse the mobile rail back down on every step change,
+  // so expanding it to jump somewhere doesn't leave it expanded afterward.
+  // Render-time adjustment (not an effect) — same pattern as the carousel
+  // seeding below, so it's already correct on the first committed render.
+  if (lastRailStepRef.current !== stepIndex) {
+    lastRailStepRef.current = stepIndex;
+    if (mobileRailExpanded) setMobileRailExpanded(false);
+  }
 
   // --- HARDWARE LOGIC ---
   const calculateSystemTDP = () => {
@@ -1147,13 +1163,55 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
   };
 
   // --- STEP RAIL ---
+  // B (round 2): the 11-pill rail costs ~40px+ of vertical budget mobile
+  // can't spare above the fold. Mobile instead shows a one-line "Korak
+  // N/11 · Label" summary with a thin progress bar; tapping it expands the
+  // full pill rail underneath (collapsed again on the next step change, see
+  // the render-time block near currentStep above). Desktop is unchanged —
+  // the pill rail always renders, this toggle never applies to it.
   const renderRail = () => (
     <div className="rs-rail-wrap">
+      {isMobile && (
+        <button
+          onClick={() => setMobileRailExpanded((v) => !v)}
+          aria-expanded={mobileRailExpanded}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "6px",
+            width: "100%",
+            background: "none",
+            border: "none",
+            padding: "0",
+            marginBottom: mobileRailExpanded ? "12px" : "18px",
+            cursor: "pointer",
+            textAlign: "left",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontFamily: MONO, fontSize: "11.5px", letterSpacing: ".5px", color: COLORS.textMuted }}>
+            <span>
+              Korak {stepIndex + 1}/{STEPS.length} · {RAIL_LABELS[currentStep]}
+            </span>
+            <span style={{ color: COLORS.textFaint, fontSize: "13px" }}>{mobileRailExpanded ? "▲" : "▼"}</span>
+          </div>
+          <div style={{ height: "3px", borderRadius: "2px", background: "rgba(255,255,255,.08)", overflow: "hidden" }}>
+            <div
+              style={{
+                height: "100%",
+                width: `${((stepIndex + 1) / STEPS.length) * 100}%`,
+                background: COLORS.accent,
+                borderRadius: "2px",
+                transition: "width .3s ease",
+              }}
+            />
+          </div>
+        </button>
+      )}
       <div
         ref={railRef}
         className="rs-rail"
         style={{
-          display: "flex",
+          display: isMobile && !mobileRailExpanded ? "none" : "flex",
           gap: "7px",
           overflowX: "auto",
           paddingBottom: "10px",
@@ -1339,11 +1397,18 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
             {isBrandStep && (
               <div>
                 <div style={{ marginBottom: "24px" }}>
-                  <div style={kickerStyle}>KORAK 01 — PLATFORMA</div>
+                  {/* B (round 2): eyebrow dropped on mobile — the compact
+                      "Korak 1/11 · Platforma" rail above already says this */}
+                  {!isMobile && <div style={kickerStyle}>KORAK 01 — PLATFORMA</div>}
                   <h2 style={h2Style}>Odaberi platformu</h2>
-                  <div style={{ color: COLORS.textMuted, fontSize: "14px", marginTop: "7px" }}>
-                    Procesorska arhitektura određuje kompatibilne komponente
-                  </div>
+                  {/* B: hidden on mobile rather than force-fit to one line —
+                      more reliable across locales/font-scaling than
+                      truncating a full sentence */}
+                  {!isMobile && (
+                    <div style={{ color: COLORS.textMuted, fontSize: "14px", marginTop: "7px" }}>
+                      Procesorska arhitektura određuje kompatibilne komponente
+                    </div>
+                  )}
                 </div>
                 <div
                   style={{
@@ -1357,7 +1422,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                     onMouseEnter={() => setHoverBrand("intel")}
                     onMouseLeave={() => setHoverBrand(null)}
                     style={{
-                      ...brandBtnStyle, position: "relative", overflow: "hidden", padding: "0", minHeight: "230px", gap: "0",
+                      ...brandBtnStyle, position: "relative", overflow: "hidden", padding: "0", minHeight: isMobile ? "120px" : "230px", gap: "0",
                       alignItems: "center", justifyContent: "center",
                       border: hoverBrand === "intel" ? "1px solid #0099ff" : `1px solid ${COLORS.border}`,
                       borderTop: "3px solid #0099ff",
@@ -1366,11 +1431,19 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                     }}
                   >
                     <div style={{ position: "absolute", top: "-70px", left: "50%", transform: "translateX(-50%)", width: "280px", height: "280px", borderRadius: "50%", background: "radial-gradient(circle, rgba(0,153,255,.24), transparent 68%)", pointerEvents: "none", transition: "opacity .2s", opacity: hoverBrand === "intel" ? 1 : 0.7 }} />
-                    <div style={{ position: "relative", zIndex: 2, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "20px", width: "100%", height: "100%", padding: "32px 24px" }}>
+                    <div
+                      style={{
+                        position: "relative", zIndex: 2, display: "flex",
+                        flexDirection: isMobile ? "row" : "column",
+                        alignItems: "center", justifyContent: "center",
+                        gap: isMobile ? "18px" : "20px", width: "100%", height: "100%",
+                        padding: isMobile ? "18px 24px" : "32px 24px",
+                      }}
+                    >
                       <img
                         src="/intel.svg"
                         alt="Intel"
-                        style={{ maxHeight: "64px", maxWidth: "170px", objectFit: "contain" }}
+                        style={{ maxHeight: isMobile ? "36px" : "64px", maxWidth: "170px", objectFit: "contain" }}
                         onError={(e) => { const t = e.currentTarget; t.style.display = "none"; const f = t.nextElementSibling as HTMLElement; if (f) f.style.display = "inline"; }}
                       />
                       <span style={{ display: "none", fontSize: "40px", fontWeight: 700, letterSpacing: "-.5px", color: "#3da5ff" }}>intel</span>
@@ -1382,7 +1455,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                     onMouseEnter={() => setHoverBrand("amd")}
                     onMouseLeave={() => setHoverBrand(null)}
                     style={{
-                      ...brandBtnStyle, position: "relative", overflow: "hidden", padding: "0", minHeight: "230px", gap: "0",
+                      ...brandBtnStyle, position: "relative", overflow: "hidden", padding: "0", minHeight: isMobile ? "120px" : "230px", gap: "0",
                       alignItems: "center", justifyContent: "center",
                       border: hoverBrand === "amd" ? "1px solid #ff5e00" : `1px solid ${COLORS.border}`,
                       borderTop: "3px solid #ff5e00",
@@ -1391,11 +1464,19 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                     }}
                   >
                     <div style={{ position: "absolute", top: "-70px", left: "50%", transform: "translateX(-50%)", width: "280px", height: "280px", borderRadius: "50%", background: "radial-gradient(circle, rgba(255,94,0,.22), transparent 68%)", pointerEvents: "none", transition: "opacity .2s", opacity: hoverBrand === "amd" ? 1 : 0.7 }} />
-                    <div style={{ position: "relative", zIndex: 2, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "20px", width: "100%", height: "100%", padding: "32px 24px" }}>
+                    <div
+                      style={{
+                        position: "relative", zIndex: 2, display: "flex",
+                        flexDirection: isMobile ? "row" : "column",
+                        alignItems: "center", justifyContent: "center",
+                        gap: isMobile ? "18px" : "20px", width: "100%", height: "100%",
+                        padding: isMobile ? "18px 24px" : "32px 24px",
+                      }}
+                    >
                       <img
                         src="/amd.svg"
                         alt="AMD"
-                        style={{ maxHeight: "56px", maxWidth: "170px", objectFit: "contain" }}
+                        style={{ maxHeight: isMobile ? "32px" : "56px", maxWidth: "170px", objectFit: "contain" }}
                         onError={(e) => { const t = e.currentTarget; t.style.display = "none"; const f = t.nextElementSibling as HTMLElement; if (f) f.style.display = "inline"; }}
                       />
                       <span style={{ display: "none", fontSize: "40px", fontWeight: 800, color: "#ff7a33" }}>AMD</span>
@@ -1422,13 +1503,19 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                     }}
                   >
                     <div>
-                      <div style={kickerStyle}>
-                        KORAK {String(stepIndex + 1).padStart(2, "0")} — ODABIR
-                      </div>
+                      {/* B (round 2): dropped on mobile — redundant once the
+                          compact "Korak N/11 · Label" rail is showing */}
+                      {!isMobile && (
+                        <div style={kickerStyle}>
+                          KORAK {String(stepIndex + 1).padStart(2, "0")} — ODABIR
+                        </div>
+                      )}
                       <h2 style={h2Style}>{STEP_LABELS[currentStep]}</h2>
-                      <div style={{ color: COLORS.textMuted, fontSize: "14px", marginTop: "7px" }}>
-                        {currentProducts.length} kompatibilnih modela za tvoju konfiguraciju
-                      </div>
+                      {!isMobile && (
+                        <div style={{ color: COLORS.textMuted, fontSize: "14px", marginTop: "7px" }}>
+                          {currentProducts.length} kompatibilnih modela za tvoju konfiguraciju
+                        </div>
+                      )}
                     </div>
                     <div
                       style={{
