@@ -81,6 +81,9 @@
 .rs-hero-inner .rs-hero-kicker{color:rgba(255,255,255,.7)}
 .rs-hero-kicker-dot{color:var(--accent)}
 .rs-hero-inner h1{font-size:clamp(46px,8.5vw,104px);line-height:.9;font-weight:700;letter-spacing:-2.5px;text-transform:uppercase;margin:16px 0 0;text-shadow:0 8px 50px rgba(0,0,0,.6)}
+/* inline on desktop (organic wrap, unchanged from before); mobile forces
+   one word per line to match the reference — see the media query below */
+.rs-hero-line{display:inline}
 /* solid gradient fill (matches the primary buttons) instead of an outline —
    color is the fallback for browsers without background-clip:text support */
 .rs-hero-inner h1 em{font-style:normal;display:block;color:var(--accent);background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
@@ -96,12 +99,17 @@
 @media(max-width:860px){
   /* was 74% center (crops in tight on just the right-hand white case) —
      centered lower shows both cases together instead of favoring one */
-  .rs-hero{background-position:50% 42%;min-height:74vh;min-height:74svh;padding:0 24px;text-align:left}
+  .rs-hero{background-position:50% 42%;min-height:62vh;min-height:62svh;padding:0 24px;text-align:left}
   .rs-hero::before{background:radial-gradient(70% 65% at 50% 60%,rgba(7,8,12,.55),rgba(7,8,12,.3) 55%,transparent 85%),linear-gradient(180deg,rgba(7,8,12,.55) 0%,rgba(7,8,12,.2) 20%,rgba(7,8,12,.3) 55%,rgba(7,8,12,.97) 100%)}
   .rs-hero-inner{padding:0;max-width:100%;text-align:left}
   .rs-hero-inner .rs-hero-kicker{color:#fff;font-size:10.5px;letter-spacing:2.5px;text-shadow:0 2px 10px rgba(0,0,0,.85),0 0 16px rgba(0,0,0,.6)}
   .rs-hero-kicker-desktop{display:none}
-  .rs-hero-inner h1{font-size:32px;line-height:1.06;letter-spacing:-.5px;margin-top:14px;text-shadow:0 3px 18px rgba(0,0,0,.85),0 1px 4px rgba(0,0,0,.9)}
+  /* follow-up: reference mockup wraps one WORD per line (4 lines total,
+     "Tvoje"/"računalo,"/"Tvoja"/"pravila"), not two lines of full phrases —
+     needs a much bigger size to fill the line at one word each. .rs-hero-line
+     stays inline here so desktop's own (unrelated) 2-line wrap is untouched. */
+  .rs-hero-inner h1{font-size:58px;line-height:.94;letter-spacing:-1.5px;margin-top:14px;text-shadow:0 3px 18px rgba(0,0,0,.85),0 1px 4px rgba(0,0,0,.9)}
+  .rs-hero-line{display:block}
   /* C (round 2) + follow-up: the desktop gradient (accent -> accent2, both
      mid-tone) read as near-invisible against the mobile hero crop + scrim.
      A light-gradient attempt fixed contrast but looked washed-out/muddy —
@@ -112,15 +120,15 @@
   .rs-hero-inner h1 em{background:linear-gradient(100deg,#ff36e0,#9b3bf0);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;text-shadow:none;filter:drop-shadow(0 2px 18px rgba(255,54,224,.35))}
   .rs-hero-inner p{display:none}
   .rs-hero-cta{display:none}
-  /* mobile-only CTA row: white primary pill + circular play button */
-  .rs-hero-cta-mobile{display:flex;align-items:center;gap:12px;margin-top:26px}
+  /* mobile-only CTA: a single full-width white pill (play button removed —
+     there's no video for it to open, so it was dead weight) */
+  .rs-hero-cta-mobile{display:block;margin-top:22px}
   /* .rs-root a{color:inherit} (a class + type selector) otherwise beats a
      plain single-class rule on specificity regardless of source order, which
      was pulling in an inherited light color and making the primary button's
      text nearly invisible against its own white background — qualified with
      the parent class here to win that fight */
-  .rs-hero-cta-mobile .rs-btn-mobile-primary{flex:1 1 auto;display:flex;align-items:center;justify-content:center;gap:6px;background:#fff;color:#0a0a0f;font-weight:700;font-size:15px;padding:15px 20px;border-radius:100px;box-shadow:0 10px 30px -10px rgba(0,0,0,.6)}
-  .rs-hero-cta-mobile .rs-btn-mobile-play{flex-shrink:0;width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.25);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;color:#fff}
+  .rs-hero-cta-mobile .rs-btn-mobile-primary{display:flex;align-items:center;justify-content:center;gap:6px;background:#fff;color:#0a0a0f;font-weight:700;font-size:15px;padding:15px 20px;border-radius:100px;box-shadow:0 10px 30px -10px rgba(0,0,0,.6)}
   /* the hero's own stat row is replaced by rs-mobile-cats' trust strip below */
   .rs-stats{display:none}
 }
@@ -148,6 +156,13 @@
   .rs-mcat-ic{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
   .rs-mcat-label{font-weight:700;font-size:15px;color:var(--text);margin-top:auto}
   .rs-mcat-sub{font-size:12px;color:var(--muted)}
+  /* follow-up: Periferija drops out of the 2-col grid into its own full-width,
+     shorter banner row (icon + text side by side) once Nadogradnja is gone —
+     "wider and shorter" rather than a lone tile stranded in an empty 2x2 cell */
+  .rs-mcat-wide{flex-direction:row;align-items:center;gap:14px;min-height:0;padding:14px 16px;margin-top:12px}
+  .rs-mcat-wide .rs-mcat-ic{margin-top:0}
+  .rs-mcat-wide-text{display:flex;flex-direction:column;gap:2px}
+  .rs-mcat-wide .rs-mcat-label{margin-top:0}
   .rs-mobile-trust{margin-top:22px;padding-top:20px;border-top:1px solid var(--line)}
   .rs-mobile-trust-stats{display:flex;align-items:center;gap:18px;font-family:'IBM Plex Mono',monospace}
   .rs-mobile-trust-stats b{display:block;font-size:19px;color:var(--text)}

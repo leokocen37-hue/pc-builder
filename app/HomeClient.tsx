@@ -32,19 +32,22 @@ export default function HomeClient({ gaming, stanice }: { gaming: ProductNode[];
             <span className="rs-hero-kicker-desktop">Custom PC <span className="rs-hero-kicker-dot">·</span> </span>
             ručno sastavljeno u Hrvatskoj
           </div>
-          <h1>Tvoje računalo,<em>tvoja pravila</em></h1>
+          {/* each word gets its own span so mobile can force one-word-per-line
+              (matching the reference exactly) via CSS alone — desktop's
+              .rs-hero-line stays display:inline so it wraps organically same
+              as before */}
+          <h1>
+            <span className="rs-hero-line">Tvoje</span> <span className="rs-hero-line">računalo,</span>
+            <em><span className="rs-hero-line">Tvoja</span> <span className="rs-hero-line">pravila</span></em>
+          </h1>
           <p>Složi svaku komponentu uz provjeru kompatibilnosti u stvarnom vremenu — ili odaberi gotovu, testiranu konfiguraciju.</p>
           <div className="rs-hero-cta">
             <Link href={CONFIGURATOR_PATH} className="rs-btn">Otvori konfigurator →</Link>
             <Link href="/racunala" className="rs-btn ghost">Gotova računala</Link>
           </div>
-          {/* mobile-only: white primary pill + circular play button, both open
-              the configurator — there's no separate demo video to link to yet */}
+          {/* mobile-only: single full-width white pill, opens the configurator */}
           <div className="rs-hero-cta-mobile">
             <Link href={CONFIGURATOR_PATH} className="rs-btn-mobile-primary">Konfigurator →</Link>
-            <Link href={CONFIGURATOR_PATH} className="rs-btn-mobile-play" aria-label="Otvori konfigurator">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
-            </Link>
           </div>
           <div className="rs-stats">
             <div><b>{SITE.buildDaysMin}–{SITE.buildDaysMax} dana</b><span>sastavljanje</span></div>
@@ -75,21 +78,16 @@ export default function HomeClient({ gaming, stanice }: { gaming: ProductNode[];
               <span className="rs-mcat-label">Radna stanica</span>
               <span className="rs-mcat-sub">{staniceFrom ? <>od {formatEUR(staniceFrom)}</> : "Pogledaj"}</span>
             </Link>
-            <Link href="/periferija" className="rs-mcat">
-              <span className="rs-mcat-ic" style={{ background: "linear-gradient(135deg,#0e7a52,#27c08a)" }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" /><circle cx="12" cy="18" r="1" /></svg>
-              </span>
+          </div>
+          <Link href="/periferija" className="rs-mcat rs-mcat-wide">
+            <span className="rs-mcat-ic" style={{ background: "linear-gradient(135deg,#0e7a52,#27c08a)" }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" /><circle cx="12" cy="18" r="1" /></svg>
+            </span>
+            <span className="rs-mcat-wide-text">
               <span className="rs-mcat-label">Periferija</span>
               <span className="rs-mcat-sub">240+ artikala</span>
-            </Link>
-            <Link href="/kontakt" className="rs-mcat">
-              <span className="rs-mcat-ic" style={{ background: "linear-gradient(135deg,#a85a0e,#e8a83a)" }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a4 4 0 0 1-5.4 5.4L4 17v3h3l5.3-5.3a4 4 0 0 1 5.4-5.4z" /></svg>
-              </span>
-              <span className="rs-mcat-label">Nadogradnja</span>
-              <span className="rs-mcat-sub">servis u 48h</span>
-            </Link>
-          </div>
+            </span>
+          </Link>
           <div className="rs-mobile-trust">
             <div className="rs-mobile-trust-stats">
               <div><b>{SITE.buildDaysMin}–{SITE.buildDaysMax}</b><span>dana sastavljanje</span></div>
