@@ -99,16 +99,28 @@
 @media(max-width:860px){
   /* was 74% center (crops in tight on just the right-hand white case) —
      centered lower shows both cases together instead of favoring one */
-  .rs-hero{background-position:50% 42%;min-height:62vh;min-height:62svh;padding:0 24px;text-align:left}
+  /* was align-items:center (inherited from the base rule) — that centers
+     the text block in the dead middle of the hero box regardless of its
+     own height, which read as "floating in the middle" instead of sitting
+     lower like the reference. flex-end anchors it toward the bottom, with
+     padding-bottom controlling the exact offset from the edge. */
+  .rs-hero{background-position:50% 42%;min-height:78vh;min-height:78svh;padding:0 24px 64px;align-items:flex-end;text-align:left}
   .rs-hero::before{background:radial-gradient(70% 65% at 50% 60%,rgba(7,8,12,.55),rgba(7,8,12,.3) 55%,transparent 85%),linear-gradient(180deg,rgba(7,8,12,.55) 0%,rgba(7,8,12,.2) 20%,rgba(7,8,12,.3) 55%,rgba(7,8,12,.97) 100%)}
-  .rs-hero-inner{padding:0;max-width:100%;text-align:left}
+  /* .rs-hero's justify-content:center (base rule, centers its flex child
+     horizontally) was centering this whole block since it only had
+     max-width — a shrink-wrapped box narrower than its container still
+     gets centered by the parent regardless of its own text-align. width:100%
+     makes it actually fill the row so text-align:left has somewhere to work. */
+  .rs-hero-inner{padding:0;width:100%;max-width:100%;text-align:left}
   .rs-hero-inner .rs-hero-kicker{color:#fff;font-size:10.5px;letter-spacing:2.5px;text-shadow:0 2px 10px rgba(0,0,0,.85),0 0 16px rgba(0,0,0,.6)}
   .rs-hero-kicker-desktop{display:none}
   /* follow-up: reference mockup wraps one WORD per line (4 lines total,
-     "Tvoje"/"računalo,"/"Tvoja"/"pravila"), not two lines of full phrases —
-     needs a much bigger size to fill the line at one word each. .rs-hero-line
-     stays inline here so desktop's own (unrelated) 2-line wrap is untouched. */
-  .rs-hero-inner h1{font-size:58px;line-height:.94;letter-spacing:-1.5px;margin-top:14px;text-shadow:0 3px 18px rgba(0,0,0,.85),0 1px 4px rgba(0,0,0,.9)}
+     "Tvoje"/"računalo,"/"Tvoja"/"pravila"), not two lines of full phrases.
+     58px was too big once actually applied (a stale max-width:400px rule
+     had been silently overriding it back down to 24px, so that size was
+     never really seen/judged before now) — dialed back to 40px.
+     .rs-hero-line stays inline on desktop (unrelated, unchanged 2-line wrap). */
+  .rs-hero-inner h1{font-size:40px;line-height:.98;letter-spacing:-1px;margin-top:12px;text-shadow:0 3px 18px rgba(0,0,0,.85),0 1px 4px rgba(0,0,0,.9)}
   .rs-hero-line{display:block}
   /* C (round 2) + follow-up: the desktop gradient (accent -> accent2, both
      mid-tone) read as near-invisible against the mobile hero crop + scrim.
@@ -133,7 +145,12 @@
   .rs-stats{display:none}
 }
 @media(min-width:861px){.rs-hero-cta-mobile{display:none}}
-@media(max-width:400px){.rs-hero-inner h1{font-size:24px}}
+/* this stale rule (from before the round-2 mobile redesign, back when the
+   mobile h1 was ~28-32px) was firing on top of the 58px rule above for any
+   phone <=400px wide — i.e. nearly every phone, including standard
+   iPhones — silently shrinking the heading back down and leaving a small
+   text block centered in a tall box. Removed; see the sized/positioned
+   rules in the max-width:860px block instead. */
 
 /* value strip — three quick answers directly under the hero */
 .rs-value-strip{background:var(--bg2);border-bottom:1px solid var(--line)}
