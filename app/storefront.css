@@ -97,17 +97,14 @@
 
 /* mobile hero — round 2 full redesign against a supplied reference mockup */
 @media(max-width:860px){
-  /* purpose-made portrait crop with both cases together and genuine open
-     space above them for text — replaces cropping into the wide desktop
-     photo, which could only ever favor one case or the other. Aspect ratio
-     (1080x1660) happens to be close enough to a phone viewport that
-     background-size:cover shows the whole image with barely any crop. */
-  .rs-hero{background-image:url('/hero-banner-mobile.jpg');background-position:50% 15%;min-height:82vh;min-height:82svh;padding:34px 24px 0;align-items:flex-start;text-align:left}
-  /* the mobile photo's own top ~45% is a plain light-lavender gradient (no
-     product to protect), so the scrim only needs to darken enough for
-     white text to read — heavier right at the bottom where it meets the
-     case renders, so the CTA button/photo boundary doesn't look abrupt */
-  .rs-hero::before{background:linear-gradient(180deg,rgba(7,8,12,.35) 0%,rgba(7,8,12,.15) 30%,rgba(7,8,12,.25) 55%,rgba(7,8,12,.85) 100%)}
+  /* purpose-made portrait crop with both cases together — replaces cropping
+     into the wide desktop photo, which could only ever favor one case or
+     the other. Position/alignment kept matching the prior (pre-image-swap)
+     layout at the user's explicit request — the text sits at the bottom,
+     over the case renders here, rather than in this photo's own open
+     upper zone. */
+  .rs-hero{background-image:url('/hero-banner-mobile.jpg');background-position:50% 15%;min-height:82vh;min-height:82svh;padding:0 24px 40px;align-items:flex-end;text-align:left}
+  .rs-hero::before{background:radial-gradient(70% 65% at 50% 60%,rgba(7,8,12,.55),rgba(7,8,12,.3) 55%,transparent 85%),linear-gradient(180deg,rgba(7,8,12,.55) 0%,rgba(7,8,12,.2) 20%,rgba(7,8,12,.3) 55%,rgba(7,8,12,.97) 100%)}
   /* .rs-hero's justify-content:center (base rule, centers its flex child
      horizontally) was centering this whole block since it only had
      max-width — a shrink-wrapped box narrower than its container still
