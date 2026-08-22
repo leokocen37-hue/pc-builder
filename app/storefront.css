@@ -97,14 +97,22 @@
 
 /* mobile hero — round 2 full redesign against a supplied reference mockup */
 @media(max-width:860px){
-  /* purpose-made portrait crop with both cases together — replaces cropping
-     into the wide desktop photo, which could only ever favor one case or
-     the other. Position/alignment kept matching the prior (pre-image-swap)
-     layout at the user's explicit request — the text sits at the bottom,
-     over the case renders here, rather than in this photo's own open
-     upper zone. */
-  .rs-hero{background-image:url('/hero-banner-mobile.jpg');background-position:50% 15%;min-height:82vh;min-height:82svh;padding:0 24px 40px;align-items:flex-end;text-align:left}
-  .rs-hero::before{background:radial-gradient(70% 65% at 50% 60%,rgba(7,8,12,.55),rgba(7,8,12,.3) 55%,transparent 85%),linear-gradient(180deg,rgba(7,8,12,.55) 0%,rgba(7,8,12,.2) 20%,rgba(7,8,12,.3) 55%,rgba(7,8,12,.97) 100%)}
+  /* purpose-made portrait crop with both cases together. Shorter box +
+     bottom-anchored background-position crops out most of the photo's own
+     empty top zone, surfacing the cases higher/closer to the header. The
+     scrim then does the opposite of before: transparent over the cases so
+     they stay visible, transitioning to solid black by where the text
+     sits, so the cases read as sitting "above" the text instead of behind
+     it — a distinct dark band, not one flat overlay top to bottom. */
+  /* background-size:cover's crop amount is scale-dependent (barely any
+     overflow to work with at a mobile-shaped box against this image's
+     aspect ratio), which fought every attempt to reposition the cases
+     predictably. Locked to 100% width / auto height instead (fixed 599px
+     rendered height at 390px viewport width) with a plain pixel offset —
+     -195px crops most of the photo's own empty top gradient away, so the
+     cases start shortly after the header instead of after a long empty gap. */
+  .rs-hero{background-image:url('/hero-banner-mobile.jpg');background-size:100% auto;background-position:center -195px;min-height:66vh;min-height:66svh;padding:0 24px 40px;align-items:flex-end;text-align:left}
+  .rs-hero::before{background:linear-gradient(180deg,rgba(7,8,12,0) 0%,rgba(7,8,12,0) 30%,rgba(7,8,12,.75) 46%,#07080c 58%,#07080c 100%)}
   /* .rs-hero's justify-content:center (base rule, centers its flex child
      horizontally) was centering this whole block since it only had
      max-width — a shrink-wrapped box narrower than its container still
