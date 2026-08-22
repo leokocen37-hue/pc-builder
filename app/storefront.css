@@ -52,7 +52,10 @@
   .rs-menu-btn{display:flex}
   .rs-cart-label{display:none}
   .rs-nav-right{gap:2px}
-  .rs-cart-btn{width:44px;height:44px;justify-content:center}
+  /* round 2 mobile redesign: soft circular buttons instead of bare icons —
+     matches the reference design's header treatment */
+  .rs-cart-btn{width:44px;height:44px;justify-content:center;border-radius:50%;background:rgba(255,255,255,.08)}
+  .rs-menu-btn{border-radius:50%;background:rgba(255,255,255,.08)}
   /* the icon is now centered inside a bigger 44px tap target, so the badge
      (positioned relative to the *button*, not the icon) needs repositioning
      to stay pinned to the icon's corner instead of the button's corner */
@@ -89,33 +92,39 @@
 .rs-stats span{font-size:11px;letter-spacing:1.5px;color:#cbb3d6;text-transform:uppercase}
 @media(max-width:600px){.rs-stats{gap:24px}}
 
-/* mobile hero — keep the image plain (no card/box behind the text), just smaller
-   type with a strong drop-shadow for contrast, and reframe on the right-hand PC. */
+/* mobile hero — round 2 full redesign against a supplied reference mockup */
 @media(max-width:860px){
-  .rs-hero{background-position:74% center;min-height:74vh;min-height:74svh;padding:0 24px}
-  .rs-hero::before{background:radial-gradient(65% 60% at 50% 55%,rgba(7,8,12,.72),rgba(7,8,12,.4) 55%,transparent 82%),linear-gradient(180deg,rgba(7,8,12,.6) 0%,rgba(7,8,12,.25) 22%,rgba(7,8,12,.35) 60%,rgba(7,8,12,.96) 100%)}
-  .rs-hero-inner{padding:0}
-  .rs-hero-inner .rs-hero-kicker{color:#fff;font-size:10px;text-shadow:0 2px 10px rgba(0,0,0,.85),0 0 16px rgba(0,0,0,.6)}
-  .rs-hero-kicker-dot{text-shadow:none}
-  .rs-hero-inner h1{font-size:28px;line-height:1.08;letter-spacing:-.3px;margin-top:12px;text-shadow:0 3px 18px rgba(0,0,0,.85),0 1px 4px rgba(0,0,0,.9)}
+  /* was 74% center (crops in tight on just the right-hand white case) —
+     centered lower shows both cases together instead of favoring one */
+  .rs-hero{background-position:50% 42%;min-height:74vh;min-height:74svh;padding:0 24px;text-align:left}
+  .rs-hero::before{background:radial-gradient(70% 65% at 50% 60%,rgba(7,8,12,.55),rgba(7,8,12,.3) 55%,transparent 85%),linear-gradient(180deg,rgba(7,8,12,.55) 0%,rgba(7,8,12,.2) 20%,rgba(7,8,12,.3) 55%,rgba(7,8,12,.97) 100%)}
+  .rs-hero-inner{padding:0;max-width:100%;text-align:left}
+  .rs-hero-inner .rs-hero-kicker{color:#fff;font-size:10.5px;letter-spacing:2.5px;text-shadow:0 2px 10px rgba(0,0,0,.85),0 0 16px rgba(0,0,0,.6)}
+  .rs-hero-kicker-desktop{display:none}
+  .rs-hero-inner h1{font-size:32px;line-height:1.06;letter-spacing:-.5px;margin-top:14px;text-shadow:0 3px 18px rgba(0,0,0,.85),0 1px 4px rgba(0,0,0,.9)}
   /* C (round 2) + follow-up: the desktop gradient (accent -> accent2, both
      mid-tone) read as near-invisible against the mobile hero crop + scrim.
      A light-gradient attempt fixed contrast but looked washed-out/muddy —
      at mobile's small type size there isn't enough width for a gradient to
-     read as intentional, it just averages into a flat pale hue. Solid,
-     saturated brand pink with a glow instead — pops regardless of the
-     photo behind it and reads as a deliberate choice, not a bug. */
-  .rs-hero-inner h1 em{background:none;-webkit-background-clip:initial;background-clip:initial;-webkit-text-fill-color:initial;color:#ff36e0;text-shadow:0 0 28px rgba(255,54,224,.55),0 2px 4px rgba(0,0,0,.9),0 4px 20px rgba(0,0,0,.75)}
-  .rs-hero-inner p{font-size:13.5px;margin:14px auto 22px;line-height:1.5}
-  .rs-hero-cta{flex-direction:column;align-items:stretch;gap:10px}
-  .rs-hero-cta .rs-btn{justify-content:center;padding:13px 22px;font-size:13.5px}
-  /* C: force one row (was flex-wrap, which split 2+1 once the three items'
-     natural width exceeded the viewport) — an even 3-column grid instead */
-  .rs-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:22px}
-  .rs-stats div{text-align:center}
-  .rs-stats b{font-size:15px}
-  .rs-stats span{font-size:9px;letter-spacing:.6px}
+     read as intentional, it just averages into a flat pale hue. A tighter
+     pink->violet gradient (closer in hue, both saturated) reads as an
+     intentional color instead of a wash, and still pops against the photo. */
+  .rs-hero-inner h1 em{background:linear-gradient(100deg,#ff36e0,#9b3bf0);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;text-shadow:none;filter:drop-shadow(0 2px 18px rgba(255,54,224,.35))}
+  .rs-hero-inner p{display:none}
+  .rs-hero-cta{display:none}
+  /* mobile-only CTA row: white primary pill + circular play button */
+  .rs-hero-cta-mobile{display:flex;align-items:center;gap:12px;margin-top:26px}
+  /* .rs-root a{color:inherit} (a class + type selector) otherwise beats a
+     plain single-class rule on specificity regardless of source order, which
+     was pulling in an inherited light color and making the primary button's
+     text nearly invisible against its own white background — qualified with
+     the parent class here to win that fight */
+  .rs-hero-cta-mobile .rs-btn-mobile-primary{flex:1 1 auto;display:flex;align-items:center;justify-content:center;gap:6px;background:#fff;color:#0a0a0f;font-weight:700;font-size:15px;padding:15px 20px;border-radius:100px;box-shadow:0 10px 30px -10px rgba(0,0,0,.6)}
+  .rs-hero-cta-mobile .rs-btn-mobile-play{flex-shrink:0;width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.25);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;color:#fff}
+  /* the hero's own stat row is replaced by rs-mobile-cats' trust strip below */
+  .rs-stats{display:none}
 }
+@media(min-width:861px){.rs-hero-cta-mobile{display:none}}
 @media(max-width:400px){.rs-hero-inner h1{font-size:24px}}
 
 /* value strip — three quick answers directly under the hero */
@@ -123,19 +132,28 @@
 .rs-value-strip-inner{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:12px 40px;padding:18px 28px;text-align:center}
 .rs-value-item{font-size:13.5px;color:var(--muted);font-family:'IBM Plex Mono',monospace;letter-spacing:.2px}
 .rs-value-item b{color:var(--text);font-weight:600}
-/* C (round 2): three centred stacked lines read as a weak list on mobile —
-   a horizontally scrollable row of chips instead, each with real edges so
-   it reads as structured content rather than three sentences */
-@media(max-width:700px){
-  /* same hide-native-scrollbar + edge-fade pattern as the configurator's
-     .rs-rail-wrap/.rs-rail, just against this section's own --bg2 */
-  .rs-value-strip{position:relative}
-  .rs-value-strip::before,.rs-value-strip::after{content:"";position:absolute;top:0;bottom:0;width:24px;z-index:2;pointer-events:none}
-  .rs-value-strip::before{left:0;background:linear-gradient(90deg,var(--bg2),transparent)}
-  .rs-value-strip::after{right:0;background:linear-gradient(270deg,var(--bg2),transparent)}
-  .rs-value-strip-inner{flex-wrap:nowrap;justify-content:flex-start;gap:10px;padding:14px 18px;overflow-x:auto;text-align:left;scrollbar-width:none;-ms-overflow-style:none}
-  .rs-value-strip-inner::-webkit-scrollbar{display:none}
-  .rs-value-item{flex-shrink:0;white-space:nowrap;padding:8px 14px;border:1px solid var(--line);border-radius:20px;background:rgba(255,255,255,.03);font-size:12.5px}
+/* round 2 mobile redesign: this chip row is superseded by rs-mobile-cats'
+   own trust strip below the new category tiles — hidden rather than kept
+   as a second, redundant strip. Desktop keeps it as-is. */
+@media(max-width:860px){.rs-value-strip{display:none}}
+
+/* mobile-only category tile grid, replacing the value-strip right under
+   the hero on small screens (see the JSX comment in HomeClient.tsx) */
+.rs-mobile-cats{display:none}
+@media(max-width:860px){
+  .rs-mobile-cats{display:block;padding:28px 0 8px;background:var(--bg)}
+  .rs-mobile-cats-kicker{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:3px;color:var(--muted);margin-bottom:14px}
+  .rs-mobile-cats-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .rs-mcat{display:flex;flex-direction:column;gap:10px;padding:16px;border-radius:16px;background:var(--card);border:1px solid var(--line);min-height:118px}
+  .rs-mcat-ic{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .rs-mcat-label{font-weight:700;font-size:15px;color:var(--text);margin-top:auto}
+  .rs-mcat-sub{font-size:12px;color:var(--muted)}
+  .rs-mobile-trust{margin-top:22px;padding-top:20px;border-top:1px solid var(--line)}
+  .rs-mobile-trust-stats{display:flex;align-items:center;gap:18px;font-family:'IBM Plex Mono',monospace}
+  .rs-mobile-trust-stats b{display:block;font-size:19px;color:var(--text)}
+  .rs-mobile-trust-stats span{font-size:10.5px;letter-spacing:.8px;color:var(--muted);text-transform:uppercase}
+  .rs-mobile-trust-div{width:1px;align-self:stretch;background:var(--line)}
+  .rs-mobile-trust p{margin-top:14px;font-size:12.5px;color:var(--faint)}
 }
 
 /* sections */
