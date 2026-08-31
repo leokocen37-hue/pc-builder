@@ -240,6 +240,12 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [comparePanelClosed, setComparePanelClosed] = useState(false);
   const [compareLimitHint, setCompareLimitHint] = useState(false);
+  // uvjeti-jednostrani-raskid-spec.md section 3: unchecked by default,
+  // required before a configured build can be added to cart — this is the
+  // one place in the flow (per the spec) that keeps an explicit checkbox
+  // rather than just a passive notice, since it's the single most likely
+  // spot a buyer would later invoke the withdrawal-right exception.
+  const [raskidConsent, setRaskidConsent] = useState(false);
   // D (round 2): compare mode — off by default, toggled from the toolbar.
   // While on, tapping a card adds/removes it from the comparison instead of
   // choosing it. Replaces the old always-visible per-card checkbox.
@@ -261,6 +267,11 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
     if (compareMode) setCompareMode(false);
     if (compareIds.length > 0) setCompareIds([]);
     if (comparePanelClosed) setComparePanelClosed(false);
+    // any step change means the buyer either just left review to edit a
+    // component, or is arriving fresh — either way the consent checkbox
+    // must be re-confirmed against whatever the configuration ends up being,
+    // not carried over unchecked-by-default-but-stale from an earlier visit
+    if (raskidConsent) setRaskidConsent(false);
   }
 
   // --- HARDWARE LOGIC ---
@@ -1052,6 +1063,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
     setCooler(null);
     setOs(null);
     setAddingExtra(null);
+    setRaskidConsent(false);
 
     window.history.replaceState(null, "", window.location.pathname);
   };
@@ -1138,7 +1150,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
   };
 
   const handleCheckout = async () => {
-    if (!buildComplete) return;
+    if (!buildComplete || !raskidConsent) return;
 
     // one clean custom line at the configurator's exact price (assembly already included).
     // variantIds is the source of truth the server uses to re-price this build —
@@ -1155,7 +1167,14 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
       .join(", ");
     const variantIds = chosenParts.map((p) => p.selectedVariant?.id || p.variants.edges[0].node.id);
 
-    addCustomBuild({ title: "Custom PC Konfiguracija", price: currentTotal(), summary, variantIds });
+    addCustomBuild({
+      title: "Custom PC Konfiguracija",
+      price: currentTotal(),
+      summary,
+      variantIds,
+      raskidObavijest: "konfigurator-2026-08",
+      raskidSuglasnost: "da",
+    });
   };
 
   // A PC is only orderable when every required part is chosen.
@@ -2590,12 +2609,46 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
 
               {isReviewStep ? (
                 <>
+                  {/* uvjeti-jednostrani-raskid-spec.md section 3: unchecked by
+                      default, required to continue. Only shown once the build
+                      is otherwise complete, so it's the last gate, not a wall
+                      shown before the buyer even knows what they're ordering. */}
+                  {buildComplete && (
+                    <label
+                      style={{
+                        display: "flex",
+                        alignItems: "flex-start",
+                        gap: "9px",
+                        marginBottom: "12px",
+                        padding: "11px 13px",
+                        background: "rgba(255,184,77,.08)",
+                        border: "1px solid rgba(255,184,77,.25)",
+                        borderRadius: "10px",
+                        fontSize: "12px",
+                        lineHeight: 1.5,
+                        color: "#e8c07a",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={raskidConsent}
+                        onChange={(e) => setRaskidConsent(e.target.checked)}
+                        style={{ marginTop: "2px", flexShrink: 0, width: "15px", height: "15px", accentColor: "#ffb84d" }}
+                      />
+                      <span>
+                        Suglasan/na sam da se ovo računalo sastavlja prema mojoj specifikaciji i da za njega,
+                        sukladno Zakonu o zaštiti potrošača, ne postoji pravo na jednostrani raskid ugovora u
+                        roku od 14 dana.
+                      </span>
+                    </label>
+                  )}
                   <button
-                    disabled={!buildComplete}
+                    disabled={!buildComplete || !raskidConsent}
                     onClick={handleCheckout}
                     style={{
                       ...checkoutBtnStyle,
-                      ...(buildComplete
+                      ...(buildComplete && raskidConsent
                         ? {}
                         : {
                             background: "rgba(255,255,255,.06)",

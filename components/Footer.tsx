@@ -33,6 +33,7 @@ export default function Footer() {
           <h5>Pravno</h5>
           <Link href="/uvjeti">Uvjeti poslovanja</Link>
           <Link href="/raskid">Pravo na raskid</Link>
+          <Link href="/uvjeti/obrazac-za-jednostrani-raskid">Obrazac za raskid</Link>
           <Link href="/privatnost">Politika privatnosti</Link>
           <Link href="/kolacici">Kolačići</Link>
           <Link href="/reklamacije">Reklamacije</Link>

@@ -6,8 +6,22 @@ import { createContext, useContext, useEffect, useState, useCallback, ReactNode 
 /* ---- item types ---- */
 // price here is only for the cart UI's own running total — the checkout API
 // never trusts it; it re-derives the real price from variantIds server-side.
-type CustomItem = { kind: "custom"; lineId: string; title: string; price: number; summary: string; quantity: number; variantIds: string[] };
-type ProductItem = { kind: "product"; lineId: string; variantId: string; title: string; price: number; image?: string; variantTitle?: string; quantity: number };
+//
+// raskidObavijest/raskidSuglasnost: which version of the "no 14-day
+// withdrawal right" notice was shown when this line was added, captured at
+// add-to-cart time (not checkout time) so it's on record even if the buyer
+// never revisits the cart. Forwarded to Shopify as a `_`-prefixed (hidden
+// from the buyer, visible in admin) line item property by /api/checkout.
+// See uvjeti-jednostrani-raskid-spec.md section 3.
+type CustomItem = {
+  kind: "custom"; lineId: string; title: string; price: number; summary: string; quantity: number; variantIds: string[];
+  raskidObavijest?: string; raskidSuglasnost?: "da";
+};
+type ProductItem = {
+  kind: "product"; lineId: string; variantId: string; title: string; price: number; image?: string; variantTitle?: string; quantity: number;
+  section?: "racunala" | "periferija";
+  raskidObavijest?: string;
+};
 export type CartItem = CustomItem | ProductItem;
 
 const LS = "rs_cart_v2";
@@ -20,8 +34,8 @@ type Ctx = {
   subtotal: number;
   checkoutBusy: boolean;
   setOpen: (o: boolean) => void;
-  addCustomBuild: (b: { title?: string; price: number; summary: string; variantIds: string[] }) => void;
-  addProduct: (p: { variantId: string; title: string; price: number; image?: string; variantTitle?: string; quantity?: number }) => void;
+  addCustomBuild: (b: { title?: string; price: number; summary: string; variantIds: string[]; raskidObavijest?: string; raskidSuglasnost?: "da" }) => void;
+  addProduct: (p: { variantId: string; title: string; price: number; image?: string; variantTitle?: string; quantity?: number; section?: "racunala" | "periferija"; raskidObavijest?: string }) => void;
   updateQty: (lineId: string, quantity: number) => void;
   removeItem: (lineId: string) => void;
   clear: () => void;
@@ -50,18 +64,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (hydrated) { try { localStorage.setItem(LS, JSON.stringify(items)); } catch {} }
   }, [items, hydrated]);
 
-  const addCustomBuild = useCallback((b: { title?: string; price: number; summary: string; variantIds: string[] }) => {
-    setItems((p) => [...p, { kind: "custom", lineId: uid(), title: b.title || "Custom PC Konfiguracija", price: b.price, summary: b.summary, quantity: 1, variantIds: b.variantIds }]);
+  const addCustomBuild = useCallback((b: { title?: string; price: number; summary: string; variantIds: string[]; raskidObavijest?: string; raskidSuglasnost?: "da" }) => {
+    setItems((p) => [...p, { kind: "custom", lineId: uid(), title: b.title || "Custom PC Konfiguracija", price: b.price, summary: b.summary, quantity: 1, variantIds: b.variantIds, raskidObavijest: b.raskidObavijest, raskidSuglasnost: b.raskidSuglasnost }]);
     setOpen(true);
   }, []);
 
   const addProduct = useCallback(
-    (pr: { variantId: string; title: string; price: number; image?: string; variantTitle?: string; quantity?: number }) => {
+    (pr: { variantId: string; title: string; price: number; image?: string; variantTitle?: string; quantity?: number; section?: "racunala" | "periferija"; raskidObavijest?: string }) => {
       const qty = pr.quantity ?? 1;
       setItems((p) => {
         const i = p.findIndex((x) => x.kind === "product" && x.variantId === pr.variantId);
         if (i >= 0) { const c = [...p]; (c[i] as ProductItem).quantity += qty; return c; }
-        return [...p, { kind: "product", lineId: uid(), variantId: pr.variantId, title: pr.title, price: pr.price, image: pr.image, variantTitle: pr.variantTitle, quantity: qty }];
+        return [...p, { kind: "product", lineId: uid(), variantId: pr.variantId, title: pr.title, price: pr.price, image: pr.image, variantTitle: pr.variantTitle, quantity: qty, section: pr.section, raskidObavijest: pr.raskidObavijest }];
       });
       setOpen(true);
     },
@@ -84,8 +98,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const payload = {
         items: items.map((i) =>
           i.kind === "custom"
-            ? { kind: "custom", title: i.title, summary: i.summary, quantity: i.quantity, variantIds: i.variantIds }
-            : { kind: "product", variantId: i.variantId, quantity: i.quantity }
+            ? { kind: "custom", title: i.title, summary: i.summary, quantity: i.quantity, variantIds: i.variantIds, raskidObavijest: i.raskidObavijest, raskidSuglasnost: i.raskidSuglasnost }
+            : { kind: "product", variantId: i.variantId, quantity: i.quantity, raskidObavijest: i.raskidObavijest }
         ),
       };
       const res = await fetch("/api/checkout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });

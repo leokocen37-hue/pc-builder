@@ -4,14 +4,26 @@ import { shopifyFetch } from "@/lib/shopify";
 import { ASSEMBLY_FEE } from "@/lib/pricing";
 
 type InItem =
-  | { kind: "custom"; title?: string; summary?: string; quantity?: number; variantIds?: string[] }
-  | { kind: "product"; variantId: string; quantity?: number };
+  | { kind: "custom"; title?: string; summary?: string; quantity?: number; variantIds?: string[]; raskidObavijest?: string; raskidSuglasnost?: "da" }
+  | { kind: "product"; variantId: string; quantity?: number; raskidObavijest?: string };
 
 type VariantPriceNode = { id: string; price: { amount: string } } | null;
 
 type DraftOrderLineItem =
   | { title: string; originalUnitPrice: string; quantity: number; customAttributes: { key: string; value: string }[]; requiresShipping: boolean }
-  | { variantId: string; quantity: number };
+  | { variantId: string; quantity: number; customAttributes?: { key: string; value: string }[] };
+
+// uvjeti-jednostrani-raskid-spec.md section 3: the burden of proof that the
+// withdrawal-right notice was shown is on the seller, not the buyer. Record
+// which dated version of the notice text was displayed (and, for configurator
+// items, the buyer's checkbox consent) as a `_`-prefixed line item property —
+// hidden from the buyer, visible on the order in the Shopify admin.
+function raskidAttributes(raskidObavijest?: string, raskidSuglasnost?: "da"): { key: string; value: string }[] {
+  const attrs: { key: string; value: string }[] = [];
+  if (raskidObavijest) attrs.push({ key: "_raskid_obavijest", value: raskidObavijest });
+  if (raskidSuglasnost) attrs.push({ key: "_raskid_suglasnost", value: raskidSuglasnost });
+  return attrs;
+}
 
 const errorMessage = (e: unknown) => (e instanceof Error ? e.message : "Unknown error");
 
@@ -74,7 +86,10 @@ export async function POST(request: Request) {
           title: it.title || "Custom PC Konfiguracija",
           originalUnitPrice: price.toFixed(2),
           quantity: it.quantity || 1,
-          customAttributes: [{ key: "Komponente", value: it.summary || "" }],
+          customAttributes: [
+            { key: "Komponente", value: it.summary || "" },
+            ...raskidAttributes(it.raskidObavijest, it.raskidSuglasnost),
+          ],
           // custom (non-variant) draft order lines default to non-shippable —
           // without this, a cart with ONLY a custom build skips the shipping
           // step entirely at checkout (a real product line masks this, since
@@ -82,7 +97,8 @@ export async function POST(request: Request) {
           requiresShipping: true,
         });
       } else {
-        lineItems.push({ variantId: it.variantId, quantity: it.quantity || 1 });
+        const attrs = raskidAttributes(it.raskidObavijest);
+        lineItems.push({ variantId: it.variantId, quantity: it.quantity || 1, ...(attrs.length ? { customAttributes: attrs } : {}) });
       }
     }
 

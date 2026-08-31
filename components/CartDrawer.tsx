@@ -1,6 +1,7 @@
 // → put this at:  components/CartDrawer.tsx
 "use client";
 
+import Link from "next/link";
 import { useCart, formatEUR } from "@/lib/cart";
 import CrossSell from "@/components/CrossSell";
 
@@ -47,6 +48,14 @@ export default function CartDrawer() {
                       </details>
                     ) : (
                       l.variantTitle && <div className="rs-line-variant">{l.variantTitle}</div>
+                    )}
+                    {/* uvjeti-jednostrani-raskid-spec.md section 3: repeat the
+                        no-withdrawal-right notice per applicable line in the
+                        cart, not just once on the product page */}
+                    {(l.kind === "custom" || l.section === "racunala") && (
+                      <div className="rs-line-raskid">
+                        Bez prava na jednostrani raskid (14 dana) — <Link href="/raskid">pogledajte zašto</Link>
+                      </div>
                     )}
                     <div className="rs-line-bottom">
                       {l.kind === "custom" ? (

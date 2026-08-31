@@ -1,14 +1,21 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { useCart, formatMoney, formatEUR } from "@/lib/cart";
 import type { Product } from "@/lib/product-page";
 import { SITE } from "@/lib/site-config";
 
+// dated version tag for the withdrawal-right notice text below — bump this
+// (and keep the old text in git history) whenever the notice copy changes,
+// so a past order's saved tag can be matched back to the exact text a buyer
+// actually saw. See uvjeti-jednostrani-raskid-spec.md section 3.
+const RASKID_NOTICE_VERSION = "gotova-racunala-2026-08";
+
 // callers are expected to have already handled the missing/mismatched-category
 // case via notFound() (see the segment-scoped not-found.tsx next to each page.tsx)
 // before rendering this — product is always real here.
-export default function ProductClient({ product }: { product: Product }) {
+export default function ProductClient({ product, section }: { product: Product; section: "racunala" | "periferija" }) {
   const { addProduct } = useCart();
 
   const [variantId, setVariantId] = useState<string | null>(() => {
@@ -128,11 +135,31 @@ export default function ProductClient({ product }: { product: Product }) {
                   image: selected.image?.url || product.featuredImage?.url || undefined,
                   variantTitle: selected.title !== "Default Title" ? selected.title : undefined,
                   quantity: qty,
+                  section,
+                  // recorded automatically, no buyer interaction — see the
+                  // dated-version comment on RASKID_NOTICE_VERSION above
+                  raskidObavijest: section === "racunala" ? RASKID_NOTICE_VERSION : undefined,
                 })
               }
             >
               {selected?.availableForSale ? "Dodaj u košaricu" : "Nedostupno"}
             </button>
+
+            {/* uvjeti-jednostrani-raskid-spec.md section 3: notice must sit
+                right next to the add-to-cart button, visible without any
+                interaction — not small print, not below the fold, not in a
+                closed accordion. */}
+            {section === "racunala" ? (
+              <div className="rs-raskid-notice rs-raskid-notice-strong">
+                Ovo računalo ne držimo na zalihi. Riječ je o preporučenoj konfiguraciji koju sastavljamo nakon
+                vaše narudžbe, prema odabranim komponentama. Za takvu robu, sukladno Zakonu o zaštiti potrošača,
+                ne postoji pravo na jednostrani raskid ugovora u roku od 14 dana. <Link href="/raskid">Više u Uvjetima →</Link>
+              </div>
+            ) : (
+              <div className="rs-raskid-notice">
+                Pravo na povrat u roku od 14 dana. <Link href="/raskid">Uvjeti →</Link>
+              </div>
+            )}
           </div>
         </div>
 

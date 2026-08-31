@@ -24,7 +24,7 @@ export default function UvjetiPage() {
 
       <section className="legal-wrap">
         <div className="rs-wrap">
-          <p className="legal-meta">Zadnje ažurirano: {"{DATUM}"}</p>
+          <p className="legal-meta">Zadnje ažurirano: kolovoz 2026.</p>
           <div className="legal-content">
             <h2>1. Opći podaci o trgovcu</h2>
             <LegalTodo>
