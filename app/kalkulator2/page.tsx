@@ -1,16 +1,9 @@
-import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 
-// standalone HTML tool embedded via iframe — no crawlable content of its own
-export const metadata: Metadata = {
-  title: "Kalkulator",
-  robots: { index: false, follow: false },
-};
-
-export default function KalkulatorPage() {
-  return (
-    <iframe
-      src="/kalkulator2.html"
-      style={{ width: "100%", height: "100vh", border: "none" }}
-    />
-  );
+// TEMPORARILY DISABLED — this tool was reachable by anyone who guessed the
+// URL, with no link to it anywhere on the site, and exposed internal
+// pricing/planning info. Restore by reverting this commit (also re-adds
+// public/kalkulator2.html, moved to disabled-assets/ for the same reason).
+export default function Kalkulator2Page() {
+  notFound();
 }
