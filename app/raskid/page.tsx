@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import LegalTodo from "@/components/LegalTodo";
 import { COMPANY, COMPANY_ADDRESS_FULL } from "@/lib/company";
 
 const TITLE = "Pravo na jednostrani raskid ugovora";
@@ -72,18 +71,19 @@ export default function RaskidPage() {
               konfiguracije koju potrošač sam složi u konfiguratoru. Odabirom preporučene konfiguracije potrošač je
               odredio specifikaciju prema kojoj se roba izrađuje.
             </p>
-            <LegalTodo>
-              ova primjena iznimke na „Gotova računala&#8221; nije nesporna i treba je svjesno potvrditi prije
-              objave. Iznimka traži robu izrađenu po specifikaciji potrošača — kod gotovih računala kako su
-              trenutno postavljena potrošač bira samo model iz kataloga, ne određuje nijednu komponentu. Sud EU
-              (Möbel Kraft, C-529/19) smatra da sam trenutak sastavljanja nije odlučujući — odlučujuća je
-              specifikacija potrošača. Novija praksa ide u istom smjeru: OLG Brandenburg, 7 U 133/23 (16. srpnja
-              2024.), priznao je pravo na raskid kupcu konfiguriranog prijenosnika koji je birao samo između
-              unaprijed zadanih standardnih opcija. Ova se odredba može znatno ojačati bez izmjene teksta dodavanjem
-              stvarnog izbora na stranice gotovih računala (npr. obavezan odabir memorije, pohrane i operativnog
-              sustava prije dodavanja u košaricu) — provjeri s odvjetnikom prije objave, uz procjenu rizika s
-              obzirom na navedenu europsku praksu.
-            </LegalTodo>
+            {/* Applying the made-to-specification exception to the "Gotova
+                računala" category is a deliberate decision by the trader,
+                confirmed on 15 September 2026, with the contested points
+                known: the exception requires goods made to the consumer's
+                specification, and on a catalogue model the consumer picks no
+                individual component. CJEU Möbel Kraft (C-529/19) treats the
+                consumer's specification — not when assembly starts — as
+                decisive, and OLG Brandenburg 7 U 133/23 (16 July 2024)
+                granted a withdrawal right to the buyer of a configured
+                laptop chosen from preset options. The clause can be
+                strengthened without changing this text by requiring real
+                choices (memory, storage, OS) on the prebuilt pages before
+                add-to-cart. Keep this note with the text if it is revised. */}
             <p>
               Prije dovršetka narudžbe za bilo koje računalo iz prethodna dva stavka potrošača izričito upozoravamo
               da za tu robu ne postoji pravo na jednostrani raskid i tražimo njegovu potvrdu da je s time upoznat.

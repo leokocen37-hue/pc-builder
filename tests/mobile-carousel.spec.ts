@@ -135,7 +135,11 @@ test.describe("step rail scroll-fade mask", () => {
     await page.goto("/konfigurator");
     const acceptBtn = page.getByText("Prihvaćam");
     if (await acceptBtn.isVisible().catch(() => false)) await acceptBtn.click();
-    await expect(page.locator(".rs-rail-wrap")).toHaveClass(/rail-at-start/);
+    // Assert on the visible wrap rather than `.rs-rail-wrap` bare: during
+    // streaming hydration a second, non-visible copy of the rail briefly
+    // exists, which made a strict locator here fail intermittently. The
+    // class is applied by an effect, so this also waits out hydration.
+    await expect(page.locator(".rs-rail-wrap.rail-at-start")).toBeVisible();
   });
 });
 

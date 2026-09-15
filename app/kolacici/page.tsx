@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import LegalTodo from "@/components/LegalTodo";
 import { COMPANY } from "@/lib/company";
 
 const TITLE = "Pravila o kolačićima";
@@ -62,7 +61,6 @@ export default function KolaciciPage() {
               popisom, a takvi kolačići postavljat će se tek nakon vašeg izričitog pristanka putem trake za
               pristanak na kolačiće.
             </p>
-            <LegalTodo>ažuriraj ovaj odjeljak ako/kad se dodaju analitički ili marketinški alati.</LegalTodo>
 
             <h2>3. Upravljanje kolačićima</h2>
             <p>

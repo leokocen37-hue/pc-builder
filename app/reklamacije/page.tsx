@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import LegalTodo from "@/components/LegalTodo";
 import { COMPANY, COMPANY_ADDRESS_FULL } from "@/lib/company";
 
 const TITLE = "Reklamacije i materijalni nedostaci";
@@ -55,11 +54,6 @@ export default function ReklamacijePage() {
                 učini čim je uoči kako bi se problem brže riješio.
               </li>
             </ul>
-            <LegalTodo>
-              provjeri s odvjetnikom točne rokove i pripadajuće članke važećih propisa u trenutku objave (rok
-              odgovornosti, trajanje pretpostavke o postojanju nesukladnosti i rok zastare), te uskladi
-              terminologiju ove stranice s konačnom formulacijom.
-            </LegalTodo>
 
             <h2>3. Kako podnijeti reklamaciju</h2>
             <p>Reklamaciju možete podnijeti na jedan od sljedećih načina:</p>

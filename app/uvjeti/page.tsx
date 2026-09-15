@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import LegalTodo from "@/components/LegalTodo";
 import { COMPANY, COMPANY_ADDRESS_FULL } from "@/lib/company";
 
 const TITLE = "Opći uvjeti poslovanja";
@@ -41,19 +40,13 @@ export default function UvjetiPage() {
             </ul>
             <p>
               Internetska trgovina {COMPANY.brand} u vlasništvu je i pod upravljanjem društva {COMPANY.name}.
-              Svi upiti, prigovori i zahtjevi rješavaju se elektroničkom poštom na{" "}
-              <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a>, čime ostaje pisani trag komunikacije.
             </p>
-            <LegalTodo>
-              odluči hoće li se objaviti kontakt telefon. Članak 57. Zakona o zaštiti potrošača (uz izmijenjeni
-              čl. 6. Direktive 2011/83/EU nakon „Omnibus&#8221; direktive 2019/2161) traži da se potrošaču prije
-              sklapanja ugovora na daljinu daju adresa, <strong>broj telefona</strong> i adresa e-pošte. Starija
-              praksa Suda EU (C-649/17, Amazon EU) govorila je da trgovac nije dužan uspostaviti telefonsku
-              liniju, ali ta se presuda odnosi na raniji tekst direktive („gdje je dostupno&#8221;), koji je u
-              međuvremenu izmijenjen. Ako se telefon ne objavi, provjeri s odvjetnikom je li e-pošta dovoljna i
-              treba li se ponuditi drugi kanal izravne komunikacije (npr. obrazac za kontakt uz zajamčen rok
-              odgovora).
-            </LegalTodo>
+            <p>
+              Sve upite, prigovore i zahtjeve rješavamo elektroničkom poštom na{" "}
+              <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a> ili putem obrasca na stranici{" "}
+              <Link href="/kontakt">Kontakt</Link>. Tim kanalima ostaje pisani trag komunikacije, a na poruke
+              odgovaramo u najkraćem mogućem roku.
+            </p>
 
             <h2>2. Predmet uvjeta</h2>
             <p>
@@ -102,11 +95,6 @@ export default function UvjetiPage() {
               pohranjujemo — unose se izravno kod pružatelja platnih usluga, koji ih obrađuje u skladu s
               primjenjivim sigurnosnim standardima za platne kartice.
             </p>
-            <LegalTodo>
-              potvrdi je li društvo u sustavu PDV-a. Cijeli storefront (cijene, košarica, ova stranica) trenutno
-              tvrdi da cijene uključuju PDV — ako društvo još nije u sustavu PDV-a, tu formulaciju i izgled računa
-              treba uskladiti prije objave.
-            </LegalTodo>
 
             <h2>5. Isporuka</h2>
             <p>
@@ -175,12 +163,6 @@ export default function UvjetiPage() {
               dobrovoljno.
             </p>
             <p>Za sporove je nadležan stvarno i mjesno nadležan sud u Republici Hrvatskoj.</p>
-            <LegalTodo>
-              odluči obvezuje li se trgovac na sudjelovanje u postupku pred konkretnim tijelom za alternativno
-              rješavanje potrošačkih sporova (npr. Sud časti ili Centar za mirenje pri HGK) — ako da, to se tijelo
-              mora izrijekom navesti zajedno s poveznicom. Napomena: europska ODR platforma prestala je s radom
-              20. srpnja 2025., pa je namjerno nismo naveli iako je još ima na mnogim hrvatskim stranicama.
-            </LegalTodo>
 
             <h2>11. Izmjene uvjeta</h2>
             <p>

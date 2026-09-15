@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import LegalTodo from "@/components/LegalTodo";
 import { COMPANY, COMPANY_ADDRESS_FULL } from "@/lib/company";
 
 const TITLE = "Politika privatnosti";
@@ -90,23 +89,17 @@ export default function PrivatnostPage() {
             </ul>
 
             <h2>5. Primatelji podataka</h2>
-            <p>Vaše podatke dijelimo samo s pružateljima usluga nužnim za izvršenje narudžbe i rad stranice:</p>
-            <ul>
-              <li><strong>Shopify</strong> — platforma za obradu narudžbi i naplatu (Shopify International Ltd., Irska).</li>
-              <li><strong>PayPal</strong> — obrada plaćanja za kupce koji odaberu taj način (PayPal (Europe) S.à r.l. et Cie, S.C.A., Luksemburg).</li>
-              <li><strong>Vercel</strong> — hosting ovih internetskih stranica.</li>
-              <li><strong>Dostavne službe</strong> — isporuka pošiljke (ime, adresa, telefon i e-pošta radi obavijesti o dostavi).</li>
-            </ul>
+            <p>
+              Vaše podatke dijelimo samo s pružateljima usluga nužnim za izvršenje narudžbe i rad stranice: s
+              platformom za obradu narudžbi i naplatu (Shopify), s pružateljem usluge plaćanja koji ste odabrali
+              (PayPal), s pružateljem usluge hostinga ovih stranica (Vercel) te s dostavnom službom koja
+              isporučuje vašu pošiljku (ime, adresa, telefon i e-pošta radi obavijesti o dostavi).
+            </p>
             <p>
               Podatke ne prodajemo niti ih dijelimo u svrhe koje nisu navedene. Pojedini pružatelji usluga mogu
               podatke obrađivati i izvan Europskog gospodarskog prostora; u tom se slučaju prijenos temelji na
               odluci Europske komisije o primjerenosti ili na standardnim ugovornim klauzulama.
             </p>
-            <LegalTodo>
-              popis obrađivača dopuni kad se doda bilo koji novi alat (analitika, e-mail marketing, chat) i
-              provjeri s odvjetnikom koja se konkretna osnova za prijenos izvan EGP-a primjenjuje na svakog od
-              gore navedenih pružatelja u trenutku objave.
-            </LegalTodo>
 
             <h2>6. Vaša prava</h2>
             <p>U skladu s GDPR-om, imate pravo na:</p>
@@ -129,10 +122,6 @@ export default function PrivatnostPage() {
               <li>narudžbe se obrađuju unutar Shopify sustava, uz pristup ograničen na osobe kojima je nužan za obradu narudžbe,</li>
               <li>pristup administrativnim sustavima zaštićen je osobnim korisničkim računima i višefaktorskom autentifikacijom.</li>
             </ul>
-            <LegalTodo>
-              provjeri da gornji popis odgovara stvarnom stanju u trenutku objave — posebno je li višefaktorska
-              autentifikacija doista uključena na svim administratorskim računima (Shopify, hosting, e-pošta).
-            </LegalTodo>
 
             <h2>8. Kolačići</h2>
             <p>Detalje o kolačićima koje koristimo pronađite na stranici <Link href="/kolacici">Pravila o kolačićima</Link>.</p>
