@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import LegalTodo from "@/components/LegalTodo";
+import { COMPANY, COMPANY_ADDRESS_FULL } from "@/lib/company";
 
 const TITLE = "Reklamacije i materijalni nedostaci";
 const DESCRIPTION = "Kako podnijeti reklamaciju za materijalni nedostatak na proizvodu kupljenom na RAČUNALO.hr.";
@@ -24,7 +25,7 @@ export default function ReklamacijePage() {
 
       <section className="legal-wrap">
         <div className="rs-wrap">
-          <p className="legal-meta">Zadnje ažurirano: {"{DATUM}"}</p>
+          <p className="legal-meta">Zadnje ažurirano: rujan 2026.</p>
           <div className="legal-content">
             <h2>1. Pravna osnova</h2>
             <p>
@@ -33,18 +34,31 @@ export default function ReklamacijePage() {
               Materijalni nedostatak postoji ako proizvod nema svojstva potrebna za njegovu redovnu uporabu ili
               svojstva izričito ili prešutno ugovorena.
             </p>
-            <LegalTodo>
-              potvrdi primjenjuje li se za potrošačke ugovore pravni okvir sukladnosti robe s ugovorom prema
-              Zakonu o zaštiti potrošača (koji je zamijenio dio ranijih pravila o materijalnim nedostacima za B2C
-              odnose) i uskladi terminologiju cijele stranice s time.
-            </LegalTodo>
+            <p>
+              Za ugovore sklopljene s potrošačima primjenjuju se pravila o <strong>sukladnosti robe s
+              ugovorom</strong>. Odgovaramo za svaku nesukladnost koja je postojala u trenutku isporuke robe.
+            </p>
 
-            <h2>2. Rok za prigovor</h2>
+            <h2>2. Rokovi</h2>
+            <ul>
+              <li>
+                Odgovaramo za nesukladnost koja se pokaže u roku od <strong>dvije godine</strong> od dana
+                isporuke robe.
+              </li>
+              <li>
+                Za nesukladnost koja se pokaže u roku od <strong>godine dana</strong> od isporuke smatra se da je
+                postojala već u trenutku isporuke, osim ako dokažemo suprotno ili ako je takva pretpostavka
+                nespojiva s prirodom robe ili nesukladnosti. Nakon toga roka teret dokaza je na potrošaču.
+              </li>
+              <li>
+                Potrošač nije dužan prijaviti nesukladnost u nekom posebnom kratkom roku, ali preporučujemo da to
+                učini čim je uoči kako bi se problem brže riješio.
+              </li>
+            </ul>
             <LegalTodo>
-              navedi točan zakonski rok za obavještavanje trgovca o nedostatku i rok zastare prava (uobičajeno je
-              da potrošač o vidljivom nedostatku mora obavijestiti u razumnom roku, a za potrošačke ugovore
-              primjenjuje se poseban rok sukladnosti robe s ugovorom — uskladi s važećim propisima u trenutku
-              objave stranice).
+              provjeri s odvjetnikom točne rokove i pripadajuće članke važećih propisa u trenutku objave (rok
+              odgovornosti, trajanje pretpostavke o postojanju nesukladnosti i rok zastare), te uskladi
+              terminologiju ove stranice s konačnom formulacijom.
             </LegalTodo>
 
             <h2>3. Kako podnijeti reklamaciju</h2>
@@ -52,7 +66,7 @@ export default function ReklamacijePage() {
             <ul>
               <li>putem e-maila na <a href="mailto:info@racunalo.hr">info@racunalo.hr</a>,</li>
               <li>putem obrasca na stranici <Link href="/kontakt">Kontakt</Link>,</li>
-              <li>pisanim putem na adresu sjedišta trgovca.</li>
+              <li>pisanim putem na adresu {COMPANY.name}, {COMPANY_ADDRESS_FULL}.</li>
             </ul>
             <p>Radi bržeg rješavanja, u prijavu uključite:</p>
             <ul>
@@ -60,24 +74,43 @@ export default function ReklamacijePage() {
               <li>opis nedostatka i, ako je moguće, fotografije/video,</li>
               <li>vaše kontakt podatke.</li>
             </ul>
-            <LegalTodo>potvrdi želi li trgovac ponuditi zaseban pisani obrazac za reklamaciju (kao dodatak gornjem popisu) i adresu sjedišta za pisane prigovore.</LegalTodo>
+            <p>Poseban obrazac nije potreban — dovoljna je poruka koja sadrži gore navedene podatke.</p>
 
             <h2>4. Rok za odgovor trgovca</h2>
             <p>
-              Na pisani prigovor potrošača trgovac je dužan pisanim putem odgovoriti u zakonski propisanom roku
-              od zaprimanja prigovora.
+              Na uredno zaprimljen pisani prigovor odgovaramo pisanim putem <strong>u roku od 15 dana</strong> od
+              dana zaprimanja prigovora.
             </p>
-            <LegalTodo>potvrdi točan zakonski rok za odgovor (prema Zakonu o zaštiti potrošača) važeći u trenutku objave.</LegalTodo>
 
             <h2>5. Rješavanje reklamacije</h2>
-            <LegalTodo>
-              opiši redoslijed pravnih sredstava dostupnih potrošaču kod materijalnog nedostatka (popravak,
-              zamjena, razmjerno sniženje cijene, raskid ugovora) i rok u kojem trgovac mora postupiti po
-              osnovanoj reklamaciji.
-            </LegalTodo>
+            <p>Ako je roba nesukladna ugovoru, potrošač ima pravo, sljedećim redoslijedom:</p>
+            <ol>
+              <li>
+                zahtijevati <strong>popravak ili zamjenu</strong> robe — potrošač bira između ta dva sredstva,
+                osim ako je odabrano sredstvo nemoguće ili bi za nas predstavljalo nerazmjeran trošak u odnosu na
+                drugo;
+              </li>
+              <li>
+                ako popravak ili zamjena nisu izvedivi, ako ih nismo izvršili u razumnom roku, ako nesukladnost
+                i dalje postoji ili je toliko ozbiljna da opravdava trenutačno sniženje ili raskid — zahtijevati{" "}
+                <strong>razmjerno sniženje cijene</strong> ili <strong>raskid ugovora</strong> uz povrat plaćenog
+                iznosa.
+              </li>
+            </ol>
+            <p>
+              Popravak ili zamjenu izvršavamo besplatno i u razumnom roku od trenutka kada nas je potrošač
+              obavijestio o nesukladnosti, bez znatnijih neugodnosti za potrošača i uzimajući u obzir prirodu
+              robe i svrhu za koju je potrošač robu tražio. Zbog nesukladnosti manje važnosti potrošač nema pravo
+              na raskid ugovora.
+            </p>
 
             <h2>6. Troškovi</h2>
-            <LegalTodo>navedi tko snosi troškove dostave/povrata proizvoda u slučaju osnovane reklamacije (u pravilu trgovac, ako je nedostatak dokazano materijalni).</LegalTodo>
+            <p>
+              Troškove koji nastanu radi usklađivanja robe s ugovorom — posebno troškove dostave, rada i
+              materijala — <strong>snosimo mi</strong>. Kod osnovane reklamacije potrošač ne snosi trošak slanja
+              robe na provjeru ni trošak povrata popravljene ili zamijenjene robe. Uputu za slanje i način
+              preuzimanja pošiljke dogovaramo s potrošačem prije slanja, kako trošak ne bi išao preko njega.
+            </p>
 
             <h2>7. Odnos prema jamstvu</h2>
             <p>

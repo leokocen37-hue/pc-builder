@@ -25,7 +25,7 @@ export default function PrivatnostPage() {
 
       <section className="legal-wrap">
         <div className="rs-wrap">
-          <p className="legal-meta">Zadnje ažurirano: {"{DATUM}"}</p>
+          <p className="legal-meta">Zadnje ažurirano: rujan 2026.</p>
           <div className="legal-content">
             <h2>1. Voditelj obrade podataka</h2>
             <p>Voditelj obrade vaših osobnih podataka je:</p>
@@ -35,9 +35,12 @@ export default function PrivatnostPage() {
               <li>OIB: {COMPANY.oib}</li>
               <li>E-pošta: <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a></li>
             </ul>
-            <LegalTodo>
-              potvrdi je li imenovan službenik za zaštitu podataka (DPO) — ako jest, dodaj njegove kontakt podatke.
-            </LegalTodo>
+            <p>
+              Nismo imenovali službenika za zaštitu podataka jer naša djelatnost ne ispunjava uvjete iz članka 37.
+              Opće uredbe o zaštiti podataka (nema opsežnog praćenja ni obrade posebnih kategorija podataka u
+              velikom opsegu). Za sva pitanja o obradi podataka obratite se na{" "}
+              <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a>.
+            </p>
 
             <h2>2. Koje podatke prikupljamo</h2>
             <ul>
@@ -46,7 +49,10 @@ export default function PrivatnostPage() {
               <li>Podaci o korištenju stranice: IP adresa, vrsta uređaja/preglednika, stranice koje posjećujete (putem kolačića — vidi <Link href="/kolacici">Pravila o kolačićima</Link>).</li>
               <li>Podaci iz kontaktnog obrasca i konfiguratora: ime, e-mail, telefon, poruka, odabrana konfiguracija (kada nam ih sami pošaljete).</li>
             </ul>
-            <LegalTodo>potvrdi je li popis potpun i uskladi s aktualnim tehničkim tokom podataka (npr. Shopify, analytics alati ako se dodaju).</LegalTodo>
+            <p>
+              Sadržaj košarice i odabir prikaza u konfiguratoru spremaju se lokalno u vašem pregledniku i ne
+              šalju nam se dok ne dovršite narudžbu ili nam sami ne pošaljete konfiguraciju.
+            </p>
 
             <h2>3. Svrha i pravna osnova obrade</h2>
             <ul>
@@ -54,23 +60,53 @@ export default function PrivatnostPage() {
               <li>Komunikacija povodom upita — legitimni interes / privola (čl. 6(1)(f) / (a) GDPR-a).</li>
               <li>Ispunjenje zakonskih obveza (npr. računovodstvo, porezni propisi) — pravna obveza (čl. 6(1)(c) GDPR-a).</li>
             </ul>
-            <LegalTodo>potvrdi i eventualnu obradu za marketinške svrhe (newsletter i sl.) i pripadajuću pravnu osnovu (privola), ako je primjenjivo.</LegalTodo>
+            <p>
+              Trenutno ne šaljemo newsletter ni druge marketinške poruke i ne obrađujemo podatke u marketinške
+              svrhe. Ako to uvedemo, slat ćemo ih isključivo na temelju vaše prethodne privole (čl. 6(1)(a)
+              GDPR-a), koju ćete u svakom trenutku moći povući, a ova će stranica biti ažurirana.
+            </p>
 
             <h2>4. Razdoblje čuvanja podataka</h2>
-            <LegalTodo>
-              odredi konkretna razdoblja čuvanja po kategoriji podataka (npr. računovodstveni dokumenti prema
-              zakonskom roku, podaci o narudžbi za vrijeme trajanja jamstva + zakonski rok, podaci iz kontaktnog
-              obrasca do rješavanja upita ili kraće).
-            </LegalTodo>
+            <ul>
+              <li>
+                <strong>Računi i knjigovodstvene isprave</strong> — 11 godina od kraja poslovne godine na koju se
+                odnose, sukladno propisima o računovodstvu.
+              </li>
+              <li>
+                <strong>Podaci o narudžbi i jamstvu</strong> — za vrijeme trajanja jamstva i odgovornosti za
+                nesukladnost robe, uvećano za rok zastare potraživanja.
+              </li>
+              <li>
+                <strong>Upiti putem kontaktnog obrasca i e-pošte</strong> — do rješavanja upita, a najdulje 12
+                mjeseci nakon zadnje komunikacije, osim ako je potrebno dulje čuvanje radi eventualnog spora.
+              </li>
+              <li>
+                <strong>Zapis o prihvaćanju uvjeta uz narudžbu</strong> — zajedno s narudžbom, kao dokaz da je
+                obavijest dana prije sklapanja ugovora.
+              </li>
+              <li>
+                <strong>Kolačić pristanka</strong> — 180 dana, nakon čega se pristanak ponovno traži.
+              </li>
+            </ul>
 
             <h2>5. Primatelji podataka</h2>
-            <p>Vaše podatke po potrebi dijelimo s pružateljima usluga potrebnih za izvršenje narudžbe, uključujući:</p>
+            <p>Vaše podatke dijelimo samo s pružateljima usluga nužnim za izvršenje narudžbe i rad stranice:</p>
             <ul>
-              <li>Shopify (platforma za obradu narudžbi i plaćanja)</li>
-              <li>dostavne službe zadužene za isporuku pošiljke</li>
-              <li>pružatelje platnih usluga (kartično plaćanje, PayPal, KEKS Pay)</li>
+              <li><strong>Shopify</strong> — platforma za obradu narudžbi i naplatu (Shopify International Ltd., Irska).</li>
+              <li><strong>PayPal</strong> — obrada plaćanja za kupce koji odaberu taj način (PayPal (Europe) S.à r.l. et Cie, S.C.A., Luksemburg).</li>
+              <li><strong>Vercel</strong> — hosting ovih internetskih stranica.</li>
+              <li><strong>Dostavne službe</strong> — isporuka pošiljke (ime, adresa, telefon i e-pošta radi obavijesti o dostavi).</li>
             </ul>
-            <LegalTodo>potvrdi cjeloviti popis obrađivača i, ako je primjenjivo, informacije o prijenosu podataka izvan EGP-a (npr. Shopify infrastruktura) uz odgovarajuće zaštitne mjere.</LegalTodo>
+            <p>
+              Podatke ne prodajemo niti ih dijelimo u svrhe koje nisu navedene. Pojedini pružatelji usluga mogu
+              podatke obrađivati i izvan Europskog gospodarskog prostora; u tom se slučaju prijenos temelji na
+              odluci Europske komisije o primjerenosti ili na standardnim ugovornim klauzulama.
+            </p>
+            <LegalTodo>
+              popis obrađivača dopuni kad se doda bilo koji novi alat (analitika, e-mail marketing, chat) i
+              provjeri s odvjetnikom koja se konkretna osnova za prijenos izvan EGP-a primjenjuje na svakog od
+              gore navedenih pružatelja u trenutku objave.
+            </LegalTodo>
 
             <h2>6. Vaša prava</h2>
             <p>U skladu s GDPR-om, imate pravo na:</p>
@@ -86,7 +122,17 @@ export default function PrivatnostPage() {
             <p>Zahtjeve vezane uz svoja prava možete poslati na <a href="mailto:info@racunalo.hr">info@racunalo.hr</a>.</p>
 
             <h2>7. Sigurnost podataka</h2>
-            <LegalTodo>opiši tehničke i organizacijske mjere zaštite podataka koje se stvarno primjenjuju (enkripcija, kontrola pristupa i sl.).</LegalTodo>
+            <p>Primjenjujemo sljedeće mjere zaštite:</p>
+            <ul>
+              <li>sav promet između vašeg preglednika i naših stranica te stranice za naplatu odvija se preko šifrirane HTTPS/TLS veze,</li>
+              <li>podatke o platnim karticama ne primamo niti pohranjujemo — unose se izravno kod pružatelja platnih usluga,</li>
+              <li>narudžbe se obrađuju unutar Shopify sustava, uz pristup ograničen na osobe kojima je nužan za obradu narudžbe,</li>
+              <li>pristup administrativnim sustavima zaštićen je osobnim korisničkim računima i višefaktorskom autentifikacijom.</li>
+            </ul>
+            <LegalTodo>
+              provjeri da gornji popis odgovara stvarnom stanju u trenutku objave — posebno je li višefaktorska
+              autentifikacija doista uključena na svim administratorskim računima (Shopify, hosting, e-pošta).
+            </LegalTodo>
 
             <h2>8. Kolačići</h2>
             <p>Detalje o kolačićima koje koristimo pronađite na stranici <Link href="/kolacici">Pravila o kolačićima</Link>.</p>

@@ -16,6 +16,8 @@ export const COMPANY = {
   city: "Selnica",
   country: "Hrvatska",
   court: "Trgovački sud u Varaždinu",
+  /** shown only in the Uvjeti trader details, not in the footer impressum */
+  shareCapital: "3.060,00 EUR",
   directors: ["Leo Kocen", "Jasmin Kodba"],
   activity: "G47400 — Trgovina na malo informacijsko-komunikacijskom opremom",
   email: "info@racunalo.hr",

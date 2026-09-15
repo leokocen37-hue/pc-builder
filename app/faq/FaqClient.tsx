@@ -27,7 +27,7 @@ const FAQ_ITEMS: { q: string; a: React.ReactNode }[] = [
   },
   {
     q: "Koje su opcije plaćanja?",
-    a: "Narudžbu možete platiti karticom, putem PayPal-a ili KEKS Pay-a. Svi detalji dostupni su na stranici Dostava i plaćanje.",
+    a: "Narudžbu možete platiti karticom (Visa, Mastercard, Maestro) ili putem PayPal-a. Svi detalji dostupni su na stranici Dostava i plaćanje.",
   },
   {
     q: "Koliko traje jamstvo?",

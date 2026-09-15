@@ -51,9 +51,10 @@ export default function Footer() {
       <div className="rs-wrap" style={{ marginBottom: 28 }}>
         {/* payment method row — text placeholders; swap for real provider logos once available */}
         <div className="rs-foot-pay">
-          <span>Kartice</span>
+          <span>Visa</span>
+          <span>Mastercard</span>
+          <span>Maestro</span>
           <span>PayPal</span>
-          <span>KEKS Pay</span>
         </div>
       </div>
 

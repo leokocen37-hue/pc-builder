@@ -25,7 +25,7 @@ export default function RaskidPage() {
 
       <section className="legal-wrap">
         <div className="rs-wrap">
-          <p className="legal-meta">Zadnje ažurirano: kolovoz 2026.</p>
+          <p className="legal-meta">Zadnje ažurirano: rujan 2026.</p>
           <div className="legal-content">
             <h2>1. Opće pravo na raskid (14 dana)</h2>
             <p>

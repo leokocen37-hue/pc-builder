@@ -48,9 +48,8 @@ export default function DostavaPage() {
             <h2>Načini plaćanja</h2>
             <p>Narudžbu možete platiti na jedan od sljedećih načina:</p>
             <ul>
-              <li><strong>Kartično plaćanje</strong> — Visa, Mastercard i ostale podržane kartice.</li>
+              <li><strong>Kartično plaćanje</strong> — Visa, Mastercard i Maestro, putem Shopify Payments.</li>
               <li><strong>PayPal</strong></li>
-              <li><strong>KEKS Pay</strong></li>
             </ul>
             <p>Sve cijene na stranici prikazane su u eurima (EUR) i uključuju PDV.</p>
 

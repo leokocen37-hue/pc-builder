@@ -25,7 +25,7 @@ export default function UvjetiPage() {
 
       <section className="legal-wrap">
         <div className="rs-wrap">
-          <p className="legal-meta">Zadnje ažurirano: kolovoz 2026.</p>
+          <p className="legal-meta">Zadnje ažurirano: rujan 2026.</p>
           <div className="legal-content">
             <h2>1. Opći podaci o trgovcu</h2>
             <ul>
@@ -34,16 +34,25 @@ export default function UvjetiPage() {
               <li>OIB: {COMPANY.oib}</li>
               <li>MBS: {COMPANY.mbs}</li>
               <li>Registarski sud: {COMPANY.court}</li>
+              <li>Temeljni kapital: {COMPANY.shareCapital}</li>
               <li>Članovi uprave: {COMPANY.directors.join(", ")}</li>
               <li>Djelatnost: {COMPANY.activity}</li>
               <li>E-pošta: <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a></li>
             </ul>
             <p>
               Internetska trgovina {COMPANY.brand} u vlasništvu je i pod upravljanjem društva {COMPANY.name}.
+              Svi upiti, prigovori i zahtjevi rješavaju se elektroničkom poštom na{" "}
+              <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a>, čime ostaje pisani trag komunikacije.
             </p>
             <LegalTodo>
-              dopuni iznos temeljnog kapitala i kontakt telefon — nisu dostupni u javnom registarskom izvatku
-              iz kojeg su preuzeti ostali podaci iznad.
+              odluči hoće li se objaviti kontakt telefon. Članak 57. Zakona o zaštiti potrošača (uz izmijenjeni
+              čl. 6. Direktive 2011/83/EU nakon „Omnibus&#8221; direktive 2019/2161) traži da se potrošaču prije
+              sklapanja ugovora na daljinu daju adresa, <strong>broj telefona</strong> i adresa e-pošte. Starija
+              praksa Suda EU (C-649/17, Amazon EU) govorila je da trgovac nije dužan uspostaviti telefonsku
+              liniju, ali ta se presuda odnosi na raniji tekst direktive („gdje je dostupno&#8221;), koji je u
+              međuvremenu izmijenjen. Ako se telefon ne objavi, provjeri s odvjetnikom je li e-pošta dovoljna i
+              treba li se ponuditi drugi kanal izravne komunikacije (npr. obrazac za kontakt uz zajamčen rok
+              odgovora).
             </LegalTodo>
 
             <h2>2. Predmet uvjeta</h2>
@@ -55,14 +64,27 @@ export default function UvjetiPage() {
 
             <h2>3. Sklapanje ugovora</h2>
             <p>
-              Narudžba putem web stranice predstavlja ponudu kupca za sklapanje ugovora o kupoprodaji. Ugovor se
-              smatra sklopljenim kada trgovac potvrdi narudžbu kupcu.
+              Robu odabirete na ovim stranicama i dodajete je u košaricu. Narudžba se dovršava i plaća na
+              sigurnoj stranici za naplatu koju za nas vodi Shopify.
             </p>
-            <LegalTodo>
-              potvrdi točan trenutak sklapanja ugovora (potvrda e-mailom / plaćanje / slanje robe) i postupak u
-              slučaju nedostupnosti komponenti nakon narudžbe (posebno relevantno za konfigurator, gdje se
-              konačna konfiguracija sastavlja ručno).
-            </LegalTodo>
+            <p>
+              Dovršetkom narudžbe kupac daje ponudu za sklapanje ugovora o kupoprodaji. <strong>Ugovor je
+              sklopljen u trenutku kada kupcu na adresu elektroničke pošte navedenu u narudžbi pošaljemo potvrdu
+              narudžbe.</strong> Potvrda narudžbe sadrži podatke o naručenoj robi, cijeni, troškovima isporuke i
+              načinu plaćanja. Ako potvrdu ne zaprimite, provjerite mapu neželjene pošte i javite nam se na{" "}
+              <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a>.
+            </p>
+            <p>
+              Ugovor se sklapa na hrvatskom jeziku i pohranjuje se u našem sustavu. Tekst ovih Uvjeta dostupan je
+              na ovoj stranici u svakom trenutku, a potvrdu narudžbe kupac zaprima elektroničkom poštom u obliku
+              koji može pohraniti i reproducirati.
+            </p>
+            <p>
+              Ako pojedina komponenta nakon zaprimanja narudžbe više nije dostupna, o tome ćemo kupca obavijestiti
+              bez odgode i ponuditi mu zamjensku komponentu jednakih ili boljih svojstava bez doplate, izmjenu
+              konfiguracije ili raskid ugovora uz povrat cjelokupnog plaćenog iznosa. Bez izričite suglasnosti
+              kupca nećemo isporučiti računalo koje odstupa od naručene konfiguracije.
+            </p>
 
             <h2>4. Cijene i način plaćanja</h2>
             <p>
@@ -70,11 +92,39 @@ export default function UvjetiPage() {
               drugačije navedeno. Za konfiguracije sastavljene putem konfiguratora cijena uključuje trošak sastavljanja
               i testiranja računala.
             </p>
-            <LegalTodo>navedi dostupne načine plaćanja (kartično, PayPal, KEKS Pay, obročno plaćanje, virman) i uvjete svakog od njih.</LegalTodo>
+            <p>Narudžbu je moguće platiti:</p>
+            <ul>
+              <li><strong>kartično</strong> — Visa, Mastercard i Maestro, putem Shopify Payments,</li>
+              <li><strong>PayPal</strong>.</li>
+            </ul>
+            <p>
+              Plaćanje se izvršava pri dovršetku narudžbe. Podatke o platnim karticama ne primamo niti
+              pohranjujemo — unose se izravno kod pružatelja platnih usluga, koji ih obrađuje u skladu s
+              primjenjivim sigurnosnim standardima za platne kartice.
+            </p>
+            <LegalTodo>
+              potvrdi je li društvo u sustavu PDV-a. Cijeli storefront (cijene, košarica, ova stranica) trenutno
+              tvrdi da cijene uključuju PDV — ako društvo još nije u sustavu PDV-a, tu formulaciju i izgled računa
+              treba uskladiti prije objave.
+            </LegalTodo>
 
             <h2>5. Isporuka</h2>
-            <p>Detalji o rokovima i načinu isporuke nalaze se na stranici <Link href="/dostava">Dostava i plaćanje</Link>.</p>
-            <LegalTodo>potvrdi pravni okvir prijenosa rizika slučajne propasti robe s trgovca na kupca (obično trenutak predaje robi prijevozniku ili kupcu, ovisno o tome tko organizira prijevoz).</LegalTodo>
+            <p>
+              Prijevoz robe organiziramo mi, putem dostavne službe. Detalji o rokovima i cijeni isporuke nalaze se
+              na stranici <Link href="/dostava">Dostava i plaćanje</Link>.
+            </p>
+            <p>
+              Rizik slučajnog oštećenja ili propasti robe prelazi na potrošača u trenutku kada je roba predana
+              potrošaču ili trećoj osobi koju je potrošač odredio, a koja nije prijevoznik. Ako je prijevoz
+              ugovorio sam potrošač, i to prijevoznikom kojeg mu mi nismo ponudili, rizik prelazi na potrošača u
+              trenutku predaje robe tom prijevozniku.
+            </p>
+            <p>
+              Pri preuzimanju pošiljke preporučujemo pregledati ambalažu. Ako je pošiljka vidljivo oštećena,
+              prijavite to dostavljaču pri preuzimanju i javite nam se na{" "}
+              <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a> u najkraćem mogućem roku, po mogućnosti uz
+              fotografije — time nam olakšavate postupak prema prijevozniku.
+            </p>
 
             <h2>6. Pravo na jednostrani raskid ugovora</h2>
             <p>
@@ -90,21 +140,46 @@ export default function UvjetiPage() {
             </p>
 
             <h2>8. Ograničenje odgovornosti</h2>
-            <LegalTodo>
-              formuliraj opseg i granice odgovornosti trgovca (npr. za neispravno korištenje, izmjene sklopa od
-              strane kupca, gubitak podataka, neizravnu štetu) u skladu s prisilnim odredbama Zakona o zaštiti
-              potrošača i Zakona o obveznim odnosima — ograničenja odgovornosti prema potrošačima su zakonski
-              ograničena i ne smiju isključivati prava koja potrošaču pripadaju po zakonu.
-            </LegalTodo>
+            <p>
+              Odgovaramo za nesukladnost robe s ugovorom i za materijalne nedostatke sukladno Zakonu o obveznim
+              odnosima i Zakonu o zaštiti potrošača. <strong>Ništa u ovim Uvjetima ne isključuje niti ograničava
+              prava koja potrošaču pripadaju po prisilnim propisima</strong> — vidi{" "}
+              <Link href="/reklamacije">Reklamacije</Link> i <Link href="/jamstvo">Jamstvo</Link>.
+            </p>
+            <p>Ne odgovaramo za štetu koja je nastala:</p>
+            <ul>
+              <li>korištenjem protivno uputama proizvođača, uključujući overclocking i rad izvan deklariranih specifikacija,</li>
+              <li>neovlaštenim otvaranjem, izmjenama ili popravcima koje su izvršile treće osobe,</li>
+              <li>mehaničkim oštećenjem, prodorom tekućine, neispravnom električnom instalacijom, udarom groma ili višom silom,</li>
+              <li>instalacijom ili korištenjem programske podrške koju nismo isporučili.</li>
+            </ul>
+            <p>
+              Ne odgovaramo za gubitak podataka. Prije predaje uređaja na servis ili povrat kupac je dužan sam
+              izraditi sigurnosnu kopiju svojih podataka.
+            </p>
 
             <h2>9. Zaštita osobnih podataka</h2>
             <p>Podaci koje prikupljamo pri narudžbi obrađuju se u skladu s našom <Link href="/privatnost">Politikom privatnosti</Link>.</p>
 
             <h2>10. Rješavanje sporova</h2>
+            <p>
+              Eventualne sporove nastojat ćemo riješiti dogovorno. Pisani prigovor možete podnijeti na{" "}
+              <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a> ili poštom na adresu sjedišta iz točke 1.;
+              na uredno zaprimljen pisani prigovor odgovaramo pisanim putem u roku od 15 dana od zaprimanja —
+              vidi <Link href="/reklamacije">Reklamacije</Link>.
+            </p>
+            <p>
+              Ako spor ne bude riješen dogovorno, potrošač se može obratiti nekom od tijela za alternativno
+              rješavanje potrošačkih sporova u Republici Hrvatskoj. Popis ovlaštenih tijela objavljuje
+              ministarstvo nadležno za gospodarstvo. Sudjelovanje u postupku alternativnog rješavanja spora je
+              dobrovoljno.
+            </p>
+            <p>Za sporove je nadležan stvarno i mjesno nadležan sud u Republici Hrvatskoj.</p>
             <LegalTodo>
-              unesi standardnu odredbu o izvansudskom rješavanju potrošačkih sporova (nadležni sud, mogućnost
-              korištenja Platforme za online rješavanje sporova Europske komisije te popisa nadležnih tijela za
-              alternativno rješavanje sporova u RH).
+              odluči obvezuje li se trgovac na sudjelovanje u postupku pred konkretnim tijelom za alternativno
+              rješavanje potrošačkih sporova (npr. Sud časti ili Centar za mirenje pri HGK) — ako da, to se tijelo
+              mora izrijekom navesti zajedno s poveznicom. Napomena: europska ODR platforma prestala je s radom
+              20. srpnja 2025., pa je namjerno nismo naveli iako je još ima na mnogim hrvatskim stranicama.
             </LegalTodo>
 
             <h2>11. Izmjene uvjeta</h2>
