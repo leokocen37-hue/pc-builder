@@ -140,8 +140,9 @@ export default function RaskidPage() {
             <h2>6. Obrazac za jednostrani raskid ugovora</h2>
             <p>
               Ukoliko se pravo na raskid primjenjuje na vašu narudžbu, izjavu o raskidu možete poslati koristeći{" "}
-              <Link href="/uvjeti/obrazac-za-jednostrani-raskid">obrazac za jednostrani raskid ugovora</Link>.
-              Popunjen obrazac pošaljite na <a href="mailto:info@racunalo.hr">info@racunalo.hr</a> ili putem
+              <Link href="/uvjeti/obrazac-za-jednostrani-raskid">obrazac za jednostrani raskid ugovora</Link>{" "}
+              (dostupan i kao <a href="/obrazac-za-jednostrani-raskid.pdf" download>PDF za preuzimanje</a>).
+              Popunjen obrazac pošaljite na <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a> ili putem
               stranice <Link href="/kontakt">Kontakt</Link>.
             </p>
 

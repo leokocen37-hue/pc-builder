@@ -68,6 +68,11 @@
 .rs-btn{display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-weight:700;font-size:15px;padding:15px 30px;border-radius:13px;border:none;cursor:pointer;box-shadow:0 12px 34px -8px rgba(216,31,216,.6);transition:.2s;font-family:'Space Grotesk',sans-serif;text-decoration:none}
 .rs-btn:hover{transform:translateY(-2px);box-shadow:0 18px 44px -8px rgba(216,31,216,.75)}
 .rs-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+/* `.rs-root a{color:inherit}` (class+type) outranks the plain `.rs-btn`
+   class, so an anchor styled as a button silently picks up whatever colour
+   its container happens to have — dull grey inside .legal-content, white by
+   luck in the hero. Pin it here so button-links are always legible. */
+.rs-root a.rs-btn,a.rs-btn{color:#fff}
 .rs-btn.ghost{background:rgba(10,8,16,.4);border:1px solid rgba(255,255,255,.28);box-shadow:none;backdrop-filter:blur(6px)}
 .rs-btn.ghost:hover{border-color:var(--accent);background:rgba(216,31,216,.15)}
 
@@ -310,21 +315,73 @@
 .legal-content a{color:var(--accent)}
 .legal-address-block{margin:0 0 16px;padding:14px 16px;background:var(--card);border:1px solid var(--line);border-radius:10px;font-size:14px;color:var(--text)}
 
-/* withdrawal form page — plain selectable text (spec: no image-of-text, no
-   PDF as the only source), with a browser print/save-as-PDF affordance */
-.raskid-form-actions{margin-bottom:22px}
-.raskid-form{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:28px 30px;font-family:'IBM Plex Mono',monospace;font-size:13.5px;line-height:2;color:var(--text)}
-.raskid-form-title{font-weight:700;letter-spacing:1px;margin-bottom:18px}
-.raskid-form-line{word-break:break-all}
-.raskid-form p{color:var(--text);font-family:inherit;font-size:inherit;line-height:inherit}
+/* withdrawal form — laid out as a real document (letterhead, ruled fields,
+   signature row) rather than monospace underscores. Stays plain selectable
+   text, since the spec requires the HTML version to be the canonical one;
+   the downloadable PDF is printed from this same markup by
+   scripts/generate-raskid-pdf.mjs. */
+.ras-actions{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px}
+.ras-doc{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:44px 46px;color:var(--text);font-size:14px;line-height:1.75}
+.ras-head{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;padding-bottom:16px;border-bottom:1px solid var(--line2)}
+.ras-head-company{display:flex;flex-direction:column;font-size:12px;line-height:1.7;color:var(--muted)}
+.ras-head-company strong{color:var(--text);font-size:13.5px;letter-spacing:.2px}
+.ras-head-brand{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:2px;color:var(--faint);white-space:nowrap;padding-top:2px}
+.ras-title{font-size:20px;font-weight:700;letter-spacing:-.2px;margin:30px 0 6px;text-align:center}
+.ras-subtitle{font-size:12.5px;color:var(--muted);text-align:center;margin:0 0 30px;font-style:italic}
+.ras-block{margin-bottom:26px}
+.ras-label{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:1.6px;text-transform:uppercase;color:var(--faint);margin-bottom:6px}
+.ras-recipient{font-size:13.5px;line-height:1.7}
+.ras-decl{margin:0 0 14px;font-size:14px;line-height:2.1}
+/* ruled blanks: a bottom border reads far cleaner than a run of underscores,
+   on screen and on paper alike */
+.ras-blank{display:inline-block;width:38%;border-bottom:1px solid var(--line2);margin:0 4px;vertical-align:baseline}
+.ras-rule{display:block;width:100%;height:20px;border-bottom:1px solid var(--line2);margin-bottom:6px}
+.ras-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px 22px}
+.ras-grid-2{grid-template-columns:repeat(2,1fr)}
+.ras-grid-sign{grid-template-columns:2fr 1fr;gap:14px 30px}
+.ras-field{display:flex;flex-direction:column;margin-bottom:12px}
+.ras-field-label{font-size:11.5px;color:var(--muted);margin-bottom:2px}
+.ras-field-caption{font-size:11px;color:var(--faint)}
+.ras-field-caption em{font-style:normal}
+.ras-sign{margin-top:34px}
+.ras-foot{margin-top:30px;padding-top:14px;border-top:1px solid var(--line);font-size:11.5px;line-height:1.7;color:var(--faint)}
+.ras-after{margin-top:22px}
+@media(max-width:700px){
+  .ras-doc{padding:26px 20px}
+  .ras-head{flex-direction:column;gap:10px}
+  .ras-grid,.ras-grid-2,.ras-grid-sign{grid-template-columns:1fr}
+  .ras-blank{width:60%}
+}
 
-/* print / "save as PDF" — strip site chrome so the printed page is just the
-   form, not the header, footer, or the print button itself */
+/* print / "save as PDF" — strip site chrome so the sheet is just the
+   document, and flip it to black on white for paper */
 @media print{
   .rs-nav,.rs-announce,.rs-mobile-nav,.rs-mobile-nav-overlay,.rs-footer,.rs-cart-panel,.rs-cart-overlay,.cookie-banner,.rs-no-print{display:none !important}
   .legal-wrap{padding:0}
-  .raskid-form{border:none;padding:0}
-  body,.rs-root,.raskid-form,.raskid-form p{background:#fff !important;color:#000 !important}
+  .legal-content{max-width:none}
+  /* the layout stretches the root to the viewport height, which on paper
+     spills a blank second sheet even when the form itself fits — collapse
+     everything to content height so the PDF is a single page */
+  html,body,.rs-root,.legal-wrap{height:auto !important;min-height:0 !important}
+  body,.rs-root{background:#fff !important;color:#000 !important}
+  .ras-doc{background:#fff !important;border:none;border-radius:0;padding:0;font-size:11.5pt;line-height:1.7}
+  /* the document inherits the site's dark-theme muted/faint tokens, which
+     print as a washed-out blue-grey — force the whole sheet to black first,
+     then grey back only the genuinely secondary lines */
+  .ras-doc,.ras-doc p,.ras-doc div,.ras-doc span,.ras-doc strong,.ras-doc em,.ras-title{color:#000 !important}
+  .ras-head{border-bottom:1px solid #000}
+  .ras-head-company span,.ras-head-brand,.ras-label,.ras-subtitle,.ras-field-label,.ras-field-caption,.ras-foot{color:#444 !important}
+  .ras-blank,.ras-rule{border-bottom:1px solid #000}
+  .ras-foot{border-top:1px solid #000}
+  .ras-doc section{break-inside:avoid}
+  /* A4 content width lands under the 700px phone breakpoint, which would
+     otherwise stack every field into one column and push the form onto a
+     second sheet — paper always gets the document layout */
+  .ras-head{flex-direction:row !important}
+  .ras-grid{grid-template-columns:repeat(3,1fr) !important}
+  .ras-grid-2{grid-template-columns:repeat(2,1fr) !important}
+  .ras-grid-sign{grid-template-columns:2fr 1fr !important}
+  .ras-blank{width:38% !important}
 }
 
 /* FAQ accordion */
