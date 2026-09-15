@@ -38,11 +38,12 @@ test("configurator: add-to-cart is gated on the raskid consent checkbox", async 
   await page.getByRole("link", { name: "U košaricu →" }).click();
   await page.waitForURL("**/kosarica");
 
-  // the cart page carries the withdrawal-right wording on the terms
-  // checkbox, and checkout is gated on it
+  // the cart page's terms checkbox links out to the withdrawal-right page
+  // and gates checkout
   const checkoutBtn = page.getByRole("button", { name: /Na blagajnu/ });
   await expect(checkoutBtn).toBeDisabled();
-  await expect(page.locator(".kos-terms")).toContainText("po narudžbi to pravo ne postoji");
+  await expect(page.locator(".kos-terms")).toContainText("Pravo na jednostrani raskid");
+  await expect(page.locator('.kos-terms a[href="/raskid"]')).toBeVisible();
 
   await page.locator(".kos-terms input[type=checkbox]").check();
   await expect(checkoutBtn).toBeEnabled();
@@ -58,4 +59,12 @@ test("cart drawer routes to the cart page instead of straight to checkout", asyn
   await page.getByRole("button", { name: "Dodaj u košaricu" }).click();
   await expect(page.getByRole("link", { name: "U košaricu →" })).toBeVisible({ timeout: 8000 });
   await expect(page.getByRole("button", { name: /Na blagajnu/ })).toHaveCount(0);
+
+  // the header cart button re-opens the same preview drawer (it does not
+  // navigate) — the drawer's footer link is the route to the full page
+  await page.locator(".rs-cart-x").click();
+  await expect(page.getByRole("link", { name: "U košaricu →" })).toBeHidden();
+  await page.locator(".rs-cart-btn").click();
+  await expect(page.getByRole("link", { name: "U košaricu →" })).toBeVisible();
+  expect(new URL(page.url()).pathname).not.toBe("/kosarica");
 });

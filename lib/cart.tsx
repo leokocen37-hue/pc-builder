@@ -1,7 +1,8 @@
 // → put this at:  lib/cart.tsx   (draft-order cart: custom builds + real products together)
 "use client";
 
-import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useRef, ReactNode } from "react";
+import { usePathname } from "next/navigation";
 
 /* ---- item types ---- */
 // price here is only for the cart UI's own running total — the checkout API
@@ -57,6 +58,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [checkoutBusy, setCheckoutBusy] = useState(false);
   const [hydrated, setHydrated] = useState(false);
 
+  // On /kosarica the same list is already on screen, so popping the drawer
+  // open after an add (e.g. a cross-sell) would just cover it with a copy of
+  // itself. Opening it from the header there still works — only the
+  // automatic open is suppressed. Read through a ref so the add callbacks
+  // don't need the pathname in their dependency list.
+  const pathname = usePathname();
+  const onCartPageRef = useRef(false);
+  onCartPageRef.current = pathname === "/kosarica";
+  const openAfterAdd = useCallback(() => {
+    if (!onCartPageRef.current) setOpen(true);
+  }, []);
+
   // load + persist
   useEffect(() => {
     try { const raw = localStorage.getItem(LS); if (raw) setItems(JSON.parse(raw)); } catch {}
@@ -68,8 +81,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const addCustomBuild = useCallback((b: { title?: string; price: number; summary: string; variantIds: string[]; raskidObavijest?: string; raskidSuglasnost?: "da" }) => {
     setItems((p) => [...p, { kind: "custom", lineId: uid(), title: b.title || "Custom PC Konfiguracija", price: b.price, summary: b.summary, quantity: 1, variantIds: b.variantIds, raskidObavijest: b.raskidObavijest, raskidSuglasnost: b.raskidSuglasnost }]);
-    setOpen(true);
-  }, []);
+    openAfterAdd();
+  }, [openAfterAdd]);
 
   const addProduct = useCallback(
     (pr: { variantId: string; title: string; price: number; image?: string; variantTitle?: string; quantity?: number; section?: "racunala" | "periferija"; raskidObavijest?: string }) => {
@@ -79,9 +92,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
         if (i >= 0) { const c = [...p]; (c[i] as ProductItem).quantity += qty; return c; }
         return [...p, { kind: "product", lineId: uid(), variantId: pr.variantId, title: pr.title, price: pr.price, image: pr.image, variantTitle: pr.variantTitle, quantity: qty, section: pr.section, raskidObavijest: pr.raskidObavijest }];
       });
-      setOpen(true);
+      openAfterAdd();
     },
-    []
+    [openAfterAdd]
   );
 
   const updateQty = useCallback((lineId: string, quantity: number) => {

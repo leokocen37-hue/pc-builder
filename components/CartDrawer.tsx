@@ -2,18 +2,11 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { useCart, formatEUR } from "@/lib/cart";
 import CrossSell from "@/components/CrossSell";
 
 export default function CartDrawer() {
   const { items, open, setOpen, updateQty, removeItem, subtotal, count } = useCart();
-  const pathname = usePathname();
-
-  // the cart page is the full version of this panel — showing the drawer on
-  // top of it (e.g. after adding a cross-sell item there) would just cover
-  // the same list twice
-  if (pathname === "/kosarica") return null;
 
   return (
     <>

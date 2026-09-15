@@ -10,16 +10,11 @@ import { SITE } from "@/lib/site-config";
 // below — bump it (keeping the old wording in git history) whenever the
 // wording changes, so an order's recorded tag maps back to what the buyer
 // actually agreed to. Same convention as RASKID_NOTICE_VERSION.
-const TERMS_VERSION = "uvjeti-kosarica-2026-09";
+const TERMS_VERSION = "uvjeti-kosarica-2026-09-v2";
 
 export default function CartPageClient() {
   const { items, count, subtotal, updateQty, removeItem, checkout, checkoutBusy } = useCart();
   const [termsAccepted, setTermsAccepted] = useState(false);
-
-  // built-to-order lines (configurator builds and prebuilt PCs) are the ones
-  // with no 14-day withdrawal right — the checkbox wording below only claims
-  // that when such a line is actually in the cart
-  const hasMadeToOrder = items.some((l) => l.kind === "custom" || (l.kind === "product" && l.section === "racunala"));
 
   if (items.length === 0) {
     return (
@@ -97,8 +92,10 @@ export default function CartPageClient() {
           <b>{formatEUR(subtotal)}</b>
         </div>
 
-        {/* Terms + withdrawal-right acceptance. Inline on the checkbox rather
-            than as a separate disclaimer block; required before checkout. */}
+        {/* Terms + withdrawal-right acceptance. Phrased as a plain
+            read-and-agree confirmation rather than spelling the exception out
+            inline — the linked pages carry the detail for anyone who wants
+            it. Required before checkout. */}
         <label className="kos-terms">
           <input
             type="checkbox"
@@ -106,12 +103,9 @@ export default function CartPageClient() {
             onChange={(e) => setTermsAccepted(e.target.checked)}
           />
           <span>
-            Prihvaćam <Link href="/uvjeti">Uvjete poslovanja</Link> i{" "}
-            <Link href="/privatnost">Politiku privatnosti</Link> te potvrđujem da sam upoznat/a s{" "}
-            <Link href="/raskid">pravom na jednostrani raskid</Link>
-            {hasMadeToOrder
-              ? " i s time da za računala koja izrađujemo po narudžbi to pravo ne postoji."
-              : " i rokom od 14 dana."}
+            Pročitao/la sam i prihvaćam <Link href="/uvjeti">Uvjete poslovanja</Link>,{" "}
+            <Link href="/privatnost">Politiku privatnosti</Link> i{" "}
+            <Link href="/raskid">Pravo na jednostrani raskid</Link> te njegove iznimke.
           </span>
         </label>
 
