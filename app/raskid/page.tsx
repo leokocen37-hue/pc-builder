@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import LegalTodo from "@/components/LegalTodo";
+import { COMPANY, COMPANY_ADDRESS_FULL } from "@/lib/company";
 
 const TITLE = "Pravo na jednostrani raskid ugovora";
 const DESCRIPTION = "Uvjeti i iznimke za jednostrani raskid ugovora sklopljenog na daljinu, uključujući posebnosti za konfiguracije po mjeri.";
@@ -43,8 +44,9 @@ export default function RaskidPage() {
               <Link href="/uvjeti/obrazac-za-jednostrani-raskid">obrascem za jednostrani raskid ugovora</Link>.
             </p>
             <div className="legal-address-block">
-              <LegalTodo>upiši puni naziv tvrtke (d.o.o.) i adresu sjedišta iz sudskog registra.</LegalTodo>
-              <div>E-pošta: <a href="mailto:info@racunalo.hr">info@racunalo.hr</a></div>
+              <div><b>{COMPANY.name}</b></div>
+              <div>{COMPANY_ADDRESS_FULL}</div>
+              <div>E-pošta: <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a></div>
             </div>
             <p>
               Potvrdu o primitku obavijesti o jednostranom raskidu dostavit ćemo bez odgode elektroničkom poštom.

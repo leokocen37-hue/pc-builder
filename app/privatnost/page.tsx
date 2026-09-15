@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import LegalTodo from "@/components/LegalTodo";
+import { COMPANY, COMPANY_ADDRESS_FULL } from "@/lib/company";
 
 const TITLE = "Politika privatnosti";
 const DESCRIPTION = "Koje osobne podatke prikupljamo, zašto, koliko ih čuvamo i koja prava imate prema GDPR-u.";
@@ -27,9 +28,15 @@ export default function PrivatnostPage() {
           <p className="legal-meta">Zadnje ažurirano: {"{DATUM}"}</p>
           <div className="legal-content">
             <h2>1. Voditelj obrade podataka</h2>
+            <p>Voditelj obrade vaših osobnih podataka je:</p>
+            <ul>
+              <li><strong>{COMPANY.legalName}</strong> ({COMPANY.name})</li>
+              <li>Sjedište: {COMPANY_ADDRESS_FULL}</li>
+              <li>OIB: {COMPANY.oib}</li>
+              <li>E-pošta: <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a></li>
+            </ul>
             <LegalTodo>
-              upiši puni naziv tvrtke, sjedište, OIB i kontakt podatke voditelja obrade (i podatke službenika za
-              zaštitu podataka, ako je imenovan).
+              potvrdi je li imenovan službenik za zaštitu podataka (DPO) — ako jest, dodaj njegove kontakt podatke.
             </LegalTodo>
 
             <h2>2. Koje podatke prikupljamo</h2>

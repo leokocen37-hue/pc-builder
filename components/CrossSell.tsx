@@ -71,7 +71,7 @@ export default function CrossSell() {
               <button
                 className="rs-xsell-add"
                 disabled={!p.availableForSale}
-                onClick={() => addProduct({ variantId: v.id, title: p.title, price: Number(v.price.amount), image: p.featuredImage?.url })}
+                onClick={() => addProduct({ variantId: v.id, title: p.title, price: Number(v.price.amount), image: p.featuredImage?.url, section: "periferija" })}
               >
                 + Dodaj
               </button>

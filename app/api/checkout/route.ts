@@ -141,7 +141,18 @@ export async function POST(request: Request) {
         headers: { "Content-Type": "application/json", "X-Shopify-Access-Token": accessToken },
         body: JSON.stringify({
           query,
-          variables: { input: { note: "Web narudžba (konfigurator + trgovina)", lineItems } },
+          variables: {
+            input: {
+              note: "Web narudžba (konfigurator + trgovina)",
+              lineItems,
+              // order-level counterpart to the per-line _raskid_* properties:
+              // which dated version of the terms/withdrawal text the buyer
+              // ticked on /kosarica before checkout could be started
+              ...(typeof body.uvjetiPrihvaceni === "string" && body.uvjetiPrihvaceni
+                ? { customAttributes: [{ key: "_uvjeti_prihvaceni", value: body.uvjetiPrihvaceni }] }
+                : {}),
+            },
+          },
         }),
       }
     );

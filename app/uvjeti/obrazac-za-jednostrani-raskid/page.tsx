@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import LegalTodo from "@/components/LegalTodo";
 import PrintButton from "@/components/PrintButton";
+import { COMPANY, COMPANY_ADDRESS_FULL } from "@/lib/company";
 
 const TITLE = "Obrazac za jednostrani raskid ugovora";
 const DESCRIPTION = "Preuzmite ili ispunite obrazac za jednostrani raskid ugovora sklopljenog na daljinu u roku od 14 dana.";
@@ -37,9 +37,7 @@ export default function ObrazacRaskidPage() {
               <p className="raskid-form-title">OBRAZAC ZA JEDNOSTRANI RASKID UGOVORA</p>
 
               <p>
-                Prima:<br />
-                <LegalTodo>upiši puni naziv tvrtke (d.o.o.) i adresu sjedišta iz sudskog registra.</LegalTodo>
-                e-pošta: info@racunalo.hr
+                Prima: {COMPANY.name}, {COMPANY_ADDRESS_FULL}, e-pošta: {COMPANY.email}
               </p>
 
               <p>

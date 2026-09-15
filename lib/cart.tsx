@@ -39,7 +39,9 @@ type Ctx = {
   updateQty: (lineId: string, quantity: number) => void;
   removeItem: (lineId: string) => void;
   clear: () => void;
-  checkout: () => Promise<void>;
+  /** opts.uvjetiPrihvaceni: dated version tag of the terms text the buyer
+   *  ticked on /kosarica, recorded on the order as proof of acceptance */
+  checkout: (opts?: { uvjetiPrihvaceni?: string }) => Promise<void>;
 };
 
 const CartContext = createContext<Ctx | null>(null);
@@ -91,7 +93,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const count = items.reduce((s, i) => s + i.quantity, 0);
   const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
 
-  const checkout = useCallback(async () => {
+  const checkout = useCallback(async (opts?: { uvjetiPrihvaceni?: string }) => {
     if (items.length === 0) return;
     setCheckoutBusy(true);
     try {
@@ -101,6 +103,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
             ? { kind: "custom", title: i.title, summary: i.summary, quantity: i.quantity, variantIds: i.variantIds, raskidObavijest: i.raskidObavijest, raskidSuglasnost: i.raskidSuglasnost }
             : { kind: "product", variantId: i.variantId, quantity: i.quantity, raskidObavijest: i.raskidObavijest }
         ),
+        uvjetiPrihvaceni: opts?.uvjetiPrihvaceni,
       };
       const res = await fetch("/api/checkout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       const data = await res.json();

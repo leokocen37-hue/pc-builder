@@ -15,7 +15,7 @@ const NAV_LINKS = [
 ];
 
 export default function SiteHeader() {
-  const { count, setOpen } = useCart();
+  const { count } = useCart();
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
 
@@ -62,14 +62,16 @@ export default function SiteHeader() {
             ))}
           </nav>
           <div className="rs-nav-right">
-            <button className="rs-cart-btn" onClick={() => setOpen(true)} aria-label="Košarica">
+            {/* goes to the full cart page rather than opening the drawer —
+                the drawer is only the "added to cart" confirmation now */}
+            <Link href="/kosarica" className="rs-cart-btn" aria-label="Košarica">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" />
                 <path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6" />
               </svg>
               <span className="rs-cart-label">Košarica</span>
               {count > 0 && <span className="rs-cart-count">{count}</span>}
-            </button>
+            </Link>
             <button
               className={`rs-menu-btn ${menuOpen ? "open" : ""}`}
               onClick={() => setMenuOpen((o) => !o)}

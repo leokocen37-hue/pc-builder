@@ -2,11 +2,18 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useCart, formatEUR } from "@/lib/cart";
 import CrossSell from "@/components/CrossSell";
 
 export default function CartDrawer() {
-  const { items, open, setOpen, updateQty, removeItem, subtotal, checkout, checkoutBusy, count } = useCart();
+  const { items, open, setOpen, updateQty, removeItem, subtotal, count } = useCart();
+  const pathname = usePathname();
+
+  // the cart page is the full version of this panel — showing the drawer on
+  // top of it (e.g. after adding a cross-sell item there) would just cover
+  // the same list twice
+  if (pathname === "/kosarica") return null;
 
   return (
     <>
@@ -49,14 +56,6 @@ export default function CartDrawer() {
                     ) : (
                       l.variantTitle && <div className="rs-line-variant">{l.variantTitle}</div>
                     )}
-                    {/* uvjeti-jednostrani-raskid-spec.md section 3: repeat the
-                        no-withdrawal-right notice per applicable line in the
-                        cart, not just once on the product page */}
-                    {(l.kind === "custom" || l.section === "racunala") && (
-                      <div className="rs-line-raskid">
-                        Bez prava na jednostrani raskid (14 dana) — <Link href="/raskid">pogledajte zašto</Link>
-                      </div>
-                    )}
                     <div className="rs-line-bottom">
                       {l.kind === "custom" ? (
                         <span className="rs-line-variant">Kom. 1</span>
@@ -83,14 +82,17 @@ export default function CartDrawer() {
                 <span>Ukupno <span style={{ color: "var(--faint)", fontSize: 12, fontWeight: 400 }}>(s PDV-om)</span></span>
                 <b>{formatEUR(subtotal)}</b>
               </div>
-              <button
+              {/* the drawer is a confirmation of what was just added — the
+                  order is reviewed and placed on /kosarica, not from here */}
+              <Link
+                href="/kosarica"
                 className="rs-btn"
-                style={{ width: "100%", justifyContent: "center", opacity: checkoutBusy ? 0.7 : 1 }}
-                disabled={checkoutBusy}
-                onClick={checkout}
+                style={{ width: "100%", justifyContent: "center" }}
+                onClick={() => setOpen(false)}
               >
-                {checkoutBusy ? "Otvaram blagajnu…" : "Na blagajnu →"}
-              </button>
+                U košaricu →
+              </Link>
+              <button className="rs-cart-continue" onClick={() => setOpen(false)}>Nastavi kupovinu</button>
               <div className="rs-cart-note">Sve cijene uključuju PDV · dostava se izračunava na blagajni</div>
             </div>
           </>

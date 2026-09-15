@@ -1,6 +1,7 @@
 // → put this at: components/Footer.tsx
 // Global site footer — rendered once from app/layout.tsx so every page gets it.
 import Link from "next/link";
+import { COMPANY, COMPANY_ADDRESS } from "@/lib/company";
 
 const CONFIGURATOR_PATH = "/konfigurator";
 
@@ -11,13 +12,12 @@ export default function Footer() {
         <div>
           <div className="rs-logo" style={{ fontSize: 22, marginBottom: 12 }}>RAČUNALO<span>.hr</span></div>
           <p className="rs-foot-blurb">Ručno sastavljena i testirana računala po mjeri. Jedinstvene konfiguracije za igru, posao i kreativan rad.</p>
-          {/* impressum — placeholders must be filled with real registration data before launch */}
+          {/* impressum — see lib/company.ts (court register data) */}
           <div className="rs-foot-impressum">
-            <div><b>{"{NAZIV_TVRTKE}"}</b></div>
-            <div>OIB: {"{OIB}"}</div>
-            <div>{"{SJEDIŠTE}"}</div>
-            <div>info@racunalo.hr</div>
-            <div>{"{TELEFON}"}</div>
+            <div><b>{COMPANY.name}</b></div>
+            <div>OIB: {COMPANY.oib}</div>
+            <div>{COMPANY_ADDRESS}</div>
+            <div>{COMPANY.email}</div>
           </div>
         </div>
 
@@ -59,7 +59,7 @@ export default function Footer() {
 
       <div className="rs-foot-bottom">
         <span>© {new Date().getFullYear()} RAČUNALO.hr — sva prava pridržana</span>
-        <span className="rs-faint">OIB: {"{OIB}"}</span>
+        <span className="rs-faint">{COMPANY.name} · OIB: {COMPANY.oib}</span>
       </div>
     </footer>
   );

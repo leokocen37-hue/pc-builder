@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import LegalTodo from "@/components/LegalTodo";
+import { COMPANY, COMPANY_ADDRESS_FULL } from "@/lib/company";
 
 const TITLE = "Opći uvjeti poslovanja";
 const DESCRIPTION = "Uvjeti kupnje na RAČUNALO.hr — narudžba, cijene, isporuka, plaćanje, jamstvo i prava potrošača.";
@@ -27,9 +28,22 @@ export default function UvjetiPage() {
           <p className="legal-meta">Zadnje ažurirano: kolovoz 2026.</p>
           <div className="legal-content">
             <h2>1. Opći podaci o trgovcu</h2>
+            <ul>
+              <li>Naziv: <strong>{COMPANY.legalName}</strong> (skraćeno: {COMPANY.name})</li>
+              <li>Sjedište: {COMPANY_ADDRESS_FULL}</li>
+              <li>OIB: {COMPANY.oib}</li>
+              <li>MBS: {COMPANY.mbs}</li>
+              <li>Registarski sud: {COMPANY.court}</li>
+              <li>Članovi uprave: {COMPANY.directors.join(", ")}</li>
+              <li>Djelatnost: {COMPANY.activity}</li>
+              <li>E-pošta: <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a></li>
+            </ul>
+            <p>
+              Internetska trgovina {COMPANY.brand} u vlasništvu je i pod upravljanjem društva {COMPANY.name}.
+            </p>
             <LegalTodo>
-              upiši puni naziv tvrtke, sjedište, OIB, MB, iznos temeljnog kapitala (ako d.o.o.), podatke o
-              upisu u sudski registar i nadležni trgovački sud, te kontakt podatke (e-mail, telefon).
+              dopuni iznos temeljnog kapitala i kontakt telefon — nisu dostupni u javnom registarskom izvatku
+              iz kojeg su preuzeti ostali podaci iznad.
             </LegalTodo>
 
             <h2>2. Predmet uvjeta</h2>
