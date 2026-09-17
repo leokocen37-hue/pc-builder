@@ -21,7 +21,27 @@ type ProductItem = {
 export type CartItem = CustomItem | ProductItem;
 
 const LS = "rs_cart_v2";
+// The draft order the buyer was last sent to pay for. Leaving for Shopify's
+// invoice page is a plain redirect and nothing on the way back says an order
+// went through, so the cart remembers what it is waiting on and asks the
+// server about it on the next visit.
+const PENDING = "rs_pending_order_v1";
+// Long enough that an order paid days later still clears the cart, short
+// enough that an invoice that was never paid stops being asked about.
+const PENDING_TTL = 14 * 24 * 60 * 60 * 1000;
+
+type PendingOrder = { id: string; token: string; at: number };
+
 const uid = () => Math.random().toString(36).slice(2, 10);
+// Random enough that draft order ids, which are sequential, can't be walked:
+// /api/checkout/status only answers to a caller holding this.
+const cartToken = () => {
+  try {
+    return crypto.randomUUID().replace(/-/g, "");
+  } catch {
+    return (uid() + uid() + uid() + uid()).slice(0, 32);
+  }
+};
 
 type Ctx = {
   items: CartItem[];
@@ -88,6 +108,31 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (hydrated) { try { localStorage.setItem(LS, JSON.stringify(items)); } catch {} }
   }, [items, hydrated]);
 
+  // Coming back from checkout: if the order we last sent the buyer to has been
+  // paid, empty the cart — otherwise they return to a cart still holding
+  // everything they just bought. Only a *paid* order clears it, so abandoning
+  // the Shopify page leaves the cart exactly as it was.
+  useEffect(() => {
+    if (!hydrated) return;
+    let pending: PendingOrder | null = null;
+    try {
+      const raw = localStorage.getItem(PENDING);
+      pending = raw ? (JSON.parse(raw) as PendingOrder) : null;
+    } catch {}
+    const forget = () => { try { localStorage.removeItem(PENDING); } catch {} };
+    if (!pending?.id || !pending?.token) { if (pending) forget(); return; }
+    if (Date.now() - (pending.at ?? 0) > PENDING_TTL) { forget(); return; }
+
+    const ctrl = new AbortController();
+    fetch(`/api/checkout/status?id=${encodeURIComponent(pending.id)}&token=${encodeURIComponent(pending.token)}`,
+      { signal: ctrl.signal })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d?.completed) { setItems([]); forget(); } })
+      // offline, or the check failed — leave the cart alone and try next visit
+      .catch(() => {});
+    return () => ctrl.abort();
+  }, [hydrated]);
+
   const addCustomBuild = useCallback((b: { title?: string; price: number; summary: string; variantIds: string[] }) => {
     setItems((p) => [...p, { kind: "custom", lineId: uid(), title: b.title || "Custom PC Konfiguracija", price: b.price, summary: b.summary, quantity: 1, variantIds: b.variantIds }]);
     openAfterAdd();
@@ -122,7 +167,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (!termsAccepted) return;
     setCheckoutBusy(true);
     try {
+      const token = cartToken();
       const payload = {
+        kosaricaToken: token,
         items: items.map((i) =>
           i.kind === "custom"
             ? { kind: "custom", title: i.title, summary: i.summary, quantity: i.quantity, variantIds: i.variantIds }
@@ -137,6 +184,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const res = await fetch("/api/checkout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       const data = await res.json();
       if (data.draftOrder?.invoiceUrl) {
+        // note what we are waiting on before handing over to Shopify
+        try {
+          localStorage.setItem(
+            PENDING,
+            JSON.stringify({ id: data.draftOrder.id, token, at: Date.now() } satisfies PendingOrder)
+          );
+        } catch {}
         window.location.href = data.draftOrder.invoiceUrl;
       } else {
         alert("Greška pri kreiranju narudžbe: " + (data.error || data.userErrors?.[0]?.message || "nepoznato"));

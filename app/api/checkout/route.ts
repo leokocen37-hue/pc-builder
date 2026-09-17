@@ -1,6 +1,7 @@
 // → replace app/api/checkout/route.ts with this
 import { NextResponse } from "next/server";
 import { shopifyFetch } from "@/lib/shopify";
+import { adminAccessToken, adminGraphql } from "@/lib/shopify-admin";
 import { ASSEMBLY_FEE } from "@/lib/pricing";
 
 type InItem =
@@ -11,6 +12,11 @@ type InItem =
 // could be started. Acceptance is per order, not per line, so it is recorded
 // once at order level.
 type InTerms = { prihvat?: string; verzija?: string; vrijeme?: string };
+
+// A random token the cart makes up per checkout and keeps alongside the draft
+// order id. It rides along as a hidden attribute so /api/checkout/status can
+// tell "the buyer who started this order" from "someone guessing ids".
+const CART_TOKEN_RE = /^[a-z0-9]{16,64}$/i;
 
 type VariantPriceNode = { id: string; price: { amount: string } } | null;
 
@@ -67,6 +73,9 @@ export async function POST(request: Request) {
     // endpoint itself is public — refuse an order that arrives without the
     // acceptance that is supposed to be recorded on it, rather than booking one
     // with no evidence the terms were ever shown.
+    const cartToken: string | null =
+      typeof body.kosaricaToken === "string" && CART_TOKEN_RE.test(body.kosaricaToken) ? body.kosaricaToken : null;
+
     const uvjeti: InTerms = body.uvjeti ?? {};
     if (uvjeti.prihvat !== "da") {
       return NextResponse.json({ error: "Uvjeti poslovanja nisu prihvaćeni." }, { status: 400 });
@@ -100,25 +109,8 @@ export async function POST(request: Request) {
       }
     }
 
-    // this route is server-only, so it can use the non-public domain var directly —
-    // falls back to the NEXT_PUBLIC_ one only until that's set in Vercel
-    const shopifyDomain = process.env.SHOPIFY_DOMAIN || process.env.NEXT_PUBLIC_SHOPIFY_DOMAIN;
-
     // 1. temporary Admin access token (client credentials)
-    const authResponse = await fetch(
-      `https://${shopifyDomain}/admin/oauth/access_token`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          client_id: process.env.SHOPIFY_CLIENT_ID,
-          client_secret: process.env.SHOPIFY_CLIENT_SECRET,
-          grant_type: "client_credentials",
-        }),
-      }
-    );
-    const authData = await authResponse.json();
-    const accessToken = authData.access_token;
+    const accessToken = await adminAccessToken();
     if (!accessToken) {
       return NextResponse.json({ error: "Auth failed: Check Client ID/Secret" }, { status: 401 });
     }
@@ -127,37 +119,30 @@ export async function POST(request: Request) {
     const query = `
       mutation draftOrderCreate($input: DraftOrderInput!) {
         draftOrderCreate(input: $input) {
-          draftOrder { invoiceUrl }
+          draftOrder { id invoiceUrl }
           userErrors { message }
         }
       }
     `;
-    const response = await fetch(
-      `https://${shopifyDomain}/admin/api/2024-10/graphql.json`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Shopify-Access-Token": accessToken },
-        body: JSON.stringify({
-          query,
-          variables: {
-            input: {
-              note: "Web narudžba (konfigurator + trgovina)",
-              lineItems,
-              // What the buyer accepted, recorded on the order itself: the
-              // acceptance, which dated version of the three documents was in
-              // force, and when the box was ticked. `_`-prefixed, so it shows
-              // on the order in the admin but not to the buyer.
-              customAttributes: [
-                { key: "_uvjeti_prihvat", value: "da" },
-                { key: "_uvjeti_verzija", value: uvjeti.verzija || "" },
-                { key: "_uvjeti_vrijeme", value: uvjeti.vrijeme || "" },
-              ],
-            },
-          },
-        }),
-      }
-    );
-    const result = await response.json();
+    const result = await adminGraphql<{
+      data?: { draftOrderCreate?: { draftOrder?: { id: string; invoiceUrl: string }; userErrors?: { message: string }[] } };
+    }>(accessToken, query, {
+      input: {
+        note: "Web narudžba (konfigurator + trgovina)",
+        lineItems,
+        // What the buyer accepted, recorded on the order itself: the acceptance,
+        // which dated version of the three documents was in force, and when the
+        // box was ticked. `_`-prefixed, so it shows on the order in the admin
+        // but not to the buyer. The cart token rides along the same way — see
+        // /api/checkout/status.
+        customAttributes: [
+          { key: "_uvjeti_prihvat", value: "da" },
+          { key: "_uvjeti_verzija", value: uvjeti.verzija || "" },
+          { key: "_uvjeti_vrijeme", value: uvjeti.vrijeme || "" },
+          ...(cartToken ? [{ key: "_kosarica_token", value: cartToken }] : []),
+        ],
+      },
+    });
     const out = result.data?.draftOrderCreate;
     if (out?.userErrors?.length) {
       return NextResponse.json({ error: out.userErrors[0].message, userErrors: out.userErrors }, { status: 400 });
