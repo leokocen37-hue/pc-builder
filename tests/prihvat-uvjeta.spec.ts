@@ -4,8 +4,8 @@ import { test, expect } from "@playwright/test";
 // legal terms: the product pages and the configurator say nothing about the
 // right of withdrawal any more.
 //
-// The drawer is rendered on every page, including /kosarica, so page-level
-// assertions are scoped to .kos-summary to avoid matching its copy.
+// The drawer stays a plain preview of what was just added — the question is
+// asked on /kosarica, where the order is actually placed.
 
 const dismissCookies = async (page: import("@playwright/test").Page) => {
   const accept = page.getByText("Prihvaćam");
@@ -59,23 +59,23 @@ test("cart page: the checkbox links to all three documents and to the exceptions
   }
 });
 
-test("acceptance is shared between the drawer and the cart page, and not remembered", async ({ page }) => {
+test("the drawer stays a preview: it asks nothing, the cart page does", async ({ page }) => {
   await page.goto("/racunala/gaming/entry-level-racunalo");
   await dismissCookies(page);
   await page.getByRole("button", { name: "Dodaj u košaricu" }).click();
 
-  // the drawer carries the same checkbox, above the link that leads onward
-  const drawerBox = page.locator(".rs-cart-panel .kos-terms input[type=checkbox]");
-  await expect(drawerBox).not.toBeChecked();
-  await drawerBox.check();
+  // nothing to accept while the buyer is still shopping
+  await expect(page.locator(".rs-cart-panel")).toBeVisible();
+  await expect(page.locator(".rs-cart-panel .kos-terms")).toHaveCount(0);
 
   await page.getByRole("link", { name: "U košaricu →" }).click();
   await page.waitForURL("**/kosarica");
 
-  // ticked in the drawer -> already ticked here, so nobody is asked twice
-  await expect(page.locator(".kos-summary .kos-terms input[type=checkbox]")).toBeChecked();
+  const box = page.locator(".kos-summary .kos-terms input[type=checkbox]");
+  await expect(box).toHaveCount(1);
+  await box.check();
 
-  // ...but a fresh load starts unticked: the cart persists, the acceptance doesn't
+  // a fresh load starts unticked: the cart persists, the acceptance doesn't
   await page.reload();
   await expect(page.locator(".kos-summary .kos-terms input[type=checkbox]")).not.toBeChecked();
 });

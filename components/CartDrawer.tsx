@@ -4,7 +4,6 @@
 import Link from "next/link";
 import { useCart, formatEUR } from "@/lib/cart";
 import CrossSell from "@/components/CrossSell";
-import TermsAcceptance from "@/components/TermsAcceptance";
 
 export default function CartDrawer() {
   const { items, open, setOpen, updateQty, removeItem, subtotal, count } = useCart();
@@ -76,11 +75,6 @@ export default function CartDrawer() {
                 <span>Ukupno <span style={{ color: "var(--faint)", fontSize: 12, fontWeight: 400 }}>(s PDV-om)</span></span>
                 <b>{formatEUR(subtotal)}</b>
               </div>
-              {/* The same acceptance as on /kosarica, sharing one piece of
-                  state: whichever one the buyer ticks, the other follows. The
-                  drawer itself never reaches checkout — it hands over to
-                  /kosarica, where the order is reviewed and placed. */}
-              <TermsAcceptance />
               {/* the drawer is a confirmation of what was just added — the
                   order is reviewed and placed on /kosarica, not from here */}
               <Link

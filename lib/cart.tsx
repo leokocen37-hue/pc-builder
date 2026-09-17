@@ -35,9 +35,9 @@ type Ctx = {
   updateQty: (lineId: string, quantity: number) => void;
   removeItem: (lineId: string) => void;
   clear: () => void;
-  /** Terms acceptance, shared by the drawer and the cart page so the buyer
-   *  ticks once per order. Deliberately NOT persisted: it lives in memory
-   *  only, so a reload or a later visit asks again. */
+  /** Terms acceptance, given once per order on /kosarica. Deliberately NOT
+   *  persisted: it lives in memory only, so a reload or a later visit asks
+   *  again. */
   termsAccepted: boolean;
   setTermsAccepted: (v: boolean) => void;
   checkout: () => Promise<void>;

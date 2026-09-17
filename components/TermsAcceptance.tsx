@@ -9,13 +9,12 @@ import { useCart } from "@/lib/cart";
  * about the right of withdrawal — it is all folded into this one line, right
  * above the button that leads to checkout.
  *
- * Rendered in two places (the cart drawer and /kosarica) but backed by one
- * piece of cart state, so a tick in the drawer carries over to the cart page
- * and the buyer is never asked twice for the same order.
+ * It is deliberately not in the cart drawer: the drawer is a preview of what
+ * was just added, not the place an order is placed, and asking there would put
+ * the question in front of a buyer who is still shopping.
  *
- * The wording is kept here, in one copy, so the two renders can never drift
- * apart — what is recorded on the order as _uvjeti_verzija has to correspond
- * to a single known text.
+ * The acceptance state itself lives on the cart context rather than here,
+ * because checkout() is what has to refuse to send an order without it.
  */
 export default function TermsAcceptance({ showHint = false }: { showHint?: boolean }) {
   const { termsAccepted, setTermsAccepted } = useCart();
