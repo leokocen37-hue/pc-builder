@@ -12,7 +12,7 @@ export const COMPANY = {
   oib: "59354205995",
   mbs: "070226211",
   street: "Stepinčeva ulica 2A",
-  postalCode: "40313",
+  postalCode: "40314",
   city: "Selnica",
   country: "Hrvatska",
   court: "Trgovački sud u Varaždinu",
@@ -23,8 +23,8 @@ export const COMPANY = {
   email: "info@racunalo.hr",
 } as const;
 
-/** "Stepinčeva ulica 2A, 40313 Selnica" */
+/** "Stepinčeva ulica 2A, 40314 Selnica" */
 export const COMPANY_ADDRESS = `${COMPANY.street}, ${COMPANY.postalCode} ${COMPANY.city}`;
 
-/** "Stepinčeva ulica 2A, 40313 Selnica, Hrvatska" */
+/** "Stepinčeva ulica 2A, 40314 Selnica, Hrvatska" */
 export const COMPANY_ADDRESS_FULL = `${COMPANY_ADDRESS}, ${COMPANY.country}`;
