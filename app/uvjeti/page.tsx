@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { COMPANY, COMPANY_ADDRESS_FULL } from "@/lib/company";
+import { TERMS_UPDATED_LABEL } from "@/lib/terms";
 
 const TITLE = "Opći uvjeti poslovanja";
 const DESCRIPTION = "Uvjeti kupnje na RAČUNALO.hr — narudžba, cijene, isporuka, plaćanje, jamstvo i prava potrošača.";
@@ -24,7 +25,7 @@ export default function UvjetiPage() {
 
       <section className="legal-wrap">
         <div className="rs-wrap">
-          <p className="legal-meta">Zadnje ažurirano: rujan 2026.</p>
+          <p className="legal-meta">Zadnje ažurirano: {TERMS_UPDATED_LABEL}</p>
           <div className="legal-content">
             <h2>1. Opći podaci o trgovcu</h2>
             <ul>
@@ -173,6 +174,7 @@ export default function UvjetiPage() {
             <h2>12. Kontakt</h2>
             <p>Za sva pitanja vezana uz ove Uvjete, javite nam se na <a href="mailto:info@racunalo.hr">info@racunalo.hr</a> ili putem stranice <Link href="/kontakt">Kontakt</Link>.</p>
           </div>
+          <p className="legal-updated">Zadnje ažurirano: {TERMS_UPDATED_LABEL}</p>
         </div>
       </section>
     </div>

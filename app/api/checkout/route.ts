@@ -4,26 +4,19 @@ import { shopifyFetch } from "@/lib/shopify";
 import { ASSEMBLY_FEE } from "@/lib/pricing";
 
 type InItem =
-  | { kind: "custom"; title?: string; summary?: string; quantity?: number; variantIds?: string[]; raskidObavijest?: string; raskidSuglasnost?: "da" }
-  | { kind: "product"; variantId: string; quantity?: number; raskidObavijest?: string };
+  | { kind: "custom"; title?: string; summary?: string; quantity?: number; variantIds?: string[] }
+  | { kind: "product"; variantId: string; quantity?: number };
+
+// What the cart reports about the acceptance the buyer gave before checkout
+// could be started. Acceptance is per order, not per line, so it is recorded
+// once at order level.
+type InTerms = { prihvat?: string; verzija?: string; vrijeme?: string };
 
 type VariantPriceNode = { id: string; price: { amount: string } } | null;
 
 type DraftOrderLineItem =
   | { title: string; originalUnitPrice: string; quantity: number; customAttributes: { key: string; value: string }[]; requiresShipping: boolean }
   | { variantId: string; quantity: number; customAttributes?: { key: string; value: string }[] };
-
-// uvjeti-jednostrani-raskid-spec.md section 3: the burden of proof that the
-// withdrawal-right notice was shown is on the seller, not the buyer. Record
-// which dated version of the notice text was displayed (and, for configurator
-// items, the buyer's checkbox consent) as a `_`-prefixed line item property —
-// hidden from the buyer, visible on the order in the Shopify admin.
-function raskidAttributes(raskidObavijest?: string, raskidSuglasnost?: "da"): { key: string; value: string }[] {
-  const attrs: { key: string; value: string }[] = [];
-  if (raskidObavijest) attrs.push({ key: "_raskid_obavijest", value: raskidObavijest });
-  if (raskidSuglasnost) attrs.push({ key: "_raskid_suglasnost", value: raskidSuglasnost });
-  return attrs;
-}
 
 const errorMessage = (e: unknown) => (e instanceof Error ? e.message : "Unknown error");
 
@@ -70,6 +63,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Košarica je prazna" }, { status: 400 });
     }
 
+    // The checkbox is the only way to reach this endpoint from the UI, but the
+    // endpoint itself is public — refuse an order that arrives without the
+    // acceptance that is supposed to be recorded on it, rather than booking one
+    // with no evidence the terms were ever shown.
+    const uvjeti: InTerms = body.uvjeti ?? {};
+    if (uvjeti.prihvat !== "da") {
+      return NextResponse.json({ error: "Uvjeti poslovanja nisu prihvaćeni." }, { status: 400 });
+    }
+
     // Build the draft-order line items.
     // - custom  → price re-derived server-side from real component prices + assembly fee
     // - product → real Shopify variant, priced by Shopify (keyboard, monitor, prebuilt…)
@@ -86,10 +88,7 @@ export async function POST(request: Request) {
           title: it.title || "Custom PC Konfiguracija",
           originalUnitPrice: price.toFixed(2),
           quantity: it.quantity || 1,
-          customAttributes: [
-            { key: "Komponente", value: it.summary || "" },
-            ...raskidAttributes(it.raskidObavijest, it.raskidSuglasnost),
-          ],
+          customAttributes: [{ key: "Komponente", value: it.summary || "" }],
           // custom (non-variant) draft order lines default to non-shippable —
           // without this, a cart with ONLY a custom build skips the shipping
           // step entirely at checkout (a real product line masks this, since
@@ -97,8 +96,7 @@ export async function POST(request: Request) {
           requiresShipping: true,
         });
       } else {
-        const attrs = raskidAttributes(it.raskidObavijest);
-        lineItems.push({ variantId: it.variantId, quantity: it.quantity || 1, ...(attrs.length ? { customAttributes: attrs } : {}) });
+        lineItems.push({ variantId: it.variantId, quantity: it.quantity || 1 });
       }
     }
 
@@ -145,12 +143,15 @@ export async function POST(request: Request) {
             input: {
               note: "Web narudžba (konfigurator + trgovina)",
               lineItems,
-              // order-level counterpart to the per-line _raskid_* properties:
-              // which dated version of the terms/withdrawal text the buyer
-              // ticked on /kosarica before checkout could be started
-              ...(typeof body.uvjetiPrihvaceni === "string" && body.uvjetiPrihvaceni
-                ? { customAttributes: [{ key: "_uvjeti_prihvaceni", value: body.uvjetiPrihvaceni }] }
-                : {}),
+              // What the buyer accepted, recorded on the order itself: the
+              // acceptance, which dated version of the three documents was in
+              // force, and when the box was ticked. `_`-prefixed, so it shows
+              // on the order in the admin but not to the buyer.
+              customAttributes: [
+                { key: "_uvjeti_prihvat", value: "da" },
+                { key: "_uvjeti_verzija", value: uvjeti.verzija || "" },
+                { key: "_uvjeti_vrijeme", value: uvjeti.vrijeme || "" },
+              ],
             },
           },
         }),

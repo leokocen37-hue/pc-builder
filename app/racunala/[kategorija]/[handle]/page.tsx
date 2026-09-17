@@ -84,7 +84,7 @@ export default async function Page({ params }: { params: Promise<{ kategorija: s
           />
         </div>
       </div>
-      <ProductClient product={product} section="racunala" />
+      <ProductClient product={product} />
     </>
   );
 }

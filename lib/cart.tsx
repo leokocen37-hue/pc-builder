@@ -3,25 +3,20 @@
 
 import { createContext, useContext, useEffect, useState, useCallback, useRef, ReactNode } from "react";
 import { usePathname } from "next/navigation";
+import { TERMS_VERSION } from "@/lib/terms";
 
 /* ---- item types ---- */
 // price here is only for the cart UI's own running total — the checkout API
 // never trusts it; it re-derives the real price from variantIds server-side.
 //
-// raskidObavijest/raskidSuglasnost: which version of the "no 14-day
-// withdrawal right" notice was shown when this line was added, captured at
-// add-to-cart time (not checkout time) so it's on record even if the buyer
-// never revisits the cart. Forwarded to Shopify as a `_`-prefixed (hidden
-// from the buyer, visible in admin) line item property by /api/checkout.
-// See uvjeti-jednostrani-raskid-spec.md section 3.
+// Terms acceptance is deliberately NOT stored per line: it is given once, in
+// the cart, for the whole order, and travels to Shopify as order-level cart
+// attributes (see checkout() below and /api/checkout).
 type CustomItem = {
   kind: "custom"; lineId: string; title: string; price: number; summary: string; quantity: number; variantIds: string[];
-  raskidObavijest?: string; raskidSuglasnost?: "da";
 };
 type ProductItem = {
   kind: "product"; lineId: string; variantId: string; title: string; price: number; image?: string; variantTitle?: string; quantity: number;
-  section?: "racunala" | "periferija";
-  raskidObavijest?: string;
 };
 export type CartItem = CustomItem | ProductItem;
 
@@ -35,14 +30,17 @@ type Ctx = {
   subtotal: number;
   checkoutBusy: boolean;
   setOpen: (o: boolean) => void;
-  addCustomBuild: (b: { title?: string; price: number; summary: string; variantIds: string[]; raskidObavijest?: string; raskidSuglasnost?: "da" }) => void;
-  addProduct: (p: { variantId: string; title: string; price: number; image?: string; variantTitle?: string; quantity?: number; section?: "racunala" | "periferija"; raskidObavijest?: string }) => void;
+  addCustomBuild: (b: { title?: string; price: number; summary: string; variantIds: string[] }) => void;
+  addProduct: (p: { variantId: string; title: string; price: number; image?: string; variantTitle?: string; quantity?: number }) => void;
   updateQty: (lineId: string, quantity: number) => void;
   removeItem: (lineId: string) => void;
   clear: () => void;
-  /** opts.uvjetiPrihvaceni: dated version tag of the terms text the buyer
-   *  ticked on /kosarica, recorded on the order as proof of acceptance */
-  checkout: (opts?: { uvjetiPrihvaceni?: string }) => Promise<void>;
+  /** Terms acceptance, shared by the drawer and the cart page so the buyer
+   *  ticks once per order. Deliberately NOT persisted: it lives in memory
+   *  only, so a reload or a later visit asks again. */
+  termsAccepted: boolean;
+  setTermsAccepted: (v: boolean) => void;
+  checkout: () => Promise<void>;
 };
 
 const CartContext = createContext<Ctx | null>(null);
@@ -57,6 +55,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const [checkoutBusy, setCheckoutBusy] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+
+  // Terms acceptance. Plain state, never written to localStorage, so it is
+  // unticked on every fresh load — a pre-ticked box carries no legal weight.
+  // The timestamp is taken at the moment of ticking, not at checkout, since
+  // that is the act being recorded.
+  const [termsAccepted, setTermsAcceptedState] = useState(false);
+  const termsAcceptedAtRef = useRef<string | null>(null);
+  const setTermsAccepted = useCallback((v: boolean) => {
+    termsAcceptedAtRef.current = v ? new Date().toISOString() : null;
+    setTermsAcceptedState(v);
+  }, []);
 
   // On /kosarica the same list is already on screen, so popping the drawer
   // open after an add (e.g. a cross-sell) would just cover it with a copy of
@@ -79,18 +88,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (hydrated) { try { localStorage.setItem(LS, JSON.stringify(items)); } catch {} }
   }, [items, hydrated]);
 
-  const addCustomBuild = useCallback((b: { title?: string; price: number; summary: string; variantIds: string[]; raskidObavijest?: string; raskidSuglasnost?: "da" }) => {
-    setItems((p) => [...p, { kind: "custom", lineId: uid(), title: b.title || "Custom PC Konfiguracija", price: b.price, summary: b.summary, quantity: 1, variantIds: b.variantIds, raskidObavijest: b.raskidObavijest, raskidSuglasnost: b.raskidSuglasnost }]);
+  const addCustomBuild = useCallback((b: { title?: string; price: number; summary: string; variantIds: string[] }) => {
+    setItems((p) => [...p, { kind: "custom", lineId: uid(), title: b.title || "Custom PC Konfiguracija", price: b.price, summary: b.summary, quantity: 1, variantIds: b.variantIds }]);
     openAfterAdd();
   }, [openAfterAdd]);
 
   const addProduct = useCallback(
-    (pr: { variantId: string; title: string; price: number; image?: string; variantTitle?: string; quantity?: number; section?: "racunala" | "periferija"; raskidObavijest?: string }) => {
+    (pr: { variantId: string; title: string; price: number; image?: string; variantTitle?: string; quantity?: number }) => {
       const qty = pr.quantity ?? 1;
       setItems((p) => {
         const i = p.findIndex((x) => x.kind === "product" && x.variantId === pr.variantId);
         if (i >= 0) { const c = [...p]; (c[i] as ProductItem).quantity += qty; return c; }
-        return [...p, { kind: "product", lineId: uid(), variantId: pr.variantId, title: pr.title, price: pr.price, image: pr.image, variantTitle: pr.variantTitle, quantity: qty, section: pr.section, raskidObavijest: pr.raskidObavijest }];
+        return [...p, { kind: "product", lineId: uid(), variantId: pr.variantId, title: pr.title, price: pr.price, image: pr.image, variantTitle: pr.variantTitle, quantity: qty }];
       });
       openAfterAdd();
     },
@@ -106,17 +115,24 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const count = items.reduce((s, i) => s + i.quantity, 0);
   const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
 
-  const checkout = useCallback(async (opts?: { uvjetiPrihvaceni?: string }) => {
+  const checkout = useCallback(async () => {
     if (items.length === 0) return;
+    // the UI gates this too, but never send an order without the acceptance
+    // that is supposed to be recorded on it
+    if (!termsAccepted) return;
     setCheckoutBusy(true);
     try {
       const payload = {
         items: items.map((i) =>
           i.kind === "custom"
-            ? { kind: "custom", title: i.title, summary: i.summary, quantity: i.quantity, variantIds: i.variantIds, raskidObavijest: i.raskidObavijest, raskidSuglasnost: i.raskidSuglasnost }
-            : { kind: "product", variantId: i.variantId, quantity: i.quantity, raskidObavijest: i.raskidObavijest }
+            ? { kind: "custom", title: i.title, summary: i.summary, quantity: i.quantity, variantIds: i.variantIds }
+            : { kind: "product", variantId: i.variantId, quantity: i.quantity }
         ),
-        uvjetiPrihvaceni: opts?.uvjetiPrihvaceni,
+        uvjeti: {
+          prihvat: "da",
+          verzija: TERMS_VERSION,
+          vrijeme: termsAcceptedAtRef.current ?? new Date().toISOString(),
+        },
       };
       const res = await fetch("/api/checkout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       const data = await res.json();
@@ -131,10 +147,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
       alert("Serverska greška pri naplati.");
       setCheckoutBusy(false);
     }
-  }, [items]);
+  }, [items, termsAccepted]);
 
   return (
-    <CartContext.Provider value={{ items, open, count, subtotal, checkoutBusy, setOpen, addCustomBuild, addProduct, updateQty, removeItem, clear, checkout }}>
+    <CartContext.Provider value={{ items, open, count, subtotal, checkoutBusy, setOpen, addCustomBuild, addProduct, updateQty, removeItem, clear, termsAccepted, setTermsAccepted, checkout }}>
       {children}
     </CartContext.Provider>
   );

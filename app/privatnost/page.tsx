@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { COMPANY, COMPANY_ADDRESS_FULL } from "@/lib/company";
+import { TERMS_UPDATED_LABEL } from "@/lib/terms";
 
 const TITLE = "Politika privatnosti";
 const DESCRIPTION = "Koje osobne podatke prikupljamo, zašto, koliko ih čuvamo i koja prava imate prema GDPR-u.";
@@ -24,7 +25,7 @@ export default function PrivatnostPage() {
 
       <section className="legal-wrap">
         <div className="rs-wrap">
-          <p className="legal-meta">Zadnje ažurirano: rujan 2026.</p>
+          <p className="legal-meta">Zadnje ažurirano: {TERMS_UPDATED_LABEL}</p>
           <div className="legal-content">
             <h2>1. Voditelj obrade podataka</h2>
             <p>Voditelj obrade vaših osobnih podataka je:</p>
@@ -127,11 +128,12 @@ export default function PrivatnostPage() {
             <p>Detalje o kolačićima koje koristimo pronađite na stranici <Link href="/kolacici">Pravila o kolačićima</Link>.</p>
 
             <h2>9. Izmjene ove politike</h2>
-            <p>Ovu Politiku privatnosti možemo povremeno ažurirati. Datum zadnje izmjene naveden je na vrhu stranice.</p>
+            <p>Ovu Politiku privatnosti možemo povremeno ažurirati. Datum zadnje izmjene naveden je na vrhu i na dnu ove stranice.</p>
 
             <h2>10. Kontakt</h2>
             <p>Za sva pitanja o obradi osobnih podataka javite nam se na <a href="mailto:info@racunalo.hr">info@racunalo.hr</a> ili putem stranice <Link href="/kontakt">Kontakt</Link>.</p>
           </div>
+          <p className="legal-updated">Zadnje ažurirano: {TERMS_UPDATED_LABEL}</p>
         </div>
       </section>
     </div>

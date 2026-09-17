@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { COMPANY, COMPANY_ADDRESS_FULL } from "@/lib/company";
+import { TERMS_UPDATED_LABEL } from "@/lib/terms";
 
 const TITLE = "Pravo na jednostrani raskid ugovora";
 const DESCRIPTION = "Uvjeti i iznimke za jednostrani raskid ugovora sklopljenog na daljinu, uključujući posebnosti za konfiguracije po mjeri.";
@@ -24,7 +25,7 @@ export default function RaskidPage() {
 
       <section className="legal-wrap">
         <div className="rs-wrap">
-          <p className="legal-meta">Zadnje ažurirano: rujan 2026.</p>
+          <p className="legal-meta">Zadnje ažurirano: {TERMS_UPDATED_LABEL}</p>
           <div className="legal-content">
             <h2>1. Opće pravo na raskid (14 dana)</h2>
             <p>
@@ -51,7 +52,8 @@ export default function RaskidPage() {
               Potvrdu o primitku obavijesti o jednostranom raskidu dostavit ćemo bez odgode elektroničkom poštom.
             </p>
 
-            <h2>2. Iznimke od prava na jednostrani raskid</h2>
+            {/* linked directly from the acceptance checkbox in the cart */}
+            <h2 id="iznimke">2. Iznimke od prava na jednostrani raskid</h2>
             <p>
               Sukladno Zakonu o zaštiti potrošača, potrošač nema pravo na jednostrani raskid ugovora ako je predmet
               ugovora roba koja je izrađena po specifikaciji potrošača ili koja je jasno prilagođena potrošaču.
@@ -152,6 +154,7 @@ export default function RaskidPage() {
               <Link href="/jamstvo">Jamstvo</Link> za povezane informacije.
             </p>
           </div>
+          <p className="legal-updated">Zadnje ažurirano: {TERMS_UPDATED_LABEL}</p>
         </div>
       </section>
     </div>

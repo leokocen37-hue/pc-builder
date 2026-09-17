@@ -1,5 +1,20 @@
 # Zadatak: sekcija o jednostranom raskidu u Uvjetima — racunalo.hr
 
+> **Zastarjelo (rujan 2026.).** Ovaj dokument opisuje raniju izvedbu, u kojoj su
+> obavijesti o pravu na jednostrani raskid stajale uz gumb "Dodaj u košaricu" na
+> stranicama proizvoda i kao zasebna kvačica u konfiguratoru.
+>
+> Ta su mjesta uklonjena. Prihvat uvjeta sada se traži na **jednom** mjestu — u
+> košarici (u pregledu i na stranici `/kosarica`), neposredno iznad gumba koji
+> vodi na blagajnu, kao jedna kvačica koja pokriva Uvjete poslovanja, Politiku
+> privatnosti te pravo na jednostrani raskid i njegove iznimke. Prihvat se bilježi
+> na razini narudžbe (`_uvjeti_prihvat`, `_uvjeti_verzija`, `_uvjeti_vrijeme`), a
+> ne po stavci.
+>
+> Tekstovi u odjeljku 1. i dalje vrijede kao izvor za stranice `/uvjeti` i
+> `/raskid`. Odjeljci o smještaju obavijesti (osobito 3.) više ne opisuju stanje
+> koda.
+
 ## Kontekst za Claude Code
 
 Projekt je headless Next.js (App Router) storefront na Vercelu, Shopify kao backend.

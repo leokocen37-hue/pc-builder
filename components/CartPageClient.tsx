@@ -4,17 +4,14 @@ import { useState } from "react";
 import Link from "next/link";
 import { useCart, formatEUR } from "@/lib/cart";
 import CrossSell from "@/components/CrossSell";
+import TermsAcceptance from "@/components/TermsAcceptance";
 import { SITE } from "@/lib/site-config";
 
-// Dated version tag for the terms/withdrawal text accepted by the checkbox
-// below — bump it (keeping the old wording in git history) whenever the
-// wording changes, so an order's recorded tag maps back to what the buyer
-// actually agreed to. Same convention as RASKID_NOTICE_VERSION.
-const TERMS_VERSION = "uvjeti-kosarica-2026-09-v2";
-
 export default function CartPageClient() {
-  const { items, count, subtotal, updateQty, removeItem, checkout, checkoutBusy } = useCart();
-  const [termsAccepted, setTermsAccepted] = useState(false);
+  const { items, count, subtotal, updateQty, removeItem, checkout, checkoutBusy, termsAccepted } = useCart();
+  // Shown only once someone actually tries to continue without ticking — a
+  // warning next to an untouched checkbox would just be noise.
+  const [showTermsHint, setShowTermsHint] = useState(false);
 
   if (items.length === 0) {
     return (
@@ -92,27 +89,20 @@ export default function CartPageClient() {
           <b>{formatEUR(subtotal)}</b>
         </div>
 
-        {/* Terms + withdrawal-right acceptance. Phrased as a plain
-            read-and-agree confirmation rather than spelling the exception out
-            inline — the linked pages carry the detail for anyone who wants
-            it. Required before checkout. */}
-        <label className="kos-terms">
-          <input
-            type="checkbox"
-            checked={termsAccepted}
-            onChange={(e) => setTermsAccepted(e.target.checked)}
-          />
-          <span>
-            Pročitao/la sam i prihvaćam <Link href="/uvjeti">Uvjete poslovanja</Link>,{" "}
-            <Link href="/privatnost">Politiku privatnosti</Link> i{" "}
-            <Link href="/raskid">Pravo na jednostrani raskid</Link> te njegove iznimke.
-          </span>
-        </label>
+        <TermsAcceptance showHint={showTermsHint} />
 
+        {/* Not disabled, in either sense: a disabled button — and one marked
+            aria-disabled — swallows the click, and the click is precisely what
+            raises the hint. It reads as unavailable, stays operable, and says
+            why when used. The invalid state lives on the checkbox, which is
+            the field actually missing an answer. */}
         <button
-          className="rs-btn kos-checkout"
-          disabled={!termsAccepted || checkoutBusy}
-          onClick={() => checkout({ uvjetiPrihvaceni: TERMS_VERSION })}
+          className={`rs-btn kos-checkout${termsAccepted ? "" : " is-locked"}`}
+          disabled={checkoutBusy}
+          onClick={() => {
+            if (!termsAccepted) { setShowTermsHint(true); return; }
+            checkout();
+          }}
         >
           {checkoutBusy ? "Otvaram blagajnu…" : "Na blagajnu →"}
         </button>
