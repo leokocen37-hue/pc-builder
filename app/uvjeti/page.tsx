@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { COMPANY, COMPANY_ADDRESS_FULL } from "@/lib/company";
+import { SITE } from "@/lib/site-config";
 import { TERMS_UPDATED_LABEL } from "@/lib/terms";
 
 const TITLE = "Opći uvjeti poslovanja";
@@ -99,8 +100,24 @@ export default function UvjetiPage() {
 
             <h2>5. Isporuka</h2>
             <p>
-              Prijevoz robe organiziramo mi, putem dostavne službe. Detalji o rokovima i cijeni isporuke nalaze se
-              na stranici <Link href="/dostava">Dostava i plaćanje</Link>.
+              Prijevoz robe organiziramo mi, putem dostavne službe. Detalji o cijeni isporuke nalaze se na
+              stranici <Link href="/dostava">Dostava i plaćanje</Link>.
+            </p>
+            <p>
+              <strong>Rok isporuke računala.</strong> Sva računala — i konfiguracije složene u konfiguratoru i
+              gotove konfiguracije iz ponude — sastavljamo tek nakon zaprimljene narudžbe. Okvirni rok je{" "}
+              <strong>
+                izrada i testiranje {SITE.buildDaysMin}–{SITE.buildDaysMax} radnih dana + dostava{" "}
+                {SITE.shipDaysMin}–{SITE.shipDaysMax} radna dana
+              </strong>, računajući od zaprimljene uplate. Ostala roba, poput periferije, šalje se sa zalihe u
+              roku od {SITE.shipDaysMin}–{SITE.shipDaysMax} radna dana.
+            </p>
+            <p>
+              Rok je okviran i ne uključuje neradne dane ni državne praznike. Ako se rok iz bilo kojeg razloga
+              produži — primjerice zbog nedostupnosti komponente — obavijestit ćemo vas elektroničkom poštom i
+              ponuditi zamjensku komponentu, novi rok ili raskid ugovora uz povrat plaćenog iznosa. Sukladno
+              Zakonu o zaštiti potrošača, robu isporučujemo najkasnije u roku od 30 dana od sklapanja ugovora,
+              osim ako je s vama izričito dogovoren duži rok.
             </p>
             <p>
               Rizik slučajnog oštećenja ili propasti robe prelazi na potrošača u trenutku kada je roba predana

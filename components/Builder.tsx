@@ -2,6 +2,7 @@
 import { CSSProperties, useEffect, useState, useMemo, Suspense, useRef } from "react";
 import { useCart } from "@/lib/cart";
 import { ASSEMBLY_FEE } from "@/lib/pricing";
+import { addWorkingDays } from "@/lib/site-config";
 import { SITE } from "@/lib/site-config";
 import { BUILD_PART_KEYS, BUILD_PART_LABEL, encodeBuild, decodeBuild, type BuildPartKey, type EncodedBuild } from "@/lib/build-share";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -1079,14 +1080,15 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
     return isReviewStep ? compPrice + ASSEMBLY_FEE : compPrice;
   };
 
-  // rough dispatch window from today, for the mobile sticky bar — matches the
-  // lead time promised on the homepage and product pages (lib/site-config.ts)
+  // Rough delivery window from today, for the mobile sticky bar. The bar is
+  // labelled ISPORUKA, so it has to span the build *and* the courier, and it
+  // has to count working days — the promise is made in working days, and
+  // counting calendar ones would show a date up to four days early.
   const estimatedDispatch = () => {
     const fmt = (d: Date) => d.toLocaleDateString("hr-HR", { day: "numeric", month: "short" });
-    const from = new Date();
-    from.setDate(from.getDate() + SITE.buildDaysMin);
-    const to = new Date();
-    to.setDate(to.getDate() + SITE.buildDaysMax);
+    const today = new Date();
+    const from = addWorkingDays(today, SITE.buildDaysMin + SITE.shipDaysMin);
+    const to = addWorkingDays(today, SITE.buildDaysMax + SITE.shipDaysMax);
     return `${fmt(from)} – ${fmt(to)}`;
   };
 

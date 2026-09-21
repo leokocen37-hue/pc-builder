@@ -114,7 +114,7 @@ export default function HomeClient({
         <div className="rs-wrap rs-value-strip-inner">
           <div className="rs-value-item">Konfiguracije od <b>{formatEUR(SITE.startingPrice)}</b></div>
           <div className="rs-value-item">Besplatna dostava iznad <b>{formatEUR(SITE.freeShippingFrom)}</b></div>
-          <div className="rs-value-item">Spremno za <b>{SITE.buildDaysMin}–{SITE.buildDaysMax} radnih dana</b></div>
+          <div className="rs-value-item">Izrada <b>{SITE.buildDaysMin}–{SITE.buildDaysMax} radnih dana</b> + dostava {SITE.shipDaysMin}–{SITE.shipDaysMax}</div>
         </div>
       </section>
 

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { SITE } from "@/lib/site-config";
 
 const TITLE = "Dostava i plaćanje";
 const DESCRIPTION = "Kako pakiramo i dostavljamo računala te koje načine plaćanja nudimo na RAČUNALO.hr.";
@@ -38,10 +39,18 @@ export default function DostavaPage() {
               krene na put.
             </p>
             <p>
-              Rok isporuke ovisi o odabranoj konfiguraciji — gotove konfiguracije u pravilu su spremnije za slanje
-              od konfiguracija sastavljenih po mjeri u konfiguratoru, jer se one sklapaju tek nakon što
-              zaprimimo narudžbu. Točan okvirni rok isporuke za vašu narudžbu možete provjeriti prilikom
-              naplate ili nas kontaktirati prije kupnje ako vam je bitan konkretan datum.
+              <strong>
+                Izrada i testiranje {SITE.buildDaysMin}–{SITE.buildDaysMax} radnih dana + dostava{" "}
+                {SITE.shipDaysMin}–{SITE.shipDaysMax} radna dana.
+              </strong>{" "}
+              Rok vrijedi jednako za konfiguracije složene u konfiguratoru i za gotove konfiguracije iz ponude —
+              nijedno računalo ne držimo na zalihi, svako sastavljamo nakon zaprimljene narudžbe. Periferija i
+              ostala roba sa zalihe šalju se u roku od {SITE.shipDaysMin}–{SITE.shipDaysMax} radna dana.
+            </p>
+            <p>
+              Rok je okviran, računa se u radnim danima i ne uključuje državne praznike. Ako vam je bitan
+              konkretan datum, javite nam se prije kupnje. Ako se rok produži — primjerice zbog nedostupnosti
+              komponente — javljamo vam se e-poštom s novim rokom.
             </p>
             <p>Osobno preuzimanje i točni troškovi dostave za vaše područje izračunavaju se i prikazuju na blagajni prilikom naplate.</p>
 

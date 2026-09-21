@@ -91,6 +91,17 @@ export function isValidCategory(section: SectionKey, kategorija: string): boolea
   return kategorija in SECTIONS[section].categories;
 }
 
+/**
+ * Every PC we sell is assembled after the order — the pre-built configurations
+ * as much as the configurator's, which is why neither carries a right of
+ * withdrawal. Peripherals ship from stock, so they must not be quoted a build
+ * time. Decided from the product's own collections rather than a prop, so a
+ * product can't be shown the wrong lead time depending on which page it's on.
+ */
+export function isBuiltToOrder(product: Product): boolean {
+  return product.collections.edges.some((e) => e.node.handle in SECTIONS.racunala.categories);
+}
+
 export function productBelongsToCategory(product: Product, kategorija: string): boolean {
   return product.collections.edges.some((e) => e.node.handle === kategorija);
 }

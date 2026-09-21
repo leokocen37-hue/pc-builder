@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { SITE } from "@/lib/site-config";
 
 const FAQ_ITEMS: { q: string; a: React.ReactNode }[] = [
   {
     q: "Koliko traje sastavljanje računala iz konfiguratora?",
-    a: "Konfiguracije sastavljene po mjeri sklapamo tek nakon što zaprimimo narudžbu, jer svaka kombinacija komponenti je jedinstvena. Prije slanja svako računalo prolazi kroz provjeru rada i stres-test.",
+    a: `Izrada i testiranje traju ${SITE.buildDaysMin}–${SITE.buildDaysMax} radnih dana, a dostava još ${SITE.shipDaysMin}–${SITE.shipDaysMax} radna dana. Svako računalo sklapamo tek nakon što zaprimimo narudžbu — i konfiguracije po mjeri i gotove konfiguracije — jer nijedno ne držimo na zalihi. Prije slanja svako prolazi kroz provjeru rada i stres-test.`,
   },
   {
     q: "Mogu li birati pojedinačne komponente?",
