@@ -52,9 +52,11 @@ test("cards tell apart two builds that differ only in RAM", async ({ page }) => 
 // "od X €" is a price claim, so it has to be the cheapest in the whole
 // collection — not the cheapest of the six the homepage row happens to fetch,
 // which put 999,99 € on a category whose entry model is 699,99 €.
-test("the homepage tile quotes the cheapest office build, not the cheapest shown", async ({ browser }) => {
-  const page = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
-
+//
+// Office is the cheapest category, so the homepage's figure has to land on an
+// office build. (It used to be read off a mobile-only tile; that tile is gone
+// with the mobile homepage now being the desktop layout scaled down.)
+test("the homepage quotes the cheapest office build, not the cheapest shown", async ({ page }) => {
   await page.goto("/racunala/office");
   await dismissCookies(page);
   const prices = await page
@@ -67,13 +69,12 @@ test("the homepage tile quotes the cheapest office build, not the cheapest shown
 
   await page.goto("/");
   await dismissCookies(page);
-  const tile = page.locator(".rs-mcat", { hasText: "Uredska računala" });
   const quoted = Number(
-    ((await tile.locator(".rs-mcat-sub").innerText()) || "").replace(/[^\d,]/g, "").replace(",", ".")
+    ((await page.locator(".rs-value-strip-inner").innerText()).match(/Računala od\s*([\d.,]+)/) || [])[1]
+      ?.replace(/\./g, "")
+      .replace(",", ".")
   );
   expect(quoted).toBeCloseTo(cheapest, 2);
-
-  await page.close();
 });
 
 // Shopify returns the office collection newest-first, which is Max -> Start.

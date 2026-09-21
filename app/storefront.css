@@ -86,9 +86,6 @@
 .rs-hero-inner .rs-hero-kicker{color:rgba(255,255,255,.7)}
 .rs-hero-kicker-dot{color:var(--accent)}
 .rs-hero-inner h1{font-size:clamp(46px,8.5vw,104px);line-height:.9;font-weight:700;letter-spacing:-2.5px;text-transform:uppercase;margin:16px 0 0;text-shadow:0 8px 50px rgba(0,0,0,.6)}
-/* inline on desktop (organic wrap, unchanged from before); mobile forces
-   one word per line to match the reference — see the media query below */
-.rs-hero-line{display:inline}
 /* solid gradient fill (matches the primary buttons) instead of an outline —
    color is the fallback for browsers without background-clip:text support */
 .rs-hero-inner h1 em{font-style:normal;display:block;color:var(--accent);background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
@@ -100,108 +97,47 @@
 .rs-stats span{font-size:11px;letter-spacing:1.5px;color:#cbb3d6;text-transform:uppercase}
 @media(max-width:600px){.rs-stats{gap:24px}}
 
-/* mobile hero — round 2 full redesign against a supplied reference mockup */
+/* Mobile hero: the desktop layout, scaled — same eyebrow, heading, lead,
+   both buttons and the stat row, just smaller. Only the photo differs, and
+   only because it has to: the landscape banner crops to almost nothing at a
+   phone's aspect ratio, so a portrait crop holding both cases stands in.
+   The scrim is heavier than desktop's so centred text stays readable over
+   the cases rather than having to be pushed down into a black band. */
 @media(max-width:860px){
-  /* purpose-made portrait crop with both cases together. Shorter box +
-     bottom-anchored background-position crops out most of the photo's own
-     empty top zone, surfacing the cases higher/closer to the header. The
-     scrim then does the opposite of before: transparent over the cases so
-     they stay visible, transitioning to solid black by where the text
-     sits, so the cases read as sitting "above" the text instead of behind
-     it — a distinct dark band, not one flat overlay top to bottom. */
-  /* background-size:cover's crop amount is scale-dependent (barely any
-     overflow to work with at a mobile-shaped box against this image's
-     aspect ratio), which fought every attempt to reposition the cases
-     predictably. Locked to 100% width / auto height instead (fixed 599px
-     rendered height at 390px viewport width) with a plain pixel offset —
-     -195px crops most of the photo's own empty top gradient away, so the
-     cases start shortly after the header instead of after a long empty gap. */
-  .rs-hero{background-image:url('/hero-banner-mobile.jpg');background-size:100% auto;background-position:center -195px;min-height:66vh;min-height:66svh;padding:0 24px 40px;align-items:flex-end;text-align:left}
-  .rs-hero::before{background:linear-gradient(180deg,rgba(7,8,12,0) 0%,rgba(7,8,12,0) 30%,rgba(7,8,12,.75) 46%,#07080c 58%,#07080c 100%)}
-  /* .rs-hero's justify-content:center (base rule, centers its flex child
-     horizontally) was centering this whole block since it only had
-     max-width — a shrink-wrapped box narrower than its container still
-     gets centered by the parent regardless of its own text-align. width:100%
-     makes it actually fill the row so text-align:left has somewhere to work. */
-  .rs-hero-inner{padding:0;width:100%;max-width:100%;text-align:left}
-  .rs-hero-inner .rs-hero-kicker{color:#fff;font-size:10.5px;letter-spacing:2.5px;text-shadow:0 2px 10px rgba(0,0,0,.85),0 0 16px rgba(0,0,0,.6)}
-  .rs-hero-kicker-desktop{display:none}
-  /* follow-up: reference mockup wraps one WORD per line (4 lines total,
-     "Tvoje"/"računalo,"/"Tvoja"/"pravila"), not two lines of full phrases.
-     58px was too big once actually applied (a stale max-width:400px rule
-     had been silently overriding it back down to 24px, so that size was
-     never really seen/judged before now) — dialed back to 40px.
-     .rs-hero-line stays inline on desktop (unrelated, unchanged 2-line wrap). */
-  .rs-hero-inner h1{font-size:40px;line-height:.98;letter-spacing:-1px;margin-top:12px;text-shadow:0 3px 18px rgba(0,0,0,.85),0 1px 4px rgba(0,0,0,.9)}
-  .rs-hero-line{display:block}
-  /* C (round 2) + follow-up: the desktop gradient (accent -> accent2, both
-     mid-tone) read as near-invisible against the mobile hero crop + scrim.
-     A light-gradient attempt fixed contrast but looked washed-out/muddy —
-     at mobile's small type size there isn't enough width for a gradient to
-     read as intentional, it just averages into a flat pale hue. A tighter
-     pink->violet gradient (closer in hue, both saturated) reads as an
-     intentional color instead of a wash, and still pops against the photo. */
-  .rs-hero-inner h1 em{background:linear-gradient(100deg,#ff36e0,#9b3bf0);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;text-shadow:none;filter:drop-shadow(0 2px 18px rgba(255,54,224,.35))}
-  .rs-hero-inner p{display:none}
-  .rs-hero-cta{display:none}
-  /* mobile-only CTA: a single full-width white pill (play button removed —
-     there's no video for it to open, so it was dead weight) */
-  .rs-hero-cta-mobile{display:block;margin-top:22px}
-  /* .rs-root a{color:inherit} (a class + type selector) otherwise beats a
-     plain single-class rule on specificity regardless of source order, which
-     was pulling in an inherited light color and making the primary button's
-     text nearly invisible against its own white background — qualified with
-     the parent class here to win that fight */
-  .rs-hero-cta-mobile .rs-btn-mobile-primary{display:flex;align-items:center;justify-content:center;gap:6px;background:#fff;color:#0a0a0f;font-weight:700;font-size:15px;padding:15px 20px;border-radius:100px;box-shadow:0 10px 30px -10px rgba(0,0,0,.6)}
-  /* the hero's own stat row is replaced by rs-mobile-cats' trust strip below */
-  .rs-stats{display:none}
+  .rs-hero{background-image:url('/hero-banner-mobile.jpg');background-size:cover;background-position:center 32%;min-height:auto;padding:76px 0 60px}
+  .rs-hero::before{background:radial-gradient(78% 42% at 50% 34%,rgba(7,8,12,.82),rgba(7,8,12,.5) 62%,transparent 100%),linear-gradient(180deg,rgba(7,8,12,.55) 0%,rgba(7,8,12,.2) 20%,rgba(7,8,12,.34) 50%,rgba(7,8,12,.78) 72%,rgba(7,8,12,.95) 88%,#07080c 100%)}
+  .rs-hero-inner .rs-hero-kicker{color:#fff;font-size:10px;letter-spacing:2.2px;text-shadow:0 2px 10px rgba(0,0,0,.9)}
+  .rs-hero-inner h1{font-size:clamp(33px,9.6vw,46px);letter-spacing:-1.4px;line-height:.95;margin-top:13px;text-shadow:0 3px 20px rgba(0,0,0,.9)}
+  .rs-hero-inner p{font-size:14.5px;line-height:1.55;margin:15px auto 22px;max-width:360px}
+  .rs-stats{gap:18px;margin-top:28px;flex-wrap:wrap}
+  .rs-stats b{font-size:17px}
+  .rs-stats span{font-size:9.5px;letter-spacing:1px}
 }
-@media(min-width:861px){.rs-hero-cta-mobile{display:none}}
-/* this stale rule (from before the round-2 mobile redesign, back when the
-   mobile h1 was ~28-32px) was firing on top of the 58px rule above for any
-   phone <=400px wide — i.e. nearly every phone, including standard
-   iPhones — silently shrinking the heading back down and leaving a small
-   text block centered in a tall box. Removed; see the sized/positioned
-   rules in the max-width:860px block instead. */
+/* Side by side the two buttons want ~400px of the 342px a phone actually
+   has, so below this they stack full-width rather than wrapping into two
+   differently-sized pills. */
+@media(max-width:560px){
+  .rs-hero-cta{flex-direction:column;align-items:stretch;gap:10px}
+  .rs-hero-cta .rs-btn{justify-content:center;padding:14px 20px}
+  /* three across like desktop, rather than wrapping 2+1 and stranding the
+     last one on a line of its own; the labels wrap inside their column */
+  .rs-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:0 10px;align-items:start;text-align:center}
+  .rs-stats span{display:block;line-height:1.35}
+}
 
 /* value strip — three quick answers directly under the hero */
 .rs-value-strip{background:var(--bg2);border-bottom:1px solid var(--line)}
 .rs-value-strip-inner{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:12px 40px;padding:18px 28px;text-align:center}
 .rs-value-item{font-size:13.5px;color:var(--muted);font-family:'IBM Plex Mono',monospace;letter-spacing:.2px}
 .rs-value-item b{color:var(--text);font-weight:600}
-/* round 2 mobile redesign: this chip row is superseded by rs-mobile-cats'
-   own trust strip below the new category tiles — hidden rather than kept
-   as a second, redundant strip. Desktop keeps it as-is. */
-@media(max-width:860px){.rs-value-strip{display:none}}
-
-/* mobile-only category tile grid, replacing the value-strip right under
-   the hero on small screens (see the JSX comment in HomeClient.tsx) */
-.rs-mobile-cats{display:none}
 @media(max-width:860px){
-  .rs-mobile-cats{display:block;padding:28px 0 8px;background:var(--bg)}
-  .rs-mobile-cats-kicker{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:3px;color:var(--muted);margin-bottom:14px}
-  .rs-mobile-cats-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  .rs-mcat{display:flex;flex-direction:column;gap:10px;padding:16px;border-radius:16px;background:var(--card);border:1px solid var(--line);min-height:118px}
-  .rs-mcat-ic{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-  .rs-mcat-label{font-weight:700;font-size:15px;color:var(--text);margin-top:auto}
-  .rs-mcat-sub{font-size:12px;color:var(--muted)}
-  /* follow-up: Periferija drops out of the 2-col grid into its own full-width,
-     shorter banner row (icon + text side by side) once Nadogradnja is gone —
-     "wider and shorter" rather than a lone tile stranded in an empty 2x2 cell */
-  .rs-mcat-wide{flex-direction:row;align-items:center;gap:14px;min-height:0;padding:14px 16px;margin-top:12px}
-  .rs-mcat-wide .rs-mcat-ic{margin-top:0}
-  .rs-mcat-wide-text{display:flex;flex-direction:column;gap:2px}
-  .rs-mcat-wide .rs-mcat-label{margin-top:0}
-  .rs-mobile-trust{margin-top:22px;padding-top:20px;border-top:1px solid var(--line)}
-  .rs-mobile-trust-stats{display:flex;align-items:center;gap:18px;font-family:'IBM Plex Mono',monospace}
-  .rs-mobile-trust-stats b{display:block;font-size:19px;color:var(--text)}
-  .rs-mobile-trust-stats span{font-size:10.5px;letter-spacing:.8px;color:var(--muted);text-transform:uppercase}
-  .rs-mobile-trust-div{width:1px;align-self:stretch;background:var(--line)}
-  .rs-mobile-trust p{margin-top:14px;font-size:12.5px;color:var(--faint)}
+  .rs-value-strip-inner{gap:8px 22px;padding:14px 18px}
+  .rs-value-item{font-size:11.5px}
 }
 
 /* sections */
 .rs-section{padding:88px 0}
+@media(max-width:860px){.rs-section{padding:56px 0}.rs-head{margin-bottom:32px}}
 .rs-section-alt{background:var(--bg2);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
 .rs-head{text-align:center;margin-bottom:46px}
 .rs-head h2{font-size:clamp(28px,4vw,40px);font-weight:700;letter-spacing:-1px;margin-top:12px;text-transform:uppercase}
@@ -257,7 +193,9 @@
 /* category tiles */
 .rs-cats{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
 @media(max-width:860px){.rs-cats{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:480px){.rs-cats{grid-template-columns:1fr}}
+/* two across even on the narrowest phones — the desktop grid shrunk, not a
+   different layout; only the tile itself comes down in size */
+@media(max-width:480px){.rs-cat{min-height:118px;padding:18px}.rs-cat-label{font-size:17px}.rs-cat-sub{font-size:11.5px}.rs-cat-link{font-size:11px;margin-top:10px}}
 .rs-cat{position:relative;border-radius:16px;padding:26px;min-height:150px;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden;transition:.25s;border:1px solid rgba(255,255,255,.1)}
 .rs-cat::after{content:"";position:absolute;inset:0;background:rgba(7,8,12,.45);transition:.25s}
 .rs-cat:hover{transform:translateY(-4px)}

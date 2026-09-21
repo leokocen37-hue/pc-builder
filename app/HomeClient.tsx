@@ -33,26 +33,15 @@ export default function HomeClient({
       <section className="rs-hero">
         <div className="rs-hero-inner">
           <div className="rs-kicker rs-hero-kicker">
-            {/* mobile drops the "Custom PC ·" lead-in, keeps just the Croatian line */}
-            <span className="rs-hero-kicker-desktop">Custom PC <span className="rs-hero-kicker-dot">·</span> </span>
-            ručno sastavljeno u Hrvatskoj
+            Custom PC <span className="rs-hero-kicker-dot">·</span> ručno sastavljeno u Hrvatskoj
           </div>
-          {/* each word gets its own span so mobile can force one-word-per-line
-              (matching the reference exactly) via CSS alone — desktop's
-              .rs-hero-line stays display:inline so it wraps organically same
-              as before */}
           <h1>
-            <span className="rs-hero-line">Tvoje</span> <span className="rs-hero-line">računalo,</span>
-            <em><span className="rs-hero-line">Tvoja</span> <span className="rs-hero-line">pravila</span></em>
+            Tvoje računalo,<em>Tvoja pravila</em>
           </h1>
           <p>Složi svaku komponentu uz provjeru kompatibilnosti u stvarnom vremenu — ili odaberi gotovu, testiranu konfiguraciju.</p>
           <div className="rs-hero-cta">
             <Link href={CONFIGURATOR_PATH} className="rs-btn">Otvori konfigurator →</Link>
             <Link href="/racunala" className="rs-btn ghost">Gotova računala</Link>
-          </div>
-          {/* mobile-only: single full-width white pill, opens the configurator */}
-          <div className="rs-hero-cta-mobile">
-            <Link href={CONFIGURATOR_PATH} className="rs-btn-mobile-primary">Konfigurator →</Link>
           </div>
           <div className="rs-stats">
             {/* the build time is already spelled out in full in the value strip
@@ -64,59 +53,7 @@ export default function HomeClient({
         </div>
       </section>
 
-      {/* mobile-only: category tiles right under the hero, replacing the old
-          value-strip chip row on small screens (still shown further down for
-          desktop) */}
-      <section className="rs-mobile-cats">
-        <div className="rs-wrap">
-          <div className="rs-mobile-cats-kicker">KATEGORIJE</div>
-          <div className="rs-mobile-cats-grid">
-            <Link href="/racunala/gaming" className="rs-mcat">
-              <span className="rs-mcat-ic" style={{ background: "linear-gradient(135deg,#d81fd8,#7b2ff7)" }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="11" rx="4" /><path d="M8 11v3M6.5 12.5h3M15.5 12.5h.01M18 11h.01" /></svg>
-              </span>
-              <span className="rs-mcat-label">Gaming PC</span>
-              <span className="rs-mcat-sub">{gamingFrom ? <>od {formatEUR(gamingFrom)}</> : "Pogledaj"}</span>
-            </Link>
-            <Link href="/racunala/radne-stanice" className="rs-mcat">
-              <span className="rs-mcat-ic" style={{ background: "linear-gradient(135deg,#0e5a8a,#22a3d8)" }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="12" rx="2" /><path d="M8 20h8M12 16v4" /></svg>
-              </span>
-              <span className="rs-mcat-label">Radna stanica</span>
-              <span className="rs-mcat-sub">{staniceFrom ? <>od {formatEUR(staniceFrom)}</> : "Pogledaj"}</span>
-            </Link>
-          </div>
-          <Link href="/racunala/office" className="rs-mcat rs-mcat-wide">
-            <span className="rs-mcat-ic" style={{ background: "linear-gradient(135deg,#2a3550,#5b7bd8)" }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="14" rx="2" /><path d="M7 9h7M7 13h4" /></svg>
-            </span>
-            <span className="rs-mcat-wide-text">
-              <span className="rs-mcat-label">Uredska računala</span>
-              <span className="rs-mcat-sub">{officeFrom ? <>od {formatEUR(officeFrom)}</> : "Pogledaj"}</span>
-            </span>
-          </Link>
-          <Link href="/periferija" className="rs-mcat rs-mcat-wide">
-            <span className="rs-mcat-ic" style={{ background: "linear-gradient(135deg,#0e7a52,#27c08a)" }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" /><circle cx="12" cy="18" r="1" /></svg>
-            </span>
-            <span className="rs-mcat-wide-text">
-              <span className="rs-mcat-label">Periferija</span>
-              <span className="rs-mcat-sub">240+ artikala</span>
-            </span>
-          </Link>
-          <div className="rs-mobile-trust">
-            <div className="rs-mobile-trust-stats">
-              <div><b>{SITE.buildDaysMin}–{SITE.buildDaysMax}</b><span>dana sastavljanje</span></div>
-              <div className="rs-mobile-trust-div" />
-              <div><b>24 mj.</b><span>jamstvo</span></div>
-            </div>
-            <p>Svako računalo prolazi stress test prije slanja.</p>
-          </div>
-        </div>
-      </section>
-
-      {/* value strip — the three questions buyers ask first (desktop; the
-          mobile-only kategorije block above covers this on small screens) */}
+      {/* value strip — the quick answers, directly under the hero */}
       <section className="rs-value-strip">
         <div className="rs-wrap rs-value-strip-inner">
           {pcFrom && <div className="rs-value-item">Računala od <b>{formatEUR(pcFrom)}</b></div>}
