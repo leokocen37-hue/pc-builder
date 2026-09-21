@@ -45,7 +45,8 @@ export default function DostavaPage() {
               </strong>{" "}
               Rok vrijedi jednako za konfiguracije složene u konfiguratoru i za gotove konfiguracije iz ponude —
               nijedno računalo ne držimo na zalihi, svako sastavljamo nakon zaprimljene narudžbe. Periferija i
-              ostala roba sa zalihe šalju se u roku od {SITE.shipDaysMin}–{SITE.shipDaysMax} radna dana.
+              ostala roba sa zalihe kod vas su u roku od{" "}
+              <strong>{SITE.stockDaysMin}–{SITE.stockDaysMax} radnih dana</strong>, uključujući dostavu.
             </p>
             <p>
               Rok je okviran, računa se u radnim danima i ne uključuje državne praznike. Ako vam je bitan

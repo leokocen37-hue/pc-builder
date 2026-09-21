@@ -109,8 +109,9 @@ export default function UvjetiPage() {
               <strong>
                 izrada i testiranje {SITE.buildDaysMin}–{SITE.buildDaysMax} radnih dana + dostava{" "}
                 {SITE.shipDaysMin}–{SITE.shipDaysMax} radna dana
-              </strong>, računajući od zaprimljene uplate. Ostala roba, poput periferije, šalje se sa zalihe u
-              roku od {SITE.shipDaysMin}–{SITE.shipDaysMax} radna dana.
+              </strong>, računajući od zaprimljene uplate. Ostala roba, poput periferije, šalje se sa zalihe i
+              kod vas je u roku od <strong>{SITE.stockDaysMin}–{SITE.stockDaysMax} radnih dana</strong>,
+              uključujući dostavu.
             </p>
             <p>
               Rok je okviran i ne uključuje neradne dane ni državne praznike. Ako se rok iz bilo kojeg razloga

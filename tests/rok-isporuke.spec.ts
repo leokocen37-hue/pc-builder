@@ -10,7 +10,7 @@ const dismissCookies = async (page: Page) => {
   if (await accept.isVisible().catch(() => false)) await accept.click();
 };
 
-const BUILD_AND_SHIP = "Izrada i testiranje 5–10 radnih dana + dostava 1–2 radna dana";
+const BUILD_AND_SHIP = "Izrada i testiranje 4–8 radnih dana + dostava 1–2 radna dana";
 
 test("a PC product page states the build and the delivery time", async ({ page }) => {
   await page.goto("/racunala/office/office-start-i");
@@ -22,7 +22,7 @@ test("a peripheral is quoted shipping only, never a build time", async ({ page }
   await page.goto("/periferija/tipkovnice/razer-huntsman-v3-pro");
   await dismissCookies(page);
   const row = page.locator(".rs-pdp-delivery");
-  await expect(row).toContainText("Dostava 1–2 radna dana");
+  await expect(row).toContainText("Isporuka 3–7 radnih dana");
   await expect(row).not.toContainText("Izrada");
 });
 
@@ -30,7 +30,9 @@ test("the terms carry the same lead time as the product pages", async ({ page })
   await page.goto("/uvjeti");
   await dismissCookies(page);
   const isporuka = page.locator(".legal-content");
-  await expect(isporuka).toContainText("izrada i testiranje 5–10 radnih dana + dostava 1–2 radna dana");
+  await expect(isporuka).toContainText("izrada i testiranje 4–8 radnih dana + dostava 1–2 radna dana");
+  // peripherals are quoted as one total there too, not as the PCs' two stages
+  await expect(isporuka).toContainText("3–7 radnih dana");
   // the 30-day statutory backstop belongs next to the estimate
   await expect(isporuka).toContainText("30 dana od sklapanja ugovora");
 });
@@ -42,5 +44,5 @@ test("the delivery page and the FAQ quote the same figure", async ({ page }) => 
 
   await page.goto("/faq");
   await dismissCookies(page);
-  await expect(page.locator("body")).toContainText("Izrada i testiranje traju 5–10 radnih dana");
+  await expect(page.locator("body")).toContainText("Izrada i testiranje traju 4–8 radnih dana");
 });
