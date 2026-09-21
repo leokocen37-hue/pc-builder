@@ -21,7 +21,7 @@ const CART_TOKEN_RE = /^[a-z0-9]{16,64}$/i;
 type VariantPriceNode = { id: string; price: { amount: string } } | null;
 
 type DraftOrderLineItem =
-  | { title: string; originalUnitPrice: string; quantity: number; customAttributes: { key: string; value: string }[]; requiresShipping: boolean }
+  | { title: string; originalUnitPrice: string; quantity: number; customAttributes: { key: string; value: string }[]; requiresShipping: boolean; taxable: boolean }
   | { variantId: string; quantity: number; customAttributes?: { key: string; value: string }[] };
 
 const errorMessage = (e: unknown) => (e instanceof Error ? e.message : "Unknown error");
@@ -98,11 +98,19 @@ export async function POST(request: Request) {
           originalUnitPrice: price.toFixed(2),
           quantity: it.quantity || 1,
           customAttributes: [{ key: "Komponente", value: it.summary || "" }],
-          // custom (non-variant) draft order lines default to non-shippable —
-          // without this, a cart with ONLY a custom build skips the shipping
-          // step entirely at checkout (a real product line masks this, since
-          // those default to shippable, which is why it "worked" alongside one).
+          // custom (non-variant) draft order lines inherit none of a real
+          // product's defaults, so every flag has to be stated outright.
+          //
+          // Without requiresShipping, a cart holding ONLY a custom build skips
+          // the shipping step entirely at checkout (a real product line masks
+          // this, since those default to shippable — which is why it "worked"
+          // alongside one).
+          //
+          // Without taxable, the line carries no VAT, and a configurator order
+          // is a single custom line: the whole order comes out at 0,00 EUR tax
+          // however the store's tax settings are configured.
           requiresShipping: true,
+          taxable: true,
         });
       } else {
         lineItems.push({ variantId: it.variantId, quantity: it.quantity || 1 });
