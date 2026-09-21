@@ -87,11 +87,10 @@ export default function UvjetiPage() {
               drugačije navedeno. Za konfiguracije sastavljene putem konfiguratora cijena uključuje trošak sastavljanja
               i testiranja računala.
             </p>
-            <p>Narudžbu je moguće platiti:</p>
-            <ul>
-              <li><strong>kartično</strong> — Visa, Mastercard i Maestro, putem Shopify Payments,</li>
-              <li><strong>PayPal</strong>.</li>
-            </ul>
+            <p>
+              Narudžbu je moguće platiti <strong>kartično</strong> — Visa, Mastercard i Maestro — putem
+              Shopify Paymentsa.
+            </p>
             <p>
               Plaćanje se izvršava pri dovršetku narudžbe. Podatke o platnim karticama ne primamo niti
               pohranjujemo — unose se izravno kod pružatelja platnih usluga, koji ih obrađuje u skladu s

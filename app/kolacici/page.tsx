@@ -72,14 +72,13 @@ export default function KolaciciPage() {
 
             <h2>4. Kolačići trećih strana</h2>
             <p>
-              Dovršetak narudžbe i naplata odvijaju se na stranici za naplatu koju vodi <strong>Shopify</strong>,
-              a plaćanje putem <strong>PayPala</strong> na PayPalovim stranicama. Te usluge na svojim stranicama
-              postavljaju vlastite kolačiće — nužne za rad naplate te za sigurnost i sprječavanje prijevara — na
-              koje mi nemamo utjecaja. Uvjete i popis tih kolačića možete pročitati u pravilima o privatnosti i
-              kolačićima društava{" "}
-              <a href="https://www.shopify.com/legal/cookies" target="_blank" rel="noopener noreferrer">Shopify</a>{" "}
-              i{" "}
-              <a href="https://www.paypal.com/hr/legalhub/paypal/cookie-full" target="_blank" rel="noopener noreferrer">PayPal</a>.
+              Dovršetak narudžbe i naplata odvijaju se na stranici za naplatu koju vodi <strong>Shopify</strong>.
+              Shopify na svojim stranicama postavlja vlastite kolačiće — nužne za rad naplate te za sigurnost i
+              sprječavanje prijevara — na koje mi nemamo utjecaja. Uvjete i popis tih kolačića možete pročitati
+              u{" "}
+              <a href="https://www.shopify.com/legal/cookies" target="_blank" rel="noopener noreferrer">
+                pravilima o kolačićima društva Shopify
+              </a>.
             </p>
             <p>Na samim stranicama {COMPANY.brand} ne postavljamo kolačiće trećih strana.</p>
 

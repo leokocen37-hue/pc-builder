@@ -54,7 +54,6 @@ export default function Footer() {
           <span>Visa</span>
           <span>Mastercard</span>
           <span>Maestro</span>
-          <span>PayPal</span>
         </div>
       </div>
 

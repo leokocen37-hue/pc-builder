@@ -46,3 +46,25 @@ test("the delivery page and the FAQ quote the same figure", async ({ page }) => 
   await dismissCookies(page);
   await expect(page.locator("body")).toContainText("Izrada i testiranje traju 4–8 radnih dana");
 });
+
+// PayPal was listed as a payment method on six surfaces before it existed.
+// It is not coming, so nothing may offer it — a payment method a buyer picks
+// and then can't use at checkout is worse than one that was never mentioned.
+test("no page offers PayPal", async ({ page }) => {
+  for (const path of ["/", "/dostava", "/uvjeti", "/privatnost", "/kolacici", "/faq"]) {
+    await page.goto(path);
+    await dismissCookies(page);
+    const body = (await page.locator("body").innerText()).toLowerCase();
+    expect(body, `PayPal still mentioned on ${path}`).not.toContain("paypal");
+  }
+});
+
+test("card payment is still named, on the pages that promise it", async ({ page }) => {
+  await page.goto("/dostava");
+  await dismissCookies(page);
+  await expect(page.locator(".legal-content")).toContainText("Visa, Mastercard ili Maestro");
+
+  await page.goto("/uvjeti");
+  await dismissCookies(page);
+  await expect(page.locator(".legal-content")).toContainText("Visa, Mastercard i Maestro");
+});

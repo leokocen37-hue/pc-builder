@@ -92,8 +92,8 @@ export default function PrivatnostPage() {
             <h2>5. Primatelji podataka</h2>
             <p>
               Vaše podatke dijelimo samo s pružateljima usluga nužnim za izvršenje narudžbe i rad stranice: s
-              platformom za obradu narudžbi i naplatu (Shopify), s pružateljem usluge plaćanja koji ste odabrali
-              (PayPal), s pružateljem usluge hostinga ovih stranica (Vercel) te s dostavnom službom koja
+              platformom za obradu narudžbi i naplatu, koja ujedno obrađuje i vaše plaćanje (Shopify), s
+              pružateljem usluge hostinga ovih stranica (Vercel) te s dostavnom službom koja
               isporučuje vašu pošiljku (ime, adresa, telefon i e-pošta radi obavijesti o dostavi).
             </p>
             <p>
