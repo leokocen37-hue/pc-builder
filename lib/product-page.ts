@@ -70,6 +70,7 @@ export const SECTIONS = {
     heading: "Gotova računala",
     categories: {
       gaming: "Gaming računala",
+      office: "Uredska računala",
       "radne-stanice": "Radne stanice",
     } as Record<string, string>,
   },

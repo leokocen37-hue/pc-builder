@@ -10,6 +10,11 @@ const COPY: Record<string, { title: string; description: string }> = {
     description:
       "Gaming računala za visok FPS i igranje na najvišim postavkama — od Starter do Ultimate konfiguracije, ručno sastavljene i testirane u Hrvatskoj.",
   },
+  office: {
+    title: "Uredska računala — PC za ured, školu i rad od kuće",
+    description:
+      "Tiha i pouzdana uredska računala za dokumente, tablice, e-poštu i online nastavu. Ručno sastavljena i testirana u Hrvatskoj, uz 24 mjeseca jamstva.",
+  },
   "radne-stanice": {
     title: "Radne stanice — Računala za profesionalni rad",
     description:

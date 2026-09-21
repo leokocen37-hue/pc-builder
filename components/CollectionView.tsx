@@ -16,6 +16,7 @@ type Tab = { label: string; href: string };
 const PC_TABS = [
   { label: "Sva računala", href: "/racunala" },
   { label: "Gaming računala", href: "/racunala/gaming" },
+  { label: "Uredska računala", href: "/racunala/office" },
   { label: "Radne stanice", href: "/racunala/radne-stanice" },
 ];
 
@@ -23,6 +24,7 @@ const PC_TABS = [
 const SUBTITLES: Record<string, string> = {
   "/racunala": "Sastavljena, testirana i spremna za isporuku.",
   "/racunala/gaming": "Za visok FPS i igranje na najvišim postavkama.",
+  "/racunala/office": "Za dokumente, tablice, e-poštu i rad od kuće.",
   "/racunala/radne-stanice": "Za montažu, 3D, render i profesionalni rad.",
   "/periferija": "Oprema koju bismo i sami koristili.",
   "/periferija/monitori": "Od brzih 1440p panela do 4K OLED-a.",

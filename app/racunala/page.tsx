@@ -3,9 +3,9 @@ import CollectionView from "@/components/CollectionView";
 import { getCollectionProducts } from "@/lib/collections";
 import { SECTIONS } from "@/lib/product-page";
 
-const TITLE = "Gotova računala — Gaming PC i radne stanice";
+const TITLE = "Gotova računala — Gaming PC, uredska računala i radne stanice";
 const DESCRIPTION =
-  "Ručno sastavljena i testirana gotova računala, spremna za isporuku. Gaming računala i profesionalne radne stanice uz 24 mjeseca jamstva.";
+  "Ručno sastavljena i testirana gotova računala, spremna za isporuku. Gaming računala, uredska računala i profesionalne radne stanice uz 24 mjeseca jamstva.";
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 };
 
 export default async function RacunalaPage() {
-  const products = await getCollectionProducts(["gaming", "radne-stanice"]);
+  const products = await getCollectionProducts(["gaming", "office", "radne-stanice"]);
   return (
     <CollectionView
       heading={SECTIONS.racunala.heading}

@@ -60,8 +60,16 @@ const SPEC_VENDOR_PREFIXES = [
   /^Intel\s+Core\s+/i,
   /^AMD\s+/i,
 ];
+// Integrated graphics arrive as "Integrirana (Intel UHD 730)". Spelling that
+// out on a card eats the whole spec line and pushes the RAM off the end —
+// which on office PCs is the one spec that tells two otherwise identical
+// models apart (Office Start I and II differ only in 8GB vs 16GB). The
+// product page still says "Integrirana" in full.
+const INTEGRATED_WRAPPER = /^Integrirana\s*\((.+)\)$/i;
+
 function shortenSpecValue(value: string): string {
-  const stripped = SPEC_VENDOR_PREFIXES.reduce((v, re) => v.replace(re, ""), value.trim());
+  const unwrapped = value.trim().replace(INTEGRATED_WRAPPER, "$1");
+  const stripped = SPEC_VENDOR_PREFIXES.reduce((v, re) => v.replace(re, ""), unwrapped);
   // "Ultra7" -> "Ultra 7", "RTX3050" -> "RTX 3050" — but not "i5"/"i7"/"i9",
   // Intel's own fused single-letter+number convention (only 2+ letter runs
   // immediately before a digit get split)
@@ -75,6 +83,32 @@ export function specLine(p: Pick<ProductNode, "specCpu" | "specGpu" | "specRam">
     .filter((v): v is string => !!v)
     .map(shortenSpecValue)
     .join(" · ");
+}
+
+// The homepage's "od X €" tiles need the cheapest product in a collection, not
+// the cheapest of the handful a row happens to show. Shopify's default
+// collection order isn't by price, so taking the minimum of the six fetched
+// for display put "od 999,99 €" on Uredska računala when the entry model is
+// 699,99 € — a price claim that was simply wrong. sortKey: PRICE asks Shopify
+// for the cheapest one directly.
+const MIN_PRICE_QUERY = `
+  query CollectionMinPrice($handle: String!) {
+    collection(handle: $handle) {
+      products(first: 1, sortKey: PRICE) {
+        edges { node { priceRange { minVariantPrice { amount } } } }
+      }
+    }
+  }
+`;
+type MinPriceResp = {
+  collection: { products: { edges: { node: { priceRange: { minVariantPrice: Money } } }[] } } | null;
+};
+
+/** Cheapest product in a collection, or null when it's empty/unpriced. */
+export async function getCollectionMinPrice(handle: string): Promise<number | null> {
+  const r = await shopifyFetch<MinPriceResp>(MIN_PRICE_QUERY, { handle });
+  const n = Number(r.collection?.products.edges[0]?.node.priceRange.minVariantPrice.amount);
+  return Number.isFinite(n) && n > 0 ? n : null;
 }
 
 // fetches one or more collections and merges/dedupes them by product id —

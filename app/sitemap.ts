@@ -15,7 +15,7 @@ const SITE_URL = "https://racunalo.hr";
 // react's cache() from a route segment config file without pulling in server-only
 // bits it doesn't need; this list is small and stable enough to just repeat).
 const SECTION_COLLECTIONS: { base: string; collections: string[] }[] = [
-  { base: "/racunala", collections: ["gaming", "radne-stanice"] },
+  { base: "/racunala", collections: ["gaming", "office", "radne-stanice"] },
   { base: "/periferija", collections: ["monitori", "tipkovnice", "misevi", "slusalice"] },
 ];
 
@@ -34,6 +34,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/konfigurator`, changeFrequency: "weekly", priority: 0.9 },
     { url: `${SITE_URL}/racunala`, changeFrequency: "daily", priority: 0.9 },
     { url: `${SITE_URL}/racunala/gaming`, changeFrequency: "daily", priority: 0.8 },
+    { url: `${SITE_URL}/racunala/office`, changeFrequency: "daily", priority: 0.8 },
     { url: `${SITE_URL}/racunala/radne-stanice`, changeFrequency: "daily", priority: 0.8 },
     { url: `${SITE_URL}/periferija`, changeFrequency: "daily", priority: 0.7 },
     { url: `${SITE_URL}/periferija/monitori`, changeFrequency: "daily", priority: 0.7 },

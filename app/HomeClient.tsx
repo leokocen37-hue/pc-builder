@@ -11,16 +11,16 @@ import { SITE } from "@/lib/site-config";
 
 const CONFIGURATOR_PATH = "/konfigurator";
 
-function minPrice(products: ProductNode[]): number | null {
-  const prices = products
-    .map((p) => Number(p.priceRange?.minVariantPrice?.amount || 0))
-    .filter((n) => n > 0);
-  return prices.length ? Math.min(...prices) : null;
-}
 
-export default function HomeClient({ gaming, stanice }: { gaming: ProductNode[]; stanice: ProductNode[] }) {
-  const gamingFrom = minPrice(gaming);
-  const staniceFrom = minPrice(stanice);
+export default function HomeClient({
+  gaming, office, stanice,
+  // cheapest in the whole collection, resolved server-side — not the cheapest
+  // of the six shown in the row, which is a different (and wrong) number
+  gamingFrom, officeFrom, staniceFrom,
+}: {
+  gaming: ProductNode[]; office: ProductNode[]; stanice: ProductNode[];
+  gamingFrom: number | null; officeFrom: number | null; staniceFrom: number | null;
+}) {
 
   return (
     <div className="rs-root">
@@ -79,6 +79,15 @@ export default function HomeClient({ gaming, stanice }: { gaming: ProductNode[];
               <span className="rs-mcat-sub">{staniceFrom ? <>od {formatEUR(staniceFrom)}</> : "Pogledaj"}</span>
             </Link>
           </div>
+          <Link href="/racunala/office" className="rs-mcat rs-mcat-wide">
+            <span className="rs-mcat-ic" style={{ background: "linear-gradient(135deg,#2a3550,#5b7bd8)" }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="14" rx="2" /><path d="M7 9h7M7 13h4" /></svg>
+            </span>
+            <span className="rs-mcat-wide-text">
+              <span className="rs-mcat-label">Uredska računala</span>
+              <span className="rs-mcat-sub">{officeFrom ? <>od {formatEUR(officeFrom)}</> : "Pogledaj"}</span>
+            </span>
+          </Link>
           <Link href="/periferija" className="rs-mcat rs-mcat-wide">
             <span className="rs-mcat-ic" style={{ background: "linear-gradient(135deg,#0e7a52,#27c08a)" }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" /><circle cx="12" cy="18" r="1" /></svg>
@@ -153,6 +162,9 @@ export default function HomeClient({ gaming, stanice }: { gaming: ProductNode[];
             <CollectionRow title="Gaming računala" subtitle="Za igranje na visokim postavkama i visokom broju sličica." href="/racunala/gaming" products={gaming} />
           </Reveal>
           <Reveal delay={140}>
+            <CollectionRow title="Uredska računala" subtitle="Tiha i pouzdana — za dokumente, tablice, e-poštu i rad od kuće." href="/racunala/office" products={office} />
+          </Reveal>
+          <Reveal delay={200}>
             <CollectionRow title="Radne stanice" subtitle="Snaga za montažu, 3D, render i zahtjevan profesionalni rad." href="/racunala/radne-stanice" products={stanice} />
           </Reveal>
         </div>
