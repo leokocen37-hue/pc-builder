@@ -687,6 +687,29 @@
 .rs-reveal-in{opacity:1;transform:none}
 @media(prefers-reduced-motion:reduce){.rs-reveal{opacity:1;transform:none;transition:none}}
 
+/* ===== collection search + sort toolbar ===== */
+.rs-coll-tools{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:-10px 0 20px}
+.rs-search{position:relative;flex:1 1 260px;max-width:400px}
+.rs-search input{width:100%;padding:9px 32px 9px 34px;border-radius:10px;border:1px solid var(--line2);background:var(--card);color:var(--text);font-family:'Space Grotesk',sans-serif;font-size:13.5px}
+.rs-search input::placeholder{color:var(--faint)}
+.rs-search input:focus{outline:none;border-color:var(--accent)}
+/* the native clear button would sit on top of ours */
+.rs-search input::-webkit-search-cancel-button{display:none}
+.rs-search-ic{position:absolute;left:11px;top:50%;transform:translateY(-50%);display:flex;color:var(--faint);pointer-events:none}
+.rs-search-x{position:absolute;right:4px;top:50%;transform:translateY(-50%);padding:6px 8px;border:none;background:none;color:var(--faint);font-size:13px;line-height:1;cursor:pointer}
+.rs-search-x:hover{color:var(--text)}
+.rs-sort{display:flex;align-items:center;gap:9px;margin-left:auto}
+.rs-sort label{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--faint);white-space:nowrap}
+/* color-scheme so the native dropdown list renders dark too, not white-on-white */
+.rs-sort select{color-scheme:dark;padding:9px 12px;border-radius:10px;border:1px solid var(--line2);background:var(--card);color:var(--text);font-family:'Space Grotesk',sans-serif;font-size:13.5px;cursor:pointer}
+.rs-sort select:focus{outline:none;border-color:var(--accent)}
+/* the tier pills tuck up under the tabs bar; with the toolbar between them that gap is already spent */
+.rs-coll-tools+.rs-tier-row{margin-top:0}
+.rs-empty-actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:14px}
+.rs-empty-actions .rs-tier-pill{text-decoration:none}
+.rs-coll-foot{display:flex;justify-content:center;margin-top:28px}
+@media(max-width:600px){.rs-coll-tools{gap:10px}.rs-search{max-width:none}.rs-sort{margin-left:0;width:100%}.rs-sort select{flex:1}}
+
 /* ===== brand logo marquee ===== */
 .rs-marquee{overflow:hidden;background:#050609;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:26px 0;position:relative}
 .rs-marquee::before,.rs-marquee::after{content:"";position:absolute;top:0;bottom:0;width:120px;z-index:2;pointer-events:none}

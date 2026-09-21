@@ -1,10 +1,10 @@
 // → put this at: components/CollectionGrid.tsx
-// Client island: tabs nav + item count + tier-filter pills + the product grid.
-// Products arrive pre-fetched from the server (CollectionView) as a prop —
-// this component only owns presentation/interaction, no data fetching.
+// Client island: tabs nav + search + sort + tier-filter pills + the product
+// grid. Products arrive pre-fetched from the server (CollectionView) as a
+// prop — this component only owns presentation/interaction, no data fetching.
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { formatMoney } from "@/lib/cart";
 import { specLine, type ProductNode } from "@/lib/collections";
@@ -25,6 +25,31 @@ const TIER_ORDER = [
 const NO_TIER = "Ostalo";
 const tierOf = (p: ProductNode): string => p.metafields?.find((m) => m && m.key === "tier")?.value?.trim() || NO_TIER;
 
+type SortKey = "default" | "price-asc" | "price-desc" | "title";
+const SORTS: { key: SortKey; label: string }[] = [
+  // "Preporučeno" is the order the server handed us, which is the order set in
+  // Shopify — a merchandising decision, so it stays the default.
+  { key: "default", label: "Preporučeno" },
+  { key: "price-asc", label: "Cijena: niža → viša" },
+  { key: "price-desc", label: "Cijena: viša → niža" },
+  { key: "title", label: "Naziv: A → Ž" },
+];
+
+const priceOf = (p: ProductNode) => Number(p.priceRange?.minVariantPrice?.amount || 0);
+
+// Nobody types "Računala" with the diacritics when searching, so fold them
+// away: "racunalo", "Računalo" and "RAČUNALO" are one query. đ has no
+// decomposed form, so it needs its own pass before NFD handles č/ć/š/ž.
+const fold = (s: string) =>
+  s.toLowerCase().replace(/đ/g, "d").normalize("NFD").replace(/[̀-ͯ]/g, "");
+
+// Searchable text per product: the name, the spec line printed under it, and
+// the tier — so "starter" finds the Starters and "rtx 5060" finds what has one.
+const haystackOf = (p: ProductNode) => fold([p.title, specLine(p), tierOf(p)].join(" "));
+
+/** 1 proizvod / 2 proizvoda / 5 proizvoda — only the form ending in 1 (but not 11) differs. */
+const productCount = (n: number) => `${n} ${n % 10 === 1 && n % 100 !== 11 ? "proizvod" : "proizvoda"}`;
+
 export default function CollectionGrid({
   products,
   tabs,
@@ -38,6 +63,8 @@ export default function CollectionGrid({
 }) {
   const linkFor = (p: ProductNode) => (section ? `/${section}/${p.category}/${p.handle}` : `/${p.handle}`);
   const [activeTier, setActiveTier] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<SortKey>("default");
 
   // known tiers first (in TIER_ORDER), then any tier value present in the data
   // that isn't in TIER_ORDER yet, then the no-tier fallback last
@@ -48,7 +75,35 @@ export default function CollectionGrid({
     ...(presentTiers.has(NO_TIER) ? [NO_TIER] : []),
   ];
   const showTierFilter = tiers.length >= 2;
-  const visibleProducts = showTierFilter && activeTier ? products.filter((p) => tierOf(p) === activeTier) : products;
+
+  const visibleProducts = useMemo(() => {
+    let list = products;
+
+    if (showTierFilter && activeTier) list = list.filter((p) => tierOf(p) === activeTier);
+
+    // every word has to match somewhere, so "starter ii" narrows rather than widens
+    const terms = fold(query).split(/\s+/).filter(Boolean);
+    if (terms.length > 0) {
+      list = list.filter((p) => {
+        const hay = haystackOf(p);
+        return terms.every((t) => hay.includes(t));
+      });
+    }
+
+    if (sort === "default") return list;
+    // copy first: sorting the prop array in place would reorder the server's data
+    return [...list].sort((a, b) => {
+      if (sort === "price-asc") return priceOf(a) - priceOf(b) || a.title.localeCompare(b.title, "hr");
+      if (sort === "price-desc") return priceOf(b) - priceOf(a) || a.title.localeCompare(b.title, "hr");
+      return a.title.localeCompare(b.title, "hr");
+    });
+  }, [products, activeTier, showTierFilter, query, sort]);
+
+  const filtering = query.trim().length > 0 || activeTier !== null;
+  const resetFilters = () => {
+    setQuery("");
+    setActiveTier(null);
+  };
 
   return (
     <>
@@ -61,9 +116,42 @@ export default function CollectionGrid({
           ))}
         </nav>
         {visibleProducts.length > 0 && (
-          <span className="rs-coll-count">{visibleProducts.length} {visibleProducts.length === 1 ? "proizvod" : visibleProducts.length < 5 ? "proizvoda" : "proizvoda"}</span>
+          <span className="rs-coll-count">{productCount(visibleProducts.length)}</span>
         )}
       </div>
+
+      {products.length > 0 && (
+        <div className="rs-coll-tools">
+          <div className="rs-search">
+            <span className="rs-search-ic" aria-hidden="true">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <circle cx="11" cy="11" r="7" />
+                <path d="m20 20-3.5-3.5" />
+              </svg>
+            </span>
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Pretraži po nazivu ili komponenti…"
+              aria-label="Pretraži proizvode"
+            />
+            {query && (
+              <button className="rs-search-x" onClick={() => setQuery("")} aria-label="Očisti pretragu">
+                ✕
+              </button>
+            )}
+          </div>
+          <div className="rs-sort">
+            <label htmlFor="rs-sort-select">Sortiraj</label>
+            <select id="rs-sort-select" value={sort} onChange={(e) => setSort(e.target.value as SortKey)}>
+              {SORTS.map((s) => (
+                <option key={s.key} value={s.key}>{s.label}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
 
       {showTierFilter && (
         <div className="rs-tier-row">
@@ -81,6 +169,18 @@ export default function CollectionGrid({
       <div className="rs-grid">
         {products.length === 0 ? (
           <div className="rs-empty">Trenutno nema proizvoda u ovoj kategoriji.</div>
+        ) : visibleProducts.length === 0 ? (
+          // a search that finds nothing has to say so and offer the way out,
+          // otherwise the page just looks broken
+          <div className="rs-empty">
+            <p>Nema rezultata{query.trim() ? ` za "${query.trim()}"` : ""}.</p>
+            <div className="rs-empty-actions">
+              <button className="rs-tier-pill" onClick={resetFilters}>Poništi filtere</button>
+              {section === "racunala" && activeHref !== "/racunala" && (
+                <Link href="/racunala" className="rs-tier-pill">Pretraži sva računala</Link>
+              )}
+            </div>
+          </div>
         ) : (
           visibleProducts.map((p) => {
             const pick = p.metafields?.find((m) => m && m.key === "pick")?.value || "";
@@ -109,6 +209,12 @@ export default function CollectionGrid({
           })
         )}
       </div>
+
+      {filtering && visibleProducts.length > 0 && (
+        <div className="rs-coll-foot">
+          <button className="rs-tier-pill" onClick={resetFilters}>Poništi filtere</button>
+        </div>
+      )}
     </>
   );
 }
