@@ -98,3 +98,23 @@ for (const width of [320, 360, 390, 430, 768]) {
     await page.close();
   });
 }
+
+// The portrait crop only makes sense on a phone. At tablet width the 125%
+// zoom that lifts the cases into the middle blows them up into a couple of
+// magnified corners, and the landscape banner works there as it does on
+// desktop — so the two swap over at 600px.
+test("the phone gets the portrait photo and the tablet the landscape one", async ({ browser }) => {
+  const shots: Record<number, string> = {};
+  for (const width of [390, 600, 768]) {
+    const page = await browser.newPage({ viewport: { width, height: 900 }, isMobile: width < 700, hasTouch: width < 700 });
+    await page.goto("/");
+    await dismissCookies(page);
+    shots[width] = await page.evaluate(
+      () => (getComputedStyle(document.querySelector(".rs-hero")!).backgroundImage.match(/hero-[a-z-]+\.jpg/) || ["?"])[0]
+    );
+    await page.close();
+  }
+  expect(shots[390]).toBe("hero-banner-mobile.jpg");
+  expect(shots[600]).toBe("hero-banner-mobile.jpg");
+  expect(shots[768]).toBe("hero-banner.jpg");
+});

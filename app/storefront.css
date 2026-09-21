@@ -98,20 +98,37 @@
 @media(max-width:600px){.rs-stats{gap:24px}}
 
 /* Mobile hero: the desktop layout, scaled — same eyebrow, heading, lead,
-   both buttons and the stat row, just smaller. Only the photo differs, and
-   only because it has to: the landscape banner crops to almost nothing at a
-   phone's aspect ratio, so a portrait crop holding both cases stands in.
-   The scrim is heavier than desktop's so centred text stays readable over
-   the cases rather than having to be pushed down into a black band. */
+   both buttons and the stat row, just smaller, and the same composition:
+   the black case at the left, the white one at the right, the text in a
+   darkened column between them.
+   
+   Getting there takes work, because the portrait photo (the landscape
+   banner crops to almost nothing at a phone's aspect ratio) sits the two
+   cases in its lower third under a tall empty wall. At its natural size the
+   photo is barely taller than the hero, so there is nothing to scroll and
+   the cases stay stuck at the bottom. Scaling it up and anchoring it to the
+   bottom crops that empty wall away instead of cropping the cases, lifting
+   them into the middle where the text is; 125% is as far as that can go
+   before the cases themselves start losing their outer edges.
+   
+   The scrim is then desktop's, retuned: a dark blob over the middle where
+   the text runs, fading out towards the left and right so the cases stay
+   bright at the edges rather than being blacked out along with it. */
 @media(max-width:860px){
-  .rs-hero{background-image:url('/hero-banner-mobile.jpg');background-size:cover;background-position:center 32%;min-height:auto;padding:76px 0 60px}
-  .rs-hero::before{background:radial-gradient(78% 42% at 50% 34%,rgba(7,8,12,.82),rgba(7,8,12,.5) 62%,transparent 100%),linear-gradient(180deg,rgba(7,8,12,.55) 0%,rgba(7,8,12,.2) 20%,rgba(7,8,12,.34) 50%,rgba(7,8,12,.78) 72%,rgba(7,8,12,.95) 88%,#07080c 100%)}
+  .rs-hero{min-height:auto;padding:76px 0 60px}
   .rs-hero-inner .rs-hero-kicker{color:#fff;font-size:10px;letter-spacing:2.2px;text-shadow:0 2px 10px rgba(0,0,0,.9)}
   .rs-hero-inner h1{font-size:clamp(33px,9.6vw,46px);letter-spacing:-1.4px;line-height:.95;margin-top:13px;text-shadow:0 3px 20px rgba(0,0,0,.9)}
   .rs-hero-inner p{font-size:14.5px;line-height:1.55;margin:15px auto 22px;max-width:360px}
   .rs-stats{gap:18px;margin-top:28px;flex-wrap:wrap}
   .rs-stats b{font-size:17px}
   .rs-stats span{font-size:9.5px;letter-spacing:1px}
+}
+/* The portrait photo is for phones only. A tablet is wide enough for the
+   landscape banner to work as it does on desktop, and the 125% zoom below
+   would blow the cases up to a few magnified corners at that width. */
+@media(max-width:600px){
+  .rs-hero{background-image:url('/hero-banner-mobile.jpg');background-size:125% auto;background-position:center bottom}
+  .rs-hero::before{background:radial-gradient(64% 46% at 50% 44%,rgba(7,8,12,.88),rgba(7,8,12,.55) 62%,rgba(7,8,12,.15) 100%),linear-gradient(180deg,rgba(7,8,12,.62) 0%,rgba(7,8,12,.3) 18%,rgba(7,8,12,.2) 50%,rgba(7,8,12,.55) 78%,#07080c 100%)}
 }
 /* Side by side the two buttons want ~400px of the 342px a phone actually
    has, so below this they stack full-width rather than wrapping into two
