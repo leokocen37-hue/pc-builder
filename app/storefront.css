@@ -692,7 +692,8 @@
 .rs-marquee::before,.rs-marquee::after{content:"";position:absolute;top:0;bottom:0;width:120px;z-index:2;pointer-events:none}
 .rs-marquee::before{left:0;background:linear-gradient(90deg,#050609,transparent)}
 .rs-marquee::after{right:0;background:linear-gradient(270deg,#050609,transparent)}
-.rs-marquee-track{display:flex;width:max-content;animation:rs-marquee-scroll 45s linear infinite}
+.rs-marquee-track{display:flex;width:max-content;animation:rs-marquee-scroll var(--rs-marquee-duration,45s) linear infinite}
+.rs-marquee-group{display:flex;flex:0 0 auto}
 .rs-marquee:hover .rs-marquee-track{animation-play-state:paused}
 /* fixed HEIGHT on the image itself (not a max-height inside a fixed box) so every
    logo renders at the same optical size regardless of its own aspect ratio —
@@ -701,7 +702,9 @@
 .rs-marquee-item{flex:0 0 auto;height:52px;margin:0 8px;display:flex;align-items:center;justify-content:center}
 .rs-marquee-item img{height:32px;width:auto;max-width:160px;object-fit:contain;opacity:.6;filter:grayscale(1) brightness(1.8);transition:opacity .25s,filter .25s}
 .rs-marquee-item img:hover{opacity:1;filter:none}
-@keyframes rs-marquee-scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+/* shift is exactly one copy of the list; the component sets it from the
+   number of copies it had to render to cover the viewport */
+@keyframes rs-marquee-scroll{from{transform:translateX(0)}to{transform:translateX(var(--rs-marquee-shift,-50%))}}
 @media(max-width:600px){.rs-marquee-item{height:42px;margin:0 6px}.rs-marquee-item img{height:24px}}
 
 /* category tile background image + head CTA */

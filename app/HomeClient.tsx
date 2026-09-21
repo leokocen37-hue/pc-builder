@@ -21,6 +21,11 @@ export default function HomeClient({
   gaming: ProductNode[]; office: ProductNode[]; stanice: ProductNode[];
   gamingFrom: number | null; officeFrom: number | null; staniceFrom: number | null;
 }) {
+  // cheapest computer on offer, whichever category it is in. Guarded against
+  // the empty case: Math.min() of nothing is Infinity, which would render as
+  // "∞ €" if Shopify ever answered with no products.
+  const pcPrices = [gamingFrom, officeFrom, staniceFrom].filter((n): n is number => n !== null);
+  const pcFrom = pcPrices.length > 0 ? Math.min(...pcPrices) : null;
 
   return (
     <div className="rs-root">
@@ -50,7 +55,9 @@ export default function HomeClient({
             <Link href={CONFIGURATOR_PATH} className="rs-btn-mobile-primary">Konfigurator →</Link>
           </div>
           <div className="rs-stats">
-            <div><b>{SITE.buildDaysMin}–{SITE.buildDaysMax} dana</b><span>sastavljanje</span></div>
+            {/* the build time is already spelled out in full in the value strip
+                just below, so the hero carries something it doesn't repeat */}
+            <div><b>Besplatna</b><span>dostava iznad {formatEUR(SITE.freeShippingFrom)}</span></div>
             <div><b>24 mj.</b><span>jamstvo</span></div>
             <div><b>✓</b><span>testirano prije slanja</span></div>
           </div>
@@ -112,9 +119,8 @@ export default function HomeClient({
           mobile-only kategorije block above covers this on small screens) */}
       <section className="rs-value-strip">
         <div className="rs-wrap rs-value-strip-inner">
-          <div className="rs-value-item">Konfiguracije od <b>{formatEUR(SITE.startingPrice)}</b></div>
-          <div className="rs-value-item">Besplatna dostava iznad <b>{formatEUR(SITE.freeShippingFrom)}</b></div>
-          <div className="rs-value-item">Izrada <b>{SITE.buildDaysMin}–{SITE.buildDaysMax} radnih dana</b> + dostava {SITE.shipDaysMin}–{SITE.shipDaysMax}</div>
+          {pcFrom && <div className="rs-value-item">Računala od <b>{formatEUR(pcFrom)}</b></div>}
+          <div className="rs-value-item">Izrada <b>{SITE.buildDaysMin}–{SITE.buildDaysMax} radnih dana</b> + dostava {SITE.shipDaysMin}–{SITE.shipDaysMax} radna dana</div>
         </div>
       </section>
 
