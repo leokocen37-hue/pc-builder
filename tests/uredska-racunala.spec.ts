@@ -75,3 +75,43 @@ test("the homepage tile quotes the cheapest office build, not the cheapest shown
 
   await page.close();
 });
+
+// Shopify returns the office collection newest-first, which is Max -> Start.
+// The category has to read cheapest-first, and the homepage row — which shows
+// only the first few — has to open on a Start rather than never reaching one.
+test("office builds read cheapest-first: Start, Plus, Pro, Business, Max", async ({ page }) => {
+  await page.goto("/racunala/office");
+  await dismissCookies(page);
+
+  const titles = await page.locator(".rs-card h4").allInnerTexts();
+  expect(titles).toEqual([
+    "Office Start I", "Office Start II",
+    "Office Plus I", "Office Plus II",
+    "Office Pro I", "Office Pro II",
+    "Office Business I", "Office Business II",
+    "Office Max I", "Office Max II",
+  ]);
+
+  const prices = await page
+    .locator(".rs-card .rs-price")
+    .evaluateAll((els) =>
+      els.map((e) => Number((e.textContent || "").replace(/[^\d,]/g, "").replace(",", ".")))
+    );
+  expect(prices).toEqual([...prices].sort((a, b) => a - b));
+});
+
+test("the homepage office row starts at the cheapest build", async ({ page }) => {
+  await page.goto("/");
+  await dismissCookies(page);
+  const first = page.locator(".rs-card h4", { hasText: "Office" }).first();
+  await expect(first).toHaveText("Office Start I");
+});
+
+// The hand-set Shopify order of the other categories is a merchandising
+// decision — sorting office must not have swept it up.
+test("gaming keeps the order the store returns", async ({ page }) => {
+  await page.goto("/racunala/gaming");
+  await dismissCookies(page);
+  const titles = await page.locator(".rs-card h4").allInnerTexts();
+  expect(titles.slice(0, 2)).toEqual(["Starter I", "Performance I"]);
+});

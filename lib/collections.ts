@@ -23,9 +23,9 @@ export type ProductNode = {
 type CollectionResp = { collection: { products: { edges: { node: Omit<ProductNode, "category"> }[] } } | null };
 
 const QUERY = `
-  query Collection($handle: String!, $first: Int!) {
+  query Collection($handle: String!, $first: Int!, $sortKey: ProductCollectionSortKeys) {
     collection(handle: $handle) {
-      products(first: $first) {
+      products(first: $first, sortKey: $sortKey) {
         edges { node {
           id title handle availableForSale
           featuredImage { url altText }
@@ -111,18 +111,48 @@ export async function getCollectionMinPrice(handle: string): Promise<number | nu
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
+// Collections whose order in Shopify isn't a merchandising decision, and which
+// should read cheapest-first instead.
+//
+// Gaming and radne-stanice have a hand-set order in Shopify (Starter I, then
+// one of each tier) and are left exactly as the store returns them. The office
+// builds were created newest-first, so the collection came back Max -> Start:
+// the category page opened on the most expensive model, and the homepage row,
+// which shows the first six, never reached a Start at all.
+//
+// Sorting is asked of Shopify rather than applied after fetching, because
+// `first` picks before any local sort could run — six fetched in the store's
+// order are the six most expensive, whichever way they are then arranged.
+// Drop a handle from here once its collection is sorted properly in Shopify.
+const PRICE_SORTED = new Set(["office"]);
+
+// Shopify doesn't define a tie-break within one price, so "Office Plus I" and
+// "Office Plus II" (both 899,99 €) could come back either way round. Title
+// settles it, which puts I before II.
+const byPriceThenTitle = (a: ProductNode, b: ProductNode) => {
+  const diff = Number(a.priceRange.minVariantPrice.amount) - Number(b.priceRange.minVariantPrice.amount);
+  return diff !== 0 ? diff : a.title.localeCompare(b.title, "hr");
+};
+
 // fetches one or more collections and merges/dedupes them by product id —
 // pass a single handle to keep a collection's results separate (e.g. homepage rows).
 export async function getCollectionProducts(handles: string[], first = 30): Promise<ProductNode[]> {
   const results = await Promise.all(
-    handles.map((h) => shopifyFetch<CollectionResp>(QUERY, { handle: h, first }).then((r) => ({ handle: h, r })))
+    handles.map((h) =>
+      shopifyFetch<CollectionResp>(QUERY, { handle: h, first, sortKey: PRICE_SORTED.has(h) ? "PRICE" : null })
+        .then((r) => ({ handle: h, r }))
+    )
   );
   const merged: ProductNode[] = [];
   const seen = new Set<string>();
-  results.forEach(({ handle, r }) =>
-    r.collection?.products.edges.forEach((e) => {
-      if (!seen.has(e.node.id)) { seen.add(e.node.id); merged.push({ ...e.node, category: handle }); }
-    })
-  );
+  results.forEach(({ handle, r }) => {
+    const nodes = (r.collection?.products.edges ?? []).map((e) => ({ ...e.node, category: handle }));
+    // each collection keeps its own block in the merged list, so a sorted one
+    // stays sorted on pages that show several collections at once
+    if (PRICE_SORTED.has(handle)) nodes.sort(byPriceThenTitle);
+    nodes.forEach((n) => {
+      if (!seen.has(n.id)) { seen.add(n.id); merged.push(n); }
+    });
+  });
   return merged;
 }
