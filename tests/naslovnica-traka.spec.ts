@@ -68,3 +68,32 @@ test("the hero no longer repeats the build time from the strip below it", async 
   // ...and the strip is still the place that states it in full
   await expect(page.locator(".rs-value-strip-inner")).toContainText("Izrada 4–8 radnih dana");
 });
+
+test("the why-us section carries the free shipping threshold, in one row", async ({ browser }) => {
+  const page = await browser.newPage({ viewport: { width: 1400, height: 1000 } });
+  await page.goto("/");
+  await dismissCookies(page);
+
+  const why = page.locator(".rs-why");
+  await expect(why.locator(".rs-why-item")).toHaveCount(4);
+  await expect(why).toContainText("Besplatna dostava iznad 500,00 €");
+
+  // a fourth card must not be stranded on a row of its own
+  const rows = await why.evaluate(
+    (el) => new Set([...el.querySelectorAll(".rs-why-item")].map((i) => Math.round(i.getBoundingClientRect().top))).size
+  );
+  expect(rows).toBe(1);
+  await page.close();
+});
+
+test("the why-us cards fall to a 2x2 before they get cramped", async ({ browser }) => {
+  const page = await browser.newPage({ viewport: { width: 900, height: 1000 } });
+  await page.goto("/");
+  await dismissCookies(page);
+  const rows = await page
+    .locator(".rs-why")
+    .evaluate((el) => new Set([...el.querySelectorAll(".rs-why-item")].map((i) => Math.round(i.getBoundingClientRect().top))).size);
+  expect(rows).toBe(2);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.close();
+});

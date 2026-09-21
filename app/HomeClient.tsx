@@ -204,6 +204,10 @@ export default function HomeClient({
             {[
               ["Testirano prije slanja", "Svako računalo prolazi stress-test i kontrolu prije isporuke."],
               ["24 mjeseca jamstva", "Puno jamstvo i podrška — uvijek smo tu nakon kupnje."],
+              [
+                `Besplatna dostava iznad ${formatEUR(SITE.freeShippingFrom)}`,
+                "Dostavu preuzimamo mi. Za manje narudžbe trošak se izračunava na blagajni.",
+              ],
               ["Savjet stručnjaka", "Niste sigurni? Javite nam namjenu i proračun, složimo idealan build."],
             ].map(([t, d]) => (
               <div key={t} className="rs-why-item">

@@ -268,8 +268,10 @@
 .rs-cat-link{font-family:'IBM Plex Mono',monospace;font-size:12px;margin-top:14px;color:#fff}
 
 /* why */
-.rs-why{display:grid;grid-template-columns:repeat(3,minmax(0,300px));gap:18px;justify-content:center}
-@media(max-width:860px){.rs-why{grid-template-columns:repeat(2,minmax(0,300px))}}
+/* four cards: three columns would strand the fourth on a row of its own, so
+   the desktop row holds all four and drops straight to a 2x2 below */
+.rs-why{display:grid;grid-template-columns:repeat(4,minmax(0,300px));gap:18px;justify-content:center}
+@media(max-width:1000px){.rs-why{grid-template-columns:repeat(2,minmax(0,300px))}}
 @media(max-width:480px){.rs-why{grid-template-columns:1fr}}
 .rs-why-item{padding:26px 22px;background:var(--card);border:1px solid var(--line);border-radius:14px}
 .rs-why-ic{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:rgba(216,31,216,.12);color:var(--accent);margin-bottom:14px;font-size:16px}
