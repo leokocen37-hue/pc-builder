@@ -40,7 +40,8 @@ for (const viewport of [
       // if the title wrapped and pushed content out, this box would be
       // taller than the card's rendered box, or a descendant would report a
       // bottom edge past the card's own bottom edge
-      const priceEl = activeCard.locator("text=/€\\d/").first();
+      // "142,99 €" — hr-HR puts the symbol last; this used to look for "€142.99"
+      const priceEl = activeCard.locator("text=/\\d\\s?€/").first();
       const priceBox = await priceEl.boundingBox();
       expect(priceBox).not.toBeNull();
       expect(priceBox!.y + priceBox!.height).toBeLessThanOrEqual(activeBox!.y + activeBox!.height + 1);
