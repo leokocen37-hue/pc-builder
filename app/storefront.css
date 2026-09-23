@@ -24,8 +24,11 @@
 /* header */
 .rs-nav{position:sticky;top:0;z-index:50;background:rgba(7,8,12,.82);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
 .rs-nav-inner{display:flex;align-items:center;justify-content:space-between;height:68px;max-width:1240px;margin:0 auto;padding:0 28px}
-.rs-logo{font-weight:700;font-size:21px;letter-spacing:-.5px;color:var(--text)}
-.rs-logo span{color:var(--accent)}
+/* the wordmark is an inline SVG (components/Logo.tsx): colour drives its
+   currentColor half, height is set here rather than on the element so it can
+   respond to the viewport */
+.rs-logo{display:inline-block;color:var(--text)}
+.rs-logo svg{height:26px}
 .rs-links{display:flex;gap:30px;font-size:14px;font-weight:500}
 .rs-links a{color:var(--muted);transition:.2s}
 .rs-links a:hover{color:var(--text)}
@@ -62,7 +65,7 @@
   .rs-cart-count{top:3px;right:3px}
 }
 @media(min-width:861px){.rs-mobile-nav,.rs-mobile-nav-overlay{display:none !important}}
-@media(max-width:400px){.rs-nav-inner{padding:0 16px}.rs-logo{font-size:18px}}
+@media(max-width:400px){.rs-nav-inner{padding:0 16px}.rs-logo svg{height:22px}}
 
 /* buttons */
 .rs-btn{display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-weight:700;font-size:15px;padding:15px 30px;border-radius:13px;border:none;cursor:pointer;box-shadow:0 12px 34px -8px rgba(216,31,216,.6);transition:.2s;font-family:'Space Grotesk',sans-serif;text-decoration:none}

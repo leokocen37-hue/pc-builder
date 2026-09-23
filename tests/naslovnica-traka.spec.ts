@@ -97,3 +97,46 @@ test("the why-us cards fall to a 2x2 before they get cramped", async ({ browser 
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.close();
 });
+
+// The wordmark is an inline SVG rather than styled text, so it can't be
+// checked by reading the page — assert the drawing is there and sized.
+test("the wordmark renders in the header and the footer", async ({ page }) => {
+  await page.goto("/");
+  await dismissCookies(page);
+
+  for (const scope of [".rs-nav", ".rs-footer"]) {
+    const logo = page.locator(`${scope} .rs-logo svg`);
+    await expect(logo).toHaveAttribute("aria-label", "RAČUNALO.hr");
+    const box = (await logo.boundingBox())!;
+    expect(box.height).toBeGreaterThan(18);
+    expect(box.width).toBeGreaterThan(80);
+  }
+
+  // the header logo is still the link home
+  await expect(page.locator('.rs-nav a.rs-logo[href="/"]')).toBeVisible();
+});
+
+test("the wordmark shrinks on a narrow phone instead of crowding the header", async ({ browser }) => {
+  const wide = await browser.newPage({ viewport: { width: 1400, height: 900 } });
+  await wide.goto("/");
+  await dismissCookies(wide);
+  const wideH = (await wide.locator(".rs-nav .rs-logo svg").boundingBox())!.height;
+  await wide.close();
+
+  const narrow = await browser.newPage({ viewport: { width: 360, height: 780 }, isMobile: true, hasTouch: true });
+  await narrow.goto("/");
+  await dismissCookies(narrow);
+  const narrowBox = (await narrow.locator(".rs-nav .rs-logo svg").boundingBox())!;
+  expect(narrowBox.height).toBeLessThan(wideH);
+  // and still clears the cart and menu buttons
+  expect(await narrow.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
+  await narrow.close();
+});
+
+test("the favicon is the purpose-made mark, not the old photo", async ({ page }) => {
+  await page.goto("/");
+  const icons = await page.locator('link[rel="icon"]').evaluateAll((els) =>
+    els.map((e) => e.getAttribute("type"))
+  );
+  expect(icons).toEqual(["image/svg+xml"]);
+});

@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCart } from "@/lib/cart";
+import Logo from "@/components/Logo";
 
 const NAV_LINKS = [
   { href: "/", label: "Početna" },
@@ -55,7 +56,11 @@ export default function SiteHeader() {
       </div>
       <header className="rs-nav">
         <div className="rs-nav-inner">
-          <Link href="/" className="rs-logo">RAČUNALO<span>.hr</span></Link>
+          {/* the size comes from CSS, not the prop, so it can shrink with the
+              viewport — see .rs-logo svg */}
+          <Link href="/" className="rs-logo" aria-label="RAČUNALO.hr — početna">
+            <Logo />
+          </Link>
           <nav className="rs-links">
             {NAV_LINKS.map((l) => (
               <Link key={l.href} href={l.href}>{l.label}</Link>

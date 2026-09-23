@@ -2,6 +2,7 @@
 // Global site footer — rendered once from app/layout.tsx so every page gets it.
 import Link from "next/link";
 import { COMPANY, COMPANY_ADDRESS } from "@/lib/company";
+import Logo from "@/components/Logo";
 
 const CONFIGURATOR_PATH = "/konfigurator";
 
@@ -10,7 +11,7 @@ export default function Footer() {
     <footer className="rs-footer">
       <div className="rs-wrap rs-foot-grid">
         <div>
-          <div className="rs-logo" style={{ fontSize: 22, marginBottom: 12 }}>RAČUNALO<span>.hr</span></div>
+          <div className="rs-logo" style={{ marginBottom: 14 }}><Logo /></div>
           <p className="rs-foot-blurb">Ručno sastavljena i testirana računala po mjeri. Jedinstvene konfiguracije za igru, posao i kreativan rad.</p>
           {/* impressum — see lib/company.ts (court register data) */}
           <div className="rs-foot-impressum">

@@ -62,9 +62,8 @@ export const metadata: Metadata = {
 
 // site-wide structured data (Organization + WebSite) — helps Google understand
 // who/what this site is, independent of any single page's content.
-// TODO: add `logo` once a dedicated logo image asset exists (currently the site
-// only has a text wordmark, no image file) and `sameAs` once official social
-// profile URLs are confirmed — leaving both out rather than guessing at either.
+// TODO: add `sameAs` once official social profile URLs are confirmed — left
+// out rather than guessed at.
 const ORG_JSON_LD = {
   "@context": "https://schema.org",
   "@type": "Organization",
@@ -72,6 +71,9 @@ const ORG_JSON_LD = {
   url: SITE_URL,
   description: DEFAULT_DESCRIPTION,
   email: "info@racunalo.hr",
+  // the light-background variant on purpose: search results render on white,
+  // and the dark-background one is near-invisible there
+  logo: `${SITE_URL}/logo-svijetla-pozadina.svg`,
 };
 const WEBSITE_JSON_LD = {
   "@context": "https://schema.org",
