@@ -116,3 +116,36 @@ test("configurator advances through all 11 steps (AMD path) without freezing", a
 
   await expect(page.getByText("Dodaj u košaricu")).toBeVisible({ timeout: 8000 });
 });
+
+// Every price in the configurator was hand-built as "€" + toFixed(2), which
+// renders "€142.99" — an English layout with a decimal point, against a site
+// that shows "142,99 €" everywhere else. hr-HR puts the symbol last and uses
+// a comma, so the whole screen has to go through formatEUR.
+test("prices are formatted the Croatian way at every step", async ({ page }) => {
+  test.setTimeout(90_000);
+
+  await page.goto("/konfigurator");
+  const accept = page.getByText("Prihvaćam");
+  if (await accept.isVisible().catch(() => false)) await accept.click();
+  await page.getByAltText("Intel").first().click();
+
+  const noSymbolFirst = async (where: string) => {
+    const text = await page.locator("body").innerText();
+    const wrong = [...new Set([...text.matchAll(/€\s?\d[\d.,]*/g)].map((m) => m[0]))];
+    expect(wrong, `symbol-first price at ${where}`).toEqual([]);
+  };
+
+  for (const label of [...REQUIRED_STEP_LABELS, "Operativni sustav"]) {
+    await expect(page.locator("h2", { hasText: label }).first()).toBeVisible({ timeout: 8000 });
+    await noSymbolFirst(label);
+    await page.locator('[data-testid="active-card"]').first().click();
+  }
+
+  // the review step, where the running total and the whole summary live
+  await expect(page.getByRole("button", { name: "🛒 Dodaj u košaricu" })).toBeVisible({ timeout: 8000 });
+  await noSymbolFirst("pregled");
+
+  // and the total really is in the site's format: "1.234,99 €"
+  const body = await page.locator("body").innerText();
+  expect(body).toMatch(/\d{1,3}(\.\d{3})*,\d{2}\s€/);
+});

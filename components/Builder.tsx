@@ -1,6 +1,6 @@
 "use client";
 import { CSSProperties, useEffect, useState, useMemo, Suspense, useRef } from "react";
-import { useCart } from "@/lib/cart";
+import { formatEUR, useCart } from "@/lib/cart";
 import { ASSEMBLY_FEE } from "@/lib/pricing";
 import { addWorkingDays } from "@/lib/site-config";
 import { SITE } from "@/lib/site-config";
@@ -1879,7 +1879,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                                 </div>
                               )}
                               <div style={{ fontWeight: 700, fontSize: "22px", color: "#fff", marginTop: "10px", letterSpacing: "-.3px" }}>
-                                €{dv.price.toFixed(2)}
+                                {formatEUR(dv.price)}
                               </div>
                             </div>
                             {isActive && (
@@ -2073,7 +2073,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                               </div>
                             )}
                             <div style={{ fontWeight: 700, fontSize: "18px", marginTop: "10px", letterSpacing: "-.3px" }}>
-                              €{dv.price.toFixed(2)}
+                              {formatEUR(dv.price)}
                             </div>
                           </div>
                         );
@@ -2124,7 +2124,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                               color: "#fff",
                             }}
                           >
-                            {hdd.title} · €{(hdd.selectedVariant?.price?.amount ?? hdd.variants.edges[0]?.node.price.amount)}
+                            {hdd.title} · {formatEUR(Number(hdd.selectedVariant?.price?.amount ?? hdd.variants.edges[0]?.node.price.amount))}
                           </span>
                         )}
                         <button
@@ -2152,7 +2152,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                                     <span>
                                       {p.title} {v.node.title !== "Default Title" ? `(${v.node.title})` : ""}
                                     </span>
-                                    <span style={{ color: COLORS.accent, fontWeight: "bold" }}>€{v.node.price.amount}</span>
+                                    <span style={{ color: COLORS.accent, fontWeight: "bold" }}>{formatEUR(Number(v.node.price.amount))}</span>
                                   </button>
                                 ))}
                               </div>
@@ -2209,7 +2209,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                         </div>
                       </div>
                       <div style={{ fontWeight: 700, fontSize: "24px", letterSpacing: "-.5px" }}>
-                        €{activePrice.toFixed(2)}
+                        {formatEUR(activePrice)}
                       </div>
                     </div>
 
@@ -2391,11 +2391,12 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                         </div>
                         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "6px" }}>
                           <div style={{ fontWeight: 700, fontSize: "16px", letterSpacing: "-.3px" }}>
-                            €
-                            {Number(
-                              part.item?.selectedVariant?.price?.amount ||
-                                part.item?.variants.edges[0].node.price.amount
-                            ).toFixed(2)}
+                            {formatEUR(
+                              Number(
+                                part.item?.selectedVariant?.price?.amount ||
+                                  part.item?.variants.edges[0].node.price.amount
+                              )
+                            )}
                           </div>
                           {targetStep && (
                             <span style={{ fontFamily: MONO, fontSize: "10.5px", color: COLORS.accent, letterSpacing: ".3px", whiteSpace: "nowrap" }}>
@@ -2447,7 +2448,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                                   <span>
                                     {p.title} {v.node.title !== "Default Title" ? `(${v.node.title})` : ""}
                                   </span>
-                                  <span style={{ color: COLORS.accent, fontWeight: "bold" }}>€{v.node.price.amount}</span>
+                                  <span style={{ color: COLORS.accent, fontWeight: "bold" }}>{formatEUR(Number(v.node.price.amount))}</span>
                                 </button>
                               ))}
                             </div>
@@ -2480,7 +2481,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                                   <span>
                                     {p.title} {v.node.title !== "Default Title" ? `(${v.node.title})` : ""}
                                   </span>
-                                  <span style={{ color: COLORS.accent, fontWeight: "bold" }}>€{v.node.price.amount}</span>
+                                  <span style={{ color: COLORS.accent, fontWeight: "bold" }}>{formatEUR(Number(v.node.price.amount))}</span>
                                 </button>
                               ))}
                             </div>
@@ -2513,7 +2514,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                                   <span>
                                     {p.title} {v.node.title !== "Default Title" ? `(${v.node.title})` : ""}
                                   </span>
-                                  <span style={{ color: COLORS.accent, fontWeight: "bold" }}>€{v.node.price.amount}</span>
+                                  <span style={{ color: COLORS.accent, fontWeight: "bold" }}>{formatEUR(Number(v.node.price.amount))}</span>
                                 </button>
                               ))}
                             </div>
@@ -2542,7 +2543,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                 UKUPNA CIJENA
               </div>
               <div style={{ fontSize: "42px", fontWeight: 700, letterSpacing: "-1.5px", marginTop: "6px" }}>
-                €{currentTotal().toFixed(2)}
+                {formatEUR(currentTotal())}
               </div>
 
               <div style={{ height: "1px", background: COLORS.border, margin: "22px 0" }} />
@@ -2845,7 +2846,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
             <div style={{ fontFamily: MONO, fontSize: "10px", color: COLORS.textMuted, letterSpacing: "1px" }}>
               {selectedPartsList.length === 0 ? "ODABERI KOMPONENTE" : `ISPORUKA ${estimatedDispatch()}`}
             </div>
-            <div style={{ fontSize: "19px", fontWeight: 700 }}>€{currentTotal().toFixed(2)}</div>
+            <div style={{ fontSize: "19px", fontWeight: 700 }}>{formatEUR(currentTotal())}</div>
           </div>
         </div>
       )}
@@ -2917,7 +2918,7 @@ function MiniSidebarRow({ label, item, keyName }: { label: string; item: Product
           {item.title}
         </div>
       </div>
-      <div style={{ fontFamily: MONO, fontSize: "12px", color: COLORS.textMuted }}>€{price}</div>
+      <div style={{ fontFamily: MONO, fontSize: "12px", color: COLORS.textMuted }}>{formatEUR(Number(price))}</div>
     </div>
   );
 }
