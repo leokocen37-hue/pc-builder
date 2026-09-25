@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import { shopifyFetch } from "@/lib/shopify";
 import { useCart, formatEUR } from "@/lib/cart";
+import { shopifyImage } from "@/lib/shopify-image";
 
 // Which collections to pull cross-sell items from. Edit to match your handles.
 const CROSS_SELL_HANDLES = ["tipkovnice", "misevi", "monitori", "slusalice"];
@@ -65,7 +66,7 @@ export default function CrossSell() {
           const v = p.variants.edges[0].node;
           return (
             <div key={p.id} className="rs-xsell-card">
-              <div className="rs-xsell-img">{p.featuredImage?.url && <img src={p.featuredImage.url} alt={p.title} />}</div>
+              <div className="rs-xsell-img">{p.featuredImage?.url && <img src={shopifyImage(p.featuredImage.url, 160)} alt={p.title} loading="lazy" decoding="async" />}</div>
               <div className="rs-xsell-title">{p.title}</div>
               <div className="rs-xsell-price">{formatEUR(Number(v.price.amount))}</div>
               <button

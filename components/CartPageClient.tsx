@@ -6,6 +6,7 @@ import { useCart, formatEUR, splitSummary } from "@/lib/cart";
 import CrossSell from "@/components/CrossSell";
 import TermsAcceptance from "@/components/TermsAcceptance";
 import { FREE_SHIPPING_FROM, shippingFor } from "@/lib/pricing";
+import { NOUNS, plural } from "@/lib/plural";
 
 export default function CartPageClient() {
   const { items, count, subtotal, updateQty, removeItem, checkout, checkoutBusy, termsAccepted } = useCart();
@@ -78,7 +79,7 @@ export default function CartPageClient() {
         <h2 className="kos-summary-h">Sažetak narudžbe</h2>
 
         <div className="kos-row">
-          <span>Međuzbroj ({count} {count === 1 ? "stavka" : "stavki"})</span>
+          <span>Međuzbroj ({plural(count, NOUNS.stavka)})</span>
           <span>{formatEUR(subtotal)}</span>
         </div>
         <div className="kos-row kos-row-muted">

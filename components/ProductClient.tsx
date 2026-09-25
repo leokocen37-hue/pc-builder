@@ -5,6 +5,7 @@ import { useCart, formatMoney, formatEUR } from "@/lib/cart";
 import { isBuiltToOrder, type Product } from "@/lib/product-page";
 import { LEAD_TIME_PC, LEAD_TIME_STOCK } from "@/lib/site-config";
 import { FREE_SHIPPING_FROM } from "@/lib/pricing";
+import { shopifyImage } from "@/lib/shopify-image";
 
 // callers are expected to have already handled the missing/mismatched-category
 // case via notFound() (see the segment-scoped not-found.tsx next to each page.tsx)
@@ -51,14 +52,14 @@ export default function ProductClient({ product }: { product: Product }) {
           <div>
             <div className="rs-gallery-main">
               {images[activeImg]?.url
-                ? <img src={images[activeImg].url} alt={images[activeImg].altText || product.title} />
+                ? <img src={shopifyImage(images[activeImg].url, 700)} alt={images[activeImg].altText || product.title} />
                 : <div className="rs-ph-fallback" />}
             </div>
             {images.length > 1 && (
               <div className="rs-thumbs">
                 {images.map((img, i) => (
                   <div key={i} className={`rs-thumb ${i === activeImg ? "active" : ""}`} onClick={() => setActiveImg(i)}>
-                    <img src={img.url} alt={img.altText || ""} />
+                    <img src={shopifyImage(img.url, 90)} alt={img.altText || ""} loading="lazy" decoding="async" />
                   </div>
                 ))}
               </div>

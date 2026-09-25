@@ -83,7 +83,7 @@ export default function CartDrawer() {
                 style={{ width: "100%", justifyContent: "center" }}
                 onClick={() => setOpen(false)}
               >
-                U košaricu →
+                Pregled košarice →
               </Link>
               <button className="rs-cart-continue" onClick={() => setOpen(false)}>Nastavi kupovinu</button>
               <div className="rs-cart-note">Sve cijene uključuju PDV · dostava se računa u košarici</div>

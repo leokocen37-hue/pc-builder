@@ -1,6 +1,7 @@
 "use client";
 import { CSSProperties, useEffect, useState, useMemo, Suspense, useRef } from "react";
 import { formatEUR, SUMMARY_SEP, useCart } from "@/lib/cart";
+import { KOMPATIBILNI_MODEL, plural } from "@/lib/plural";
 import { ASSEMBLY_FEE, ASSEMBLY_FEE_NOTE, ASSEMBLY_FEE_SHORT } from "@/lib/pricing";
 import { addWorkingDays } from "@/lib/site-config";
 import { SITE } from "@/lib/site-config";
@@ -213,6 +214,10 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
   const [helpOpen, setHelpOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
   const [contactForm, setContactForm] = useState({ name: "", email: "", phone: "", budget: "", message: "" });
+  // Bot bait: off-screen, not display:none (some bots skip hidden fields), and
+  // excluded from the tab order and the accessibility tree so no person meets
+  // it. The API treats a filled one as spam. See app/api/contact/route.ts.
+  const [honeypot, setHoneypot] = useState("");
   const [contactState, setContactState] = useState<"idle" | "sending" | "sent" | "invalid" | "error">("idle");
   const [contactError, setContactError] = useState("");
 
@@ -281,12 +286,23 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
   } else {
     powerPercentage = Math.min((estimatedDraw / 1000) * 100, 100);
   }
-  const psuOver = psuCapacity > 0 && estimatedDraw >= psuCapacity;
+  // Headroom matters as a proportion, not as a number of watts: 80 W spare is
+  // comfortable on a 400 W supply and nearly nothing on a 1000 W one. Below
+  // 10% the build is refused; below 20% it is allowed with a warning, since a
+  // supply run near its ceiling is loud, hot and short-lived.
+  const PSU_HEADROOM_MIN = 0.2;
+  const PSU_HEADROOM_BLOCK = 0.1;
+  const headroomRatio = psuCapacity > 0 ? (psuCapacity - estimatedDraw) / psuCapacity : 0;
+  const headroomPct = Math.max(0, Math.round(headroomRatio * 100));
+  const psuOver = psuCapacity > 0 && headroomRatio < PSU_HEADROOM_BLOCK;
+  const psuTight = psuCapacity > 0 && !psuOver && headroomRatio < PSU_HEADROOM_MIN;
   const powerNote =
     psuCapacity > 0
       ? psuOver
-        ? "Napajanje je preslabo za odabrane komponente"
-        : `Dovoljno snage · ${psuCapacity - estimatedDraw}W rezerve`
+        ? `Napajanje je preslabo — ${headroomPct}% rezerve, potrebno je najmanje ${Math.round(PSU_HEADROOM_BLOCK * 100)}%`
+        : psuTight
+        ? `Tijesno — samo ${headroomPct}% rezerve. Preporučujemo najmanje ${Math.round(PSU_HEADROOM_MIN * 100)}%.`
+        : `Dovoljno snage · ${headroomPct}% rezerve (${psuCapacity - estimatedDraw} W)`
       : "Odaberite napajanje za izračun rezerve";
 
   const getQualityScore = (quality?: string) => {
@@ -1116,6 +1132,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...contactForm,
+          tvrtka: honeypot,
           currentBuild: buildSummary || "(nije započeta konfiguracija)",
           buildTotal: currentTotal().toFixed(2),
           pageUrl: typeof window !== "undefined" ? window.location.href : "",
@@ -1210,18 +1227,21 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
     else setStepIndex(stepIndex - 1);
   };
 
+  // Same order as the steps, so the summary reads as a record of the walk the
+  // buyer just took rather than as its own arrangement. Each upsell sits
+  // directly under the part it extends.
   const selectedPartsList = [
     { key: "cpu", label: "PROCESOR", item: cpu },
-    { key: "gpu", label: "GRAFIČKA KARTICA", item: gpu },
-    { key: "gpu2", label: "2. GRAFIČKA KARTICA", item: gpu2 },
     { key: "mb", label: "MATIČNA PLOČA", item: mb },
     { key: "ram", label: "RADNA MEMORIJA", item: ram },
+    { key: "gpu", label: "GRAFIČKA KARTICA", item: gpu },
+    { key: "gpu2", label: "2. GRAFIČKA KARTICA", item: gpu2 },
     { key: "ssd", label: "GLAVNI SSD", item: ssd },
     { key: "ssd2", label: "DODATNI SSD", item: ssd2 },
     { key: "hdd", label: "TVRDI DISK", item: hdd },
     { key: "hdd2", label: "DODATNI HDD", item: hdd2 },
-    { key: "psu", label: "NAPAJANJE", item: psu },
     { key: "case", label: "KUĆIŠTE", item: pcCase },
+    { key: "psu", label: "NAPAJANJE", item: psu },
     { key: "cooler", label: "HLAĐENJE", item: cooler },
     { key: "os", label: "OPERATIVNI SUSTAV", item: os },
   ].filter((p) => p.item);
@@ -1582,7 +1602,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                       <h2 style={h2Style}>{STEP_LABELS[currentStep]}</h2>
                       {!isMobile && (
                         <div style={{ color: COLORS.textMuted, fontSize: "14px", marginTop: "7px" }}>
-                          {currentProducts.length} kompatibilnih modela za tvoju konfiguraciju
+                          {plural(currentProducts.length, KOMPATIBILNI_MODEL)} za tvoju konfiguraciju
                         </div>
                       )}
                     </div>
@@ -2623,12 +2643,14 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                       borderRadius: "4px",
                       background: psuOver
                         ? "linear-gradient(90deg,#ff6a3d,#ff4d6d)"
+                        : psuTight
+                        ? "linear-gradient(90deg,#d8891f,#ffb84d)"
                         : "linear-gradient(90deg,#a020f0,#d81fd8)",
                       transition: "width .45s ease",
                     }}
                   />
                 </div>
-                <div style={{ fontSize: "11px", color: COLORS.textFaint, marginTop: "9px" }}>{powerNote}</div>
+                <div style={{ fontSize: "11px", color: psuOver ? "#ff6a82" : psuTight ? "#ffb84d" : COLORS.textFaint, marginTop: "9px" }}>{powerNote}</div>
               </div>
 
               {isReviewStep ? (
@@ -2792,39 +2814,74 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                   <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-                    <input
-                      style={{ ...contactInput, flex: "1 1 180px" }}
-                      placeholder="Ime i prezime *"
-                      value={contactForm.name}
-                      onChange={(e) => setContactForm((f) => ({ ...f, name: e.target.value }))}
-                    />
-                    <input
-                      style={{ ...contactInput, flex: "1 1 180px" }}
-                      type="email"
-                      placeholder="E-mail *"
-                      value={contactForm.email}
-                      onChange={(e) => setContactForm((f) => ({ ...f, email: e.target.value }))}
-                    />
+                    <div style={{ flex: "1 1 180px", display: "flex", flexDirection: "column", gap: "5px" }}>
+                      <label htmlFor="kontakt-ime" style={contactLabel}>Ime i prezime *</label>
+                      <input
+                        id="kontakt-ime"
+                        style={contactInput}
+                        autoComplete="name"
+                        required
+                        value={contactForm.name}
+                        onChange={(e) => setContactForm((f) => ({ ...f, name: e.target.value }))}
+                      />
+                    </div>
+                    <div style={{ flex: "1 1 180px", display: "flex", flexDirection: "column", gap: "5px" }}>
+                      <label htmlFor="kontakt-email" style={contactLabel}>E-mail *</label>
+                      <input
+                        id="kontakt-email"
+                        style={contactInput}
+                        type="email"
+                        inputMode="email"
+                        autoComplete="email"
+                        required
+                        value={contactForm.email}
+                        onChange={(e) => setContactForm((f) => ({ ...f, email: e.target.value }))}
+                      />
+                    </div>
                   </div>
                   <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-                    <input
-                      style={{ ...contactInput, flex: "1 1 180px" }}
-                      placeholder="Telefon (nije obavezno)"
-                      value={contactForm.phone}
-                      onChange={(e) => setContactForm((f) => ({ ...f, phone: e.target.value }))}
-                    />
-                    <input
-                      style={{ ...contactInput, flex: "1 1 180px" }}
-                      placeholder="Okvirni proračun €"
-                      value={contactForm.budget}
-                      onChange={(e) => setContactForm((f) => ({ ...f, budget: e.target.value }))}
+                    <div style={{ flex: "1 1 180px", display: "flex", flexDirection: "column", gap: "5px" }}>
+                      <label htmlFor="kontakt-telefon" style={contactLabel}>Telefon (nije obavezno)</label>
+                      <input
+                        id="kontakt-telefon"
+                        style={contactInput}
+                        type="tel"
+                        inputMode="tel"
+                        autoComplete="tel"
+                        value={contactForm.phone}
+                        onChange={(e) => setContactForm((f) => ({ ...f, phone: e.target.value }))}
+                      />
+                    </div>
+                    <div style={{ flex: "1 1 180px", display: "flex", flexDirection: "column", gap: "5px" }}>
+                      <label htmlFor="kontakt-proracun" style={contactLabel}>Okvirni proračun (€)</label>
+                      <input
+                        id="kontakt-proracun"
+                        style={contactInput}
+                        inputMode="numeric"
+                        value={contactForm.budget}
+                        onChange={(e) => setContactForm((f) => ({ ...f, budget: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+                    <label htmlFor="kontakt-poruka" style={contactLabel}>Vaše potrebe i želje *</label>
+                    <textarea
+                      id="kontakt-poruka"
+                      style={{ ...contactInput, minHeight: "120px", resize: "vertical" }}
+                      required
+                      value={contactForm.message}
+                      onChange={(e) => setContactForm((f) => ({ ...f, message: e.target.value }))}
                     />
                   </div>
-                  <textarea
-                    style={{ ...contactInput, minHeight: "120px", resize: "vertical" }}
-                    placeholder="Vaše potrebe i želje *"
-                    value={contactForm.message}
-                    onChange={(e) => setContactForm((f) => ({ ...f, message: e.target.value }))}
+                  <input
+                    type="text"
+                    name="tvrtka"
+                    tabIndex={-1}
+                    autoComplete="off"
+                    aria-hidden="true"
+                    value={honeypot}
+                    onChange={(e) => setHoneypot(e.target.value)}
+                    style={{ position: "absolute", left: "-9999px", width: "1px", height: "1px", opacity: 0 }}
                   />
                 </div>
 
@@ -2851,6 +2908,15 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                 >
                   {contactState === "sending" ? "Šaljem…" : "Pošalji upit"}
                 </button>
+                {/* Art. 13 GDPR: say what the data is for at the point it is
+                    collected, not only on a page nobody opens from here. */}
+                <p style={{ marginTop: "12px", fontSize: "11.5px", lineHeight: 1.55, color: COLORS.textFaint }}>
+                  Vaše podatke koristimo isključivo za odgovor na ovaj upit. Više u{" "}
+                  <a href="/privatnost" target="_blank" rel="noopener" style={{ color: COLORS.accent, textDecoration: "underline" }}>
+                    Politici privatnosti
+                  </a>
+                  .
+                </p>
               </>
             )}
           </div>
@@ -3529,6 +3595,17 @@ const warningStyle: CSSProperties = {
   lineHeight: 1.4,
 };
 
+// The labels that replaced the placeholders — a placeholder disappears the
+// moment someone types, which leaves a screen reader and a distracted human
+// with an unlabelled box.
+const contactLabel: CSSProperties = {
+  fontFamily: "var(--font-plex-mono), 'IBM Plex Mono', monospace",
+  fontSize: "10.5px",
+  letterSpacing: "1px",
+  textTransform: "uppercase",
+  color: "#9aa0b0",
+};
+
 const contactInput: CSSProperties = {
   width: "100%",
   padding: "12px 14px",
@@ -3536,7 +3613,7 @@ const contactInput: CSSProperties = {
   border: "1px solid rgba(255,255,255,.10)",
   borderRadius: "10px",
   color: "#f3f4f8",
-  fontFamily: "'Space Grotesk', sans-serif",
+  fontFamily: "var(--font-space-grotesk), 'Space Grotesk', sans-serif",
   fontSize: "14px",
   outline: "none",
   boxSizing: "border-box",

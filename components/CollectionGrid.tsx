@@ -9,6 +9,8 @@ import Link from "next/link";
 import { formatMoney } from "@/lib/cart";
 import { specLine, type ProductNode } from "@/lib/collections";
 import type { SectionKey } from "@/lib/product-page";
+import { NOUNS, plural } from "@/lib/plural";
+import { shopifyImage } from "@/lib/shopify-image";
 
 type Tab = { label: string; href: string };
 
@@ -47,8 +49,8 @@ const fold = (s: string) =>
 // the tier — so "starter" finds the Starters and "rtx 5060" finds what has one.
 const haystackOf = (p: ProductNode) => fold([p.title, specLine(p), tierOf(p)].join(" "));
 
-/** 1 proizvod / 2 proizvoda / 5 proizvoda — only the form ending in 1 (but not 11) differs. */
-const productCount = (n: number) => `${n} ${n % 10 === 1 && n % 100 !== 11 ? "proizvod" : "proizvoda"}`;
+// Croatian agreement lives in one place now — see lib/plural.ts
+const productCount = (n: number) => plural(n, NOUNS.proizvod);
 
 export default function CollectionGrid({
   products,
@@ -189,7 +191,12 @@ export default function CollectionGrid({
               <Link key={p.id} href={linkFor(p)} className="rs-card rs-card-fin">
                 <div className="rs-ph">
                   {p.featuredImage?.url ? (
-                    <img src={p.featuredImage.url} alt={p.featuredImage.altText || p.title} loading="lazy" />
+                    <img
+                      src={shopifyImage(p.featuredImage.url, 320)}
+                      alt={p.featuredImage.altText || p.title}
+                      loading="lazy"
+                      decoding="async"
+                    />
                   ) : (
                     <div className="rs-ph-fallback" />
                   )}

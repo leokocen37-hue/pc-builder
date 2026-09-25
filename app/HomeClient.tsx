@@ -9,6 +9,7 @@ import BrandMarquee from "@/components/BrandMarquee";
 import { specLine, type ProductNode } from "@/lib/collections";
 import { SITE } from "@/lib/site-config";
 import { FREE_SHIPPING_FROM, SHIPPING_FEE } from "@/lib/pricing";
+import { shopifyImage } from "@/lib/shopify-image";
 
 const CONFIGURATOR_PATH = "/konfigurator";
 
@@ -189,7 +190,7 @@ function CatTile({ href, label, sub, handle, g }: { href: string; label: string;
 
   return (
     <Link href={href} className="rs-cat" style={{ background: g }}>
-      {img && <img src={img} alt={label} className="rs-cat-img" loading="lazy" />}
+      {img && <img src={shopifyImage(img, 340)} alt={label} className="rs-cat-img" loading="lazy" decoding="async" />}
       <span className="rs-cat-label">{label}</span>
       <span className="rs-cat-sub">{sub}</span>
       <span className="rs-cat-link">Pogledaj →</span>
@@ -213,7 +214,7 @@ function CollectionRow({ title, href, products, subtitle }: { title: string; hre
           : products.slice(0, 5).map((p) => (
               <Link key={p.id} href={`/racunala/${p.category}/${p.handle}`} className="rs-card rs-card-fin">
                 <div className="rs-ph">
-                  {p.featuredImage?.url ? <img src={p.featuredImage.url} alt={p.featuredImage.altText || p.title} loading="lazy" /> : <div className="rs-ph-fallback" />}
+                  {p.featuredImage?.url ? <img src={shopifyImage(p.featuredImage.url, 260)} alt={p.featuredImage.altText || p.title} loading="lazy" decoding="async" /> : <div className="rs-ph-fallback" />}
                   {!p.availableForSale && <span className="rs-badge">Uskoro</span>}
                 </div>
                 <div className="rs-card-body">

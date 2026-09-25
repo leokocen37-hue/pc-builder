@@ -1,5 +1,10 @@
 // Single place for the numbers buyers ask about most (starting price, free
 // shipping threshold, lead times) — edit here, not scattered across pages.
+/** The canonical host. Canonicals, the sitemap, robots.txt and the
+ *  Organization schema all have to agree on one, and the site is served on
+ *  www; next.config.ts redirects the apex to it. */
+export const SITE_URL = "https://www.racunalo.hr";
+
 export const SITE = {
   // Money lives in lib/pricing.ts, not here — see FREE_SHIPPING_FROM and
   // SHIPPING_FEE. There is deliberately no "starting price" constant either:

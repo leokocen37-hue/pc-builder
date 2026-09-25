@@ -17,7 +17,7 @@ test("cart page: checkout is gated on the terms checkbox", async ({ page }) => {
   await dismissCookies(page);
   await page.getByRole("button", { name: "Dodaj u košaricu" }).click();
 
-  await page.getByRole("link", { name: "U košaricu →" }).click();
+  await page.getByRole("link", { name: "Pregled košarice →" }).click();
   await page.waitForURL("**/kosarica");
 
   const terms = page.locator(".kos-summary .kos-terms");
@@ -68,7 +68,7 @@ test("the drawer stays a preview: it asks nothing, the cart page does", async ({
   await expect(page.locator(".rs-cart-panel")).toBeVisible();
   await expect(page.locator(".rs-cart-panel .kos-terms")).toHaveCount(0);
 
-  await page.getByRole("link", { name: "U košaricu →" }).click();
+  await page.getByRole("link", { name: "Pregled košarice →" }).click();
   await page.waitForURL("**/kosarica");
 
   const box = page.locator(".kos-summary .kos-terms input[type=checkbox]");
@@ -96,15 +96,15 @@ test("cart drawer routes to the cart page instead of straight to checkout", asyn
   await dismissCookies(page);
 
   await page.getByRole("button", { name: "Dodaj u košaricu" }).click();
-  await expect(page.getByRole("link", { name: "U košaricu →" })).toBeVisible({ timeout: 8000 });
+  await expect(page.getByRole("link", { name: "Pregled košarice →" })).toBeVisible({ timeout: 8000 });
   await expect(page.getByRole("button", { name: /Na blagajnu/ })).toHaveCount(0);
 
   // the header cart button re-opens the same preview drawer (it does not
   // navigate) — the drawer's footer link is the route to the full page
   await page.locator(".rs-cart-x").click();
-  await expect(page.getByRole("link", { name: "U košaricu →" })).toBeHidden();
+  await expect(page.getByRole("link", { name: "Pregled košarice →" })).toBeHidden();
   await page.locator(".rs-cart-btn").click();
-  await expect(page.getByRole("link", { name: "U košaricu →" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Pregled košarice →" })).toBeVisible();
   expect(new URL(page.url()).pathname).not.toBe("/kosarica");
 });
 

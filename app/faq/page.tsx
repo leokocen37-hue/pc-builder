@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import FaqClient from "./FaqClient";
+import JsonLd from "@/components/JsonLd";
+import { FAQ_JSON_LD } from "./faq-data";
 
 const TITLE = "Često postavljana pitanja";
 const DESCRIPTION = "Odgovori na najčešća pitanja o konfiguratoru, dostavi, plaćanju i jamstvu na RAČUNALO.hr.";
@@ -23,6 +25,9 @@ export default function FaqPage() {
 
       <section className="legal-wrap">
         <div className="rs-wrap">
+          {/* the questions and answers Google reads; the accordion below is
+              the same content for people */}
+          <JsonLd data={FAQ_JSON_LD} />
           <FaqClient />
         </div>
       </section>

@@ -8,7 +8,7 @@ import { shopifyFetch } from "@/lib/shopify";
 // just correct for a sitemap backed by a catalog that changes independently of deploys.
 export const dynamic = "force-dynamic";
 
-const SITE_URL = "https://racunalo.hr";
+import { SITE_URL } from "@/lib/site-config";
 
 // section -> collection handles that live under it, mirrors lib/product-page.ts's
 // SECTIONS config (kept separate/duplicated on purpose — sitemap.ts can't import

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, IBM_Plex_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import "./storefront.css";
 import { CartProvider } from "@/lib/cart";
@@ -18,8 +18,26 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
+// The two fonts the storefront actually renders in. They used to come from a
+// <link> to fonts.googleapis.com, which means every visitor's IP reaches
+// Google before they have consented to anything. next/font downloads them at
+// build time and serves them from our own origin, so no third party is
+// involved at all — and the privacy policy has one less recipient to declare.
+// latin-ext carries the Croatian č/ć/š/ž/đ.
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space-grotesk",
+  subsets: ["latin", "latin-ext"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
+const plexMono = IBM_Plex_Mono({
+  variable: "--font-plex-mono",
+  subsets: ["latin", "latin-ext"],
+  weight: ["400", "500", "600"],
+  display: "swap",
+});
 
-const SITE_URL = "https://racunalo.hr";
+import { SITE_URL } from "@/lib/site-config";
 const SITE_NAME = "RAČUNALO.hr";
 // note: this is used verbatim (untemplated) for the homepage, since Next's title
 // template only applies to *descendant* routes, not the root page itself — so it
@@ -68,6 +86,7 @@ const ORG_JSON_LD = {
   "@context": "https://schema.org",
   "@type": "Organization",
   name: SITE_NAME,
+  alternateName: "Racunalo.hr",
   url: SITE_URL,
   description: DEFAULT_DESCRIPTION,
   email: "info@racunalo.hr",
@@ -94,16 +113,10 @@ export default async function RootLayout({
   return (
     <html lang="hr">
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
-          rel="stylesheet"
-        />
         <JsonLd data={ORG_JSON_LD} />
         <JsonLd data={WEBSITE_JSON_LD} />
       </head>
-      <body className={`${geistSans.variable} ${geistMono.variable}`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} ${spaceGrotesk.variable} ${plexMono.variable}`}>
         {locked ? (
           // lock screen only — no header, cart or announcement bar
           children

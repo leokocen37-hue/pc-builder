@@ -34,3 +34,31 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Osvježavanje sadržaja iz Shopifyja
+
+Podaci s dućana dohvaćaju se s `revalidate: 300`, pa bi izmjena cijene ili
+opisa bez webhooka bila vidljiva tek nakon isteka tog prozora. Zato postoji
+`POST /api/revalidate`.
+
+**Postavljanje u Shopifyju** — Settings → Notifications → Webhooks, dodajte tri
+webhooka, svaki u JSON formatu, na adresu:
+
+```
+https://www.racunalo.hr/api/revalidate
+```
+
+| Događaj | Čemu služi |
+|---|---|
+| `products/create` | novi proizvod odmah ulazi u liste |
+| `products/update` | promjena cijene, opisa, slike ili zalihe |
+| `products/delete` | uklonjeni proizvod nestaje s lista |
+
+Shopify uz webhook prikaže **signing secret**. Upišite ga u Vercel kao
+`SHOPIFY_WEBHOOK_SECRET`. Ruta provjerava HMAC potpis (`X-Shopify-Hmac-Sha256`)
+i bez ispravnog secreta odgovara `503` — namjerno, jer nepotpisani endpoint koji
+na zahtjev briše cache je besplatan način da se stranica natjera na neprekidno
+ponovno dohvaćanje.
+
+Provjera da radi: izmijenite cijenu u Shopifyju i osvježite stranicu proizvoda.
+U Shopifyju se pod webhookom vidi i zadnji odgovor (200 = prošlo).

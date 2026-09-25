@@ -93,8 +93,17 @@ export default function PrivatnostPage() {
             <p>
               Vaše podatke dijelimo samo s pružateljima usluga nužnim za izvršenje narudžbe i rad stranice: s
               platformom za obradu narudžbi i naplatu, koja ujedno obrađuje i vaše plaćanje (Shopify), s
-              pružateljem usluge hostinga ovih stranica (Vercel) te s dostavnom službom koja
-              isporučuje vašu pošiljku (ime, adresa, telefon i e-pošta radi obavijesti o dostavi).
+              pružateljem usluge hostinga ovih stranica (Vercel), s pružateljem usluge slanja e-pošte kojim
+              vam odgovaramo na upit s kontakt obrasca (Resend) te s dostavnom službom koja isporučuje vašu
+              pošiljku — <strong>DPD Croatia d.o.o.</strong> (ime, adresa, telefon i e-pošta radi obavijesti
+              o dostavi).
+            </p>
+            <p>
+              <strong>Prijenos izvan EU-a.</strong> Poslužitelji na kojima se ova stranica izvršava nalaze se u
+              Europskoj uniji (Frankfurt). Pojedini gore navedeni pružatelji usluga ipak su društva sa sjedištem
+              izvan EU-a te podatke mogu obrađivati i na poslužiteljima izvan EU-a. U tom slučaju prijenos se
+              temelji na standardnim ugovornim klauzulama Europske komisije. Fontove i ostale datoteke stranice
+              poslužujemo s vlastite domene, pa vaš posjet ne dojavljuje ništa pružateljima fontova.
             </p>
             <p>
               Podatke ne prodajemo niti ih dijelimo u svrhe koje nisu navedene. Pojedini pružatelji usluga mogu

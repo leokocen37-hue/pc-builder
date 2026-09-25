@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import NotFoundTitle from "./not-found-title";
 
 export const metadata: Metadata = {
   title: "Stranica nije pronađena",
@@ -9,6 +10,7 @@ export const metadata: Metadata = {
 export default function NotFound() {
   return (
     <div className="rs-root">
+      <NotFoundTitle title="Stranica nije pronađena | RAČUNALO.hr" />
       <section className="rs-404">
         <div className="rs-wrap">
           <div className="rs-404-code">404</div>

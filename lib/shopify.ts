@@ -1,3 +1,4 @@
+import { SHOPIFY_API_VERSION } from "./shopify-version";
 // Plain fetch wrapper — safe to import from both client components and
 // server code (API routes), since it has no client-only dependencies.
 
@@ -26,7 +27,7 @@ export async function shopifyFetch<T>(
     throw new Error("Shopify domain or token is missing.");
   }
 
-  const endpoint = `https://${domain.trim()}/api/2024-10/graphql.json`;
+  const endpoint = `https://${domain.trim()}/api/${SHOPIFY_API_VERSION}/graphql.json`;
 
   try {
     const res = await fetch(endpoint, {

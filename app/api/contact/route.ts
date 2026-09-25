@@ -10,11 +10,33 @@
 
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
+import { clientIp, rateLimit, tooManyRequests } from "@/lib/rate-limit";
+
+// A field no person sees and every naive bot fills in. Kept deliberately
+// boring-looking ("tvrtka") so a scraper has no reason to skip it.
+const HONEYPOT_FIELD = "tvrtka";
+// Three messages in ten minutes is more than any real enquiry needs.
+const MAX_PER_WINDOW = 3;
+const WINDOW_MS = 10 * 60 * 1000;
 
 export async function POST(req: Request) {
   try {
     const data = await req.json();
     const { name, email, phone, budget, message, currentBuild, buildTotal, pageUrl } = data || {};
+
+    // A filled honeypot is a bot. Answer 200 rather than 400: a bot that is
+    // told it failed will try again with the field cleared.
+    if (typeof data?.[HONEYPOT_FIELD] === "string" && data[HONEYPOT_FIELD].trim() !== "") {
+      return NextResponse.json({ ok: true });
+    }
+
+    const limited = rateLimit(`contact:${clientIp(req)}`, MAX_PER_WINDOW, WINDOW_MS);
+    if (!limited.ok) {
+      return tooManyRequests(
+        limited.retryAfter,
+        "Previše poruka u kratkom roku. Pokušajte ponovno za nekoliko minuta."
+      );
+    }
 
     // basic validation
     if (!name || !email || !message) {

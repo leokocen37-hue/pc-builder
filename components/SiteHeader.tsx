@@ -69,6 +69,14 @@ export default function SiteHeader() {
           <div className="rs-nav-right">
             {/* opens the preview drawer; the drawer's own footer link is the
                 way through to the full /kosarica page */}
+            {/* store-wide search: the filter inside a category page only
+                sees that page, so there has to be a way in from anywhere */}
+            <Link href="/pretraga" className="rs-search-btn" aria-label="Pretraži proizvode">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="7" />
+                <path d="m20 20-3.5-3.5" />
+              </svg>
+            </Link>
             <button className="rs-cart-btn" onClick={() => setOpen(true)} aria-label="Košarica">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" />

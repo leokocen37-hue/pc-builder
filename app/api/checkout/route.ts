@@ -1,6 +1,8 @@
 // → replace app/api/checkout/route.ts with this
 import { NextResponse } from "next/server";
 import { shopifyFetch } from "@/lib/shopify";
+import { SUMMARY_SEP } from "@/lib/cart-summary";
+import { clientIp, rateLimit, tooManyRequests } from "@/lib/rate-limit";
 import { adminAccessToken, adminGraphql } from "@/lib/shopify-admin";
 import { ASSEMBLY_FEE, ASSEMBLY_FEE_LABEL, ASSEMBLY_FEE_NOTE } from "@/lib/pricing";
 
@@ -18,7 +20,44 @@ type InTerms = { prihvat?: string; verzija?: string; vrijeme?: string };
 // tell "the buyer who started this order" from "someone guessing ids".
 const CART_TOKEN_RE = /^[a-z0-9]{16,64}$/i;
 
-type VariantPriceNode = { id: string; price: { amount: string } } | null;
+// Creating a draft order costs an Admin call plus a round trip for pricing, so
+// a loop hitting this would burn the API budget and fill the admin with junk.
+// Ten a minute is far more than any real checkout needs.
+const MAX_CHECKOUTS_PER_WINDOW = 10;
+const CHECKOUT_WINDOW_MS = 60 * 1000;
+
+// A Shopify variant GID and nothing else. These go straight into a GraphQL
+// query, so anything that isn't one is refused before it gets there.
+const VARIANT_GID_RE = /^gid:\/\/shopify\/ProductVariant\/\d+$/;
+// One machine's worth of parts, with room to spare — a list of thousands would
+// otherwise be priced one request at a time, happily.
+const MAX_VARIANTS_PER_BUILD = 24;
+const MAX_ITEMS = 20;
+
+/**
+ * Text the browser sends that Shopify then stores on the order.
+ *
+ * The component list is rebuilt server-side from the variant ids, so the only
+ * thing taken from the client is the build's name: trimmed, length-capped and
+ * stripped of anything that could be read as markup by whatever renders the
+ * order later (the admin, a packing slip, an email).
+ */
+function cleanTitle(value: unknown, fallback: string, maxLength = 80): string {
+  if (typeof value !== "string") return fallback;
+  const cleaned = value
+    .replace(/[<>]/g, "")
+    .replace(/[\u0000-\u001f\u007f]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return cleaned.slice(0, maxLength) || fallback;
+}
+
+type VariantPriceNode = {
+  id: string;
+  title: string;
+  price: { amount: string };
+  product?: { title: string } | null;
+} | null;
 
 type DraftOrderLineItem =
   | { title: string; originalUnitPrice: string; quantity: number; customAttributes: { key: string; value: string }[]; requiresShipping: boolean; taxable: boolean }
@@ -32,42 +71,71 @@ const errorMessage = (e: unknown) => (e instanceof Error ? e.message : "Unknown 
 //
 // Components only: the assembly fee rides on its own order line, so the buyer
 // can see what it is instead of finding it folded into one opaque number.
-async function priceCustomBuild(variantIds: string[]): Promise<number> {
+async function priceCustomBuild(variantIds: string[]): Promise<{ total: number; summary: string }> {
   if (!variantIds.length) {
     throw new Error("Konfiguracija nema odabranih komponenti.");
   }
+  if (variantIds.length > MAX_VARIANTS_PER_BUILD) {
+    throw new Error("Konfiguracija ima previše komponenti.");
+  }
+  if (!variantIds.every((id) => typeof id === "string" && VARIANT_GID_RE.test(id))) {
+    throw new Error("Neispravan identifikator komponente.");
+  }
 
-  // must be live — this is the source of truth for what the customer gets charged
+  // Must be live: this is the source of truth both for what the customer is
+  // charged and for what the order says they bought. The titles come from here
+  // too rather than from the request — the browser's copy is a display string,
+  // and an order is not the place to discover the two disagree.
   const data = await shopifyFetch<{ nodes: VariantPriceNode[] }>(
     `query VariantPrices($ids: [ID!]!) {
       nodes(ids: $ids) {
-        ... on ProductVariant { id price { amount } }
+        ... on ProductVariant {
+          id
+          title
+          price { amount }
+          product { title }
+        }
       }
     }`,
     { ids: variantIds },
     { cache: "no-store" }
   );
 
-  const priceById = new Map<string, number>();
+  const byId = new Map<string, { price: number; label: string }>();
   for (const node of data.nodes) {
-    if (node) priceById.set(node.id, Number(node.price.amount));
+    if (!node) continue;
+    const variantSuffix = node.title && node.title !== "Default Title" ? ` (${node.title})` : "";
+    byId.set(node.id, {
+      price: Number(node.price.amount),
+      label: `${node.product?.title ?? "Komponenta"}${variantSuffix}`,
+    });
   }
 
   let total = 0;
+  const labels: string[] = [];
   for (const id of variantIds) {
-    const price = priceById.get(id);
-    if (price === undefined) {
+    const node = byId.get(id);
+    if (node === undefined) {
       throw new Error("Jedna od komponenti u konfiguraciji više nije dostupna.");
     }
-    total += price;
+    total += node.price;
+    labels.push(node.label);
   }
-  return total;
+  return { total, summary: labels.join(SUMMARY_SEP) };
 }
 
 export async function POST(request: Request) {
   try {
+    const limited = rateLimit(`checkout:${clientIp(request)}`, MAX_CHECKOUTS_PER_WINDOW, CHECKOUT_WINDOW_MS);
+    if (!limited.ok) {
+      return tooManyRequests(limited.retryAfter, "Previše pokušaja. Pokušajte ponovno za koji trenutak.");
+    }
+
     const body = await request.json();
 
+    if (Array.isArray(body.items) && body.items.length > MAX_ITEMS) {
+      return NextResponse.json({ error: "Košarica ima previše stavki." }, { status: 400 });
+    }
     if (!Array.isArray(body.items) || body.items.length === 0) {
       return NextResponse.json({ error: "Košarica je prazna" }, { status: 400 });
     }
@@ -90,18 +158,19 @@ export async function POST(request: Request) {
     const lineItems: DraftOrderLineItem[] = [];
     for (const it of body.items as InItem[]) {
       if (it.kind === "custom") {
-        let price: number;
+        let built: { total: number; summary: string };
         try {
-          price = await priceCustomBuild(it.variantIds || []);
+          built = await priceCustomBuild(it.variantIds || []);
         } catch (e) {
           return NextResponse.json({ error: errorMessage(e) || "Neispravna konfiguracija" }, { status: 400 });
         }
-        const quantity = it.quantity || 1;
+        const quantity = Math.min(Math.max(1, Math.floor(Number(it.quantity) || 1)), 10);
         lineItems.push({
-          title: it.title || "Custom PC Konfiguracija",
-          originalUnitPrice: price.toFixed(2),
+          title: cleanTitle(it.title, "Custom PC Konfiguracija"),
+          originalUnitPrice: built.total.toFixed(2),
           quantity,
-          customAttributes: [{ key: "Komponente", value: it.summary || "" }],
+          // rebuilt from the variant ids above, not copied from the request
+          customAttributes: [{ key: "Komponente", value: built.summary }],
           // custom (non-variant) draft order lines inherit none of a real
           // product's defaults, so every flag has to be stated outright.
           //
@@ -129,7 +198,13 @@ export async function POST(request: Request) {
           taxable: true,
         });
       } else {
-        lineItems.push({ variantId: it.variantId, quantity: it.quantity || 1 });
+        if (typeof it.variantId !== "string" || !VARIANT_GID_RE.test(it.variantId)) {
+          return NextResponse.json({ error: "Neispravan identifikator proizvoda." }, { status: 400 });
+        }
+        lineItems.push({
+          variantId: it.variantId,
+          quantity: Math.min(Math.max(1, Math.floor(Number(it.quantity) || 1)), 20),
+        });
       }
     }
 

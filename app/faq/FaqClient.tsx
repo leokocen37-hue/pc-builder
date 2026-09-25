@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { SITE } from "@/lib/site-config";
 
-const FAQ_ITEMS: { q: string; a: React.ReactNode }[] = [
+export const FAQ_ITEMS: { q: string; a: React.ReactNode }[] = [
   {
     q: "Koliko traje sastavljanje računala iz konfiguratora?",
     a: `Izrada i testiranje traju ${SITE.buildDaysMin}–${SITE.buildDaysMax} radnih dana, a dostava još ${SITE.shipDaysMin}–${SITE.shipDaysMax} radna dana. Svako računalo sklapamo tek nakon što zaprimimo narudžbu — i konfiguracije po mjeri i gotove konfiguracije — jer nijedno ne držimo na zalihi. Prije slanja svako prolazi kroz provjeru rada i stres-test.`,
@@ -81,11 +81,17 @@ export default function FaqClient() {
               className="faq-q"
               onClick={() => setOpenIndex(open ? null : i)}
               aria-expanded={open}
+              aria-controls={`faq-a-${i}`}
             >
               {item.q}
               <span className="faq-icon">+</span>
             </button>
-            {open && <div className="faq-a">{item.a}</div>}
+            {/* rendered always, hidden with CSS: an answer that only exists
+                once its panel is open is invisible to a crawler and to
+                find-in-page */}
+            <div className="faq-a" id={`faq-a-${i}`} hidden={!open}>
+              {item.a}
+            </div>
           </div>
         );
       })}

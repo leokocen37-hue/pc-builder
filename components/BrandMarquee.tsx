@@ -3,6 +3,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { shopifyFetch } from "@/lib/shopify";
+import { shopifyImage } from "@/lib/shopify-image";
 
 type Node = { id: string; title: string; featuredImage?: { url: string; altText?: string | null } | null };
 type Resp = { collection: { products: { edges: { node: Node }[] } } | null };
@@ -92,7 +93,12 @@ export default function BrandMarquee() {
           <div className="rs-marquee-group" key={copy} ref={copy === 0 ? groupRef : undefined} aria-hidden={copy > 0}>
             {logos.map((l) => (
               <div className="rs-marquee-item" key={l.id}>
-                <img src={l.featuredImage!.url} alt={l.featuredImage!.altText || l.title} loading="lazy" />
+                <img
+                  src={shopifyImage(l.featuredImage!.url, 160)}
+                  alt={l.featuredImage!.altText || l.title}
+                  loading="lazy"
+                  decoding="async"
+                />
               </div>
             ))}
           </div>
