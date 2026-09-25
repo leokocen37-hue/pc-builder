@@ -55,7 +55,7 @@ const FAQ_ITEMS: { q: string; a: React.ReactNode }[] = [
   },
   {
     q: "Instalirate li operativni sustav?",
-    a: "Svako računalo isporučujemo s instaliranim i testiranim sustavom Windows. Ako odaberete opciju bez operativnog sustava, Windows i dalje instaliramo radi testiranja, ali bez aktivirane licence.",
+    a: "Operativni sustav nije uključen u cijenu, osim ako uz računalo kupite licencu — tada ga instaliramo i aktiviramo prije slanja. Bez kupljene licence računalo stiže bez operativnog sustava. Testiramo ga u svakom slučaju.",
   },
   {
     q: "Što ako se pojavi kvar nakon isporuke?",

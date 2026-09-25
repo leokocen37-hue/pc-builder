@@ -21,6 +21,14 @@ type ProductItem = {
 export type CartItem = CustomItem | ProductItem;
 
 const LS = "rs_cart_v2";
+/** Joins the component list on a custom build, and splits it again in the
+ *  cart. Not a comma: a Croatian price carries one ("200,00 €"), so a
+ *  comma-split list tore every amount in half. */
+export const SUMMARY_SEP = " · ";
+/** Legacy carts in localStorage were joined on ", " — fall back so a basket
+ *  filled before this deploy still reads as a list. */
+export const splitSummary = (summary: string) =>
+  summary.includes(SUMMARY_SEP) ? summary.split(SUMMARY_SEP) : summary.split(",");
 // The draft order the buyer was last sent to pay for. Leaving for Shopify's
 // invoice page is a plain redirect and nothing on the way back says an order
 // went through, so the cart remembers what it is waiting on and asks the
@@ -211,7 +219,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
 }
 
 /* money helpers */
-export const formatEUR = (n: number) => new Intl.NumberFormat("hr-HR", { style: "currency", currency: "EUR" }).format(n || 0);
+// re-exported so the many client components importing it from here are
+// unaffected; the definition lives in lib/pricing.ts, which the server can use
+export { formatEUR } from "@/lib/pricing";
 export function formatMoney(m?: { amount: string; currencyCode: string }) {
   if (!m) return "Na upit";
   const n = Number(m.amount);

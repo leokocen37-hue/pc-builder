@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCart, formatEUR } from "@/lib/cart";
+import { useCart, formatEUR, splitSummary } from "@/lib/cart";
 import CrossSell from "@/components/CrossSell";
 
 export default function CartDrawer() {
@@ -41,7 +41,7 @@ export default function CartDrawer() {
                       <details className="rs-line-specs">
                         <summary>Prikaži komponente</summary>
                         <ul>
-                          {l.summary.split(",").map((part, i) => (
+                          {splitSummary(l.summary).map((part, i) => (
                             <li key={i}>{part.trim()}</li>
                           ))}
                         </ul>
@@ -86,7 +86,7 @@ export default function CartDrawer() {
                 U košaricu →
               </Link>
               <button className="rs-cart-continue" onClick={() => setOpen(false)}>Nastavi kupovinu</button>
-              <div className="rs-cart-note">Sve cijene uključuju PDV · dostava se izračunava na blagajni</div>
+              <div className="rs-cart-note">Sve cijene uključuju PDV · dostava se računa u košarici</div>
             </div>
           </>
         )}

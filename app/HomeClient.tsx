@@ -8,6 +8,7 @@ import Reveal from "@/components/Reveal";
 import BrandMarquee from "@/components/BrandMarquee";
 import { specLine, type ProductNode } from "@/lib/collections";
 import { SITE } from "@/lib/site-config";
+import { FREE_SHIPPING_FROM, SHIPPING_FEE } from "@/lib/pricing";
 
 const CONFIGURATOR_PATH = "/konfigurator";
 
@@ -46,7 +47,7 @@ export default function HomeClient({
           <div className="rs-stats">
             {/* the build time is already spelled out in full in the value strip
                 just below, so the hero carries something it doesn't repeat */}
-            <div><b>Besplatna</b><span>dostava iznad {formatEUR(SITE.freeShippingFrom)}</span></div>
+            <div><b>Besplatna</b><span>dostava iznad {formatEUR(FREE_SHIPPING_FROM)}</span></div>
             <div><b>24 mj.</b><span>jamstvo</span></div>
             <div><b>✓</b><span>testirano prije slanja</span></div>
           </div>
@@ -142,8 +143,8 @@ export default function HomeClient({
               ["Testirano prije slanja", "Svako računalo prolazi stress-test i kontrolu prije isporuke."],
               ["24 mjeseca jamstva", "Puno jamstvo i podrška — uvijek smo tu nakon kupnje."],
               [
-                `Besplatna dostava iznad ${formatEUR(SITE.freeShippingFrom)}`,
-                "Dostavu preuzimamo mi. Za manje narudžbe trošak se izračunava na blagajni.",
+                `Besplatna dostava iznad ${formatEUR(FREE_SHIPPING_FROM)}`,
+                `Dostavu unutar Hrvatske obavlja DPD. Za manje narudžbe iznosi ${formatEUR(SHIPPING_FEE)}.`,
               ],
               ["Savjet stručnjaka", "Niste sigurni? Javite nam namjenu i proračun, složimo idealan build."],
             ].map(([t, d]) => (

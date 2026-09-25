@@ -2,16 +2,18 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useCart, formatEUR } from "@/lib/cart";
+import { useCart, formatEUR, splitSummary } from "@/lib/cart";
 import CrossSell from "@/components/CrossSell";
 import TermsAcceptance from "@/components/TermsAcceptance";
-import { SITE } from "@/lib/site-config";
+import { FREE_SHIPPING_FROM, shippingFor } from "@/lib/pricing";
 
 export default function CartPageClient() {
   const { items, count, subtotal, updateQty, removeItem, checkout, checkoutBusy, termsAccepted } = useCart();
   // Shown only once someone actually tries to continue without ticking — a
   // warning next to an untouched checkbox would just be noise.
   const [showTermsHint, setShowTermsHint] = useState(false);
+  // the same rule the courier bills by, so the cart doesn't have to hedge
+  const shipping = shippingFor(subtotal);
 
   if (items.length === 0) {
     return (
@@ -44,7 +46,7 @@ export default function CartPageClient() {
                 <details className="rs-line-specs kos-line-specs">
                   <summary>Prikaži komponente</summary>
                   <ul>
-                    {l.summary.split(",").map((part, i) => (
+                    {splitSummary(l.summary).map((part, i) => (
                       <li key={i}>{part.trim()}</li>
                     ))}
                   </ul>
@@ -81,12 +83,17 @@ export default function CartPageClient() {
         </div>
         <div className="kos-row kos-row-muted">
           <span>Dostava</span>
-          <span>{subtotal >= SITE.freeShippingFrom ? "Besplatno" : "Izračunava se na blagajni"}</span>
+          <span>{shipping === 0 ? "Besplatno" : formatEUR(shipping)}</span>
         </div>
+        {shipping > 0 && (
+          <div className="kos-row kos-row-hint">
+            Besplatna dostava za narudžbe od {formatEUR(FREE_SHIPPING_FROM)}.
+          </div>
+        )}
 
         <div className="kos-total">
           <span>Ukupno <small>(s PDV-om)</small></span>
-          <b>{formatEUR(subtotal)}</b>
+          <b>{formatEUR(subtotal + shipping)}</b>
         </div>
 
         <TermsAcceptance showHint={showTermsHint} />
@@ -107,7 +114,7 @@ export default function CartPageClient() {
           {checkoutBusy ? "Otvaram blagajnu…" : "Na blagajnu →"}
         </button>
 
-        <div className="rs-cart-note">Sve cijene uključuju PDV · dostava se izračunava na blagajni</div>
+        <div className="rs-cart-note">Sve cijene uključuju PDV</div>
 
         <Link href="/racunala" className="kos-continue">← Nastavi kupovinu</Link>
       </aside>

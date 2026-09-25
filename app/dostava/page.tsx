@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SITE } from "@/lib/site-config";
+import { formatEUR, FREE_SHIPPING_FROM, SHIPPING_FEE } from "@/lib/pricing";
 
 const TITLE = "Dostava i plaćanje";
 const DESCRIPTION = "Kako pakiramo i dostavljamo računala te koje načine plaćanja nudimo na RAČUNALO.hr.";
@@ -53,7 +54,12 @@ export default function DostavaPage() {
               konkretan datum, javite nam se prije kupnje. Ako se rok produži — primjerice zbog nedostupnosti
               komponente — javljamo vam se e-poštom s novim rokom.
             </p>
-            <p>Osobno preuzimanje i točni troškovi dostave za vaše područje izračunavaju se i prikazuju na blagajni prilikom naplate.</p>
+            <p>
+              <strong>Cijena dostave.</strong> Dostavu unutar Hrvatske obavlja DPD. Za narudžbe od{" "}
+              <strong>{formatEUR(FREE_SHIPPING_FROM)}</strong> dostava je <strong>besplatna</strong>; ispod toga
+              iznosi <strong>{formatEUR(SHIPPING_FEE)}</strong>. Iznos vidite u košarici prije nego što krenete na
+              blagajnu.
+            </p>
 
             <h2>Načini plaćanja</h2>
             <p>

@@ -1,11 +1,11 @@
 // Single place for the numbers buyers ask about most (starting price, free
 // shipping threshold, lead times) — edit here, not scattered across pages.
 export const SITE = {
-  // There is deliberately no "starting price" constant here: it was a
-  // placeholder nobody ever confirmed, and it drifted to more than 100 EUR
-  // below the cheapest thing in the shop. The homepage derives the figure
-  // from the collections instead, so it can't go stale again.
-  freeShippingFrom: 500, // EUR — placeholder, awaiting confirmation
+  // Money lives in lib/pricing.ts, not here — see FREE_SHIPPING_FROM and
+  // SHIPPING_FEE. There is deliberately no "starting price" constant either:
+  // it was a placeholder nobody ever confirmed, and it drifted to more than
+  // 100 EUR below the cheapest thing in the shop. The homepage derives that
+  // figure from the collections instead, so it can't go stale again.
 
   // Every PC is assembled after the order is placed — the "gotova" ones too,
   // which is why they carry no right of withdrawal (see /raskid). That wait is

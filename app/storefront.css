@@ -480,6 +480,8 @@
 .kos-total{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin:16px 0 0;padding-top:16px;border-top:1px solid var(--line);font-size:15px}
 .kos-total small{color:var(--faint);font-size:11.5px;font-weight:400}
 .kos-total b{font-size:23px}
+/* the line under the shipping row that names the free-shipping threshold */
+.kos-row-hint{display:block;font-size:11.5px;line-height:1.45;color:var(--faint);margin:-4px 0 4px}
 .kos-terms-wrap{margin:18px 0 14px}
 .kos-terms{display:flex;align-items:flex-start;gap:9px;font-size:12px;line-height:1.6;color:var(--muted)}
 .kos-terms input{margin-top:2px;width:15px;height:15px;flex-shrink:0;accent-color:var(--accent);cursor:pointer}

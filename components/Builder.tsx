@@ -1,7 +1,7 @@
 "use client";
 import { CSSProperties, useEffect, useState, useMemo, Suspense, useRef } from "react";
-import { formatEUR, useCart } from "@/lib/cart";
-import { ASSEMBLY_FEE } from "@/lib/pricing";
+import { formatEUR, SUMMARY_SEP, useCart } from "@/lib/cart";
+import { ASSEMBLY_FEE, ASSEMBLY_FEE_NOTE, ASSEMBLY_FEE_SHORT } from "@/lib/pricing";
 import { addWorkingDays } from "@/lib/site-config";
 import { SITE } from "@/lib/site-config";
 import { BUILD_PART_KEYS, BUILD_PART_LABEL, encodeBuild, decodeBuild, type BuildPartKey, type EncodedBuild } from "@/lib/build-share";
@@ -140,7 +140,7 @@ const STEP_HELP: Record<string, string> = {
   psu: "Napajanje opskrbljuje cijelo računalo strujom. Veći broj W (vati) znači više snage u rezervi; konfigurator već pazi da bude dovoljno za vaše komponente. Kvalitetnije napajanje (80+ Gold i više) radi tiše i pouzdanije." + REC_LINE,
   cooler: "Hladnjak drži procesor na sigurnoj temperaturi da radi mirno i tiho. Sve ponuđene opcije pristaju na vaš procesor i kućište. Zračni hladnjaci su jednostavni i pouzdani, a vodeni (AIO) tiši uz jače procesore." + REC_LINE,
   case: "Kućište je najviše stvar osobnog ukusa — sva su kvalitetna i vaše odabrane komponente stanu u svako od njih. Razlikuju se po izgledu, protoku zraka i staklenim stranicama. Odaberite ono koje vam se najviše sviđa." + REC_LINE,
-  os: "Svako računalo isporučujemo sa instaliranim i temeljito testiranim sustavom Windows. Windows 11 Home/Pro dolaze s aktivnom licencom. Ako odaberete „Bez operativnog sustava\u201d, i dalje instaliramo Windows kako bismo računalo provjerili i testirali, ali bez aktivirane licence — aktivirate ga vlastitim ključem. Računalo nikada ne šaljemo neispravno ili neprovjereno.",
+  os: "Operativni sustav nije uključen u cijenu računala. Odaberete li ovdje Windows 11 Home ili Pro, licencu kupujete zajedno s računalom, a sustav instaliramo i aktiviramo prije slanja. Odaberete li „Bez operativnog sustava”, računalo stiže bez njega — instalirate ga sami. Računalo u oba slučaja prije slanja provjeravamo i testiramo; neispravno ili neprovjereno ne šaljemo nikada.",
 };
 
 // --- FONTS ---
@@ -1077,7 +1077,10 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
       return sum + Number(p?.selectedVariant?.price?.amount || p?.variants?.edges[0]?.node.price.amount || 0);
     }, 0);
 
-    return isReviewStep ? compPrice + ASSEMBLY_FEE : compPrice;
+    // The fee is charged on every configured build, so it is in the number
+    // from the first step. It used to appear only at the review step, which
+    // meant the total jumped by 200 EUR at the end with nothing to explain it.
+    return compPrice + ASSEMBLY_FEE;
   };
 
   // Rough delivery window from today, for the mobile sticky bar. The bar is
@@ -1154,13 +1157,15 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
           p.selectedVariant && p.selectedVariant.title !== "Default Title" ? ` (${p.selectedVariant.title})` : "";
         return `${p.title}${varTitle}`;
       })
-      .join(", ");
+      .join(SUMMARY_SEP);
     const variantIds = chosenParts.map((p) => p.selectedVariant?.id || p.variants.edges[0].node.id);
 
     addCustomBuild({
       title: "Custom PC Konfiguracija",
       price: currentTotal(),
-      summary,
+      // the fee is a line of its own on the order; in the cart it rides in the
+      // component list, so the basket explains the price the same way
+      summary: `${summary}${SUMMARY_SEP}${ASSEMBLY_FEE_SHORT} (${formatEUR(ASSEMBLY_FEE)})`,
       variantIds,
     });
   };
@@ -1451,7 +1456,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                 </div>
                 {currentStep === "os" && (
                   <button onClick={handleSkip} style={{ ...navBtnStyle, color: COLORS.textMuted }}>
-                    Preskoči ⏭
+                    Bez operativnog sustava — 0,00 €
                   </button>
                 )}
               </div>
@@ -1707,10 +1712,11 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                         color: COLORS.textMuted,
                       }}
                     >
-                      <strong style={{ color: COLORS.textMain }}>Napomena:</strong> svako računalo isporučujemo s
-                      instaliranim i testiranim sustavom Windows. „Bez operativnog sustava&#8221; znači da Windows
-                      instaliramo radi provjere i testiranja, ali <strong style={{ color: COLORS.textMain }}>bez aktivirane
-                      licence</strong> — aktivirate ga vlastitim ključem. Računalo nikada ne šaljemo neprovjereno.
+                      <strong style={{ color: COLORS.textMain }}>Napomena:</strong> operativni sustav nije uključen
+                      u cijenu računala. Odaberete li licencu ovdje, sustav{" "}
+                      <strong style={{ color: COLORS.textMain }}>instaliramo i aktiviramo</strong> prije slanja.
+                      Odaberete li „Bez operativnog sustava&#8221;, računalo stiže bez njega. Testiramo ga u oba
+                      slučaja — neprovjereno ne šaljemo nikada.
                     </div>
                   )}
 
@@ -1980,8 +1986,10 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                                 toggleCompare(p.id);
                                 return;
                               }
-                              if (selected) handleSelection(currentStep, p);
-                              else setActiveIndex(idx);
+                              // one click = chosen and priced. It used to take
+                              // two: the first only moved the focus, while the
+                              // card already read as selected.
+                              handleSelection(currentStep, p);
                             }}
                             onMouseEnter={() => setHoverCard(idx)}
                             onMouseLeave={() => setHoverCard((c) => (c === idx ? null : c))}
@@ -2039,6 +2047,11 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                                   ✓ ZA USPOREDBU
                                 </span>
                               ) : (
+                                // The focused card used to be badged
+                                // "✓ ODABRANO" — but focus is not a choice,
+                                // and on the OS step that put a 149,99 EUR
+                                // option on screen as already taken. It now
+                                // says what it actually is: a prompt.
                                 !compareMode &&
                                 selected && (
                                   <span
@@ -2051,12 +2064,12 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                                       fontWeight: 600,
                                       letterSpacing: ".5px",
                                       color: "#fff",
-                                      background: COLORS.accent,
+                                      background: "rgba(10,8,16,.78)",
                                       padding: "3px 7px",
                                       borderRadius: "6px",
                                     }}
                                   >
-                                    ✓ ODABRANO
+                                    KLIKNI ZA ODABIR
                                   </span>
                                 )
                               )}
@@ -2179,7 +2192,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                     <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: "16px" }}>
                       <div style={{ minWidth: 0 }}>
                         <div style={{ fontFamily: MONO, fontSize: "10px", color: COLORS.textMuted, letterSpacing: "2px" }}>
-                          ODABRANO
+                          PRIKAZANO
                         </div>
                         <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "4px", position: "relative" }}>
                           <span style={{ fontWeight: 600, fontSize: "17px" }}>{activeProduct?.title}</span>
@@ -2296,7 +2309,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                     </button>
                     {currentStep === "os" && (
                       <button onClick={handleSkip} style={navBtnStyle}>
-                        Preskoči ⏭
+                        Bez operativnog sustava — 0,00 €
                       </button>
                     )}
                   </div>
@@ -2549,6 +2562,28 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
               <div style={{ height: "1px", background: COLORS.border, margin: "22px 0" }} />
 
               <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                <div style={{ display: "flex", alignItems: "flex-start", gap: "13px" }} title={ASSEMBLY_FEE_NOTE}>
+                  <div
+                    style={{
+                      width: "38px", height: "38px", borderRadius: "10px", flexShrink: 0,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      background: "rgba(216,31,216,.10)", border: `1px solid ${COLORS.border}`,
+                      fontSize: "15px",
+                    }}
+                  >
+                    🔧
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontFamily: MONO, fontSize: "9px", color: COLORS.textFaint, letterSpacing: ".5px" }}>
+                      UVIJEK UKLJUČENO
+                    </div>
+                    <div style={{ fontSize: "12.5px", fontWeight: 600, marginTop: "2px" }}>{ASSEMBLY_FEE_SHORT}</div>
+                    <div style={{ fontSize: "10.5px", color: COLORS.textFaint, marginTop: "3px", lineHeight: 1.45 }}>
+                      {ASSEMBLY_FEE_NOTE}
+                    </div>
+                  </div>
+                  <div style={{ fontFamily: MONO, fontSize: "12px", color: COLORS.textMuted }}>{formatEUR(ASSEMBLY_FEE)}</div>
+                </div>
                 {selectedPartsList.map((part) => (
                   <MiniSidebarRow key={part.key} label={part.label} keyName={part.key} item={part.item} />
                 ))}

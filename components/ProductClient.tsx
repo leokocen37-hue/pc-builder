@@ -3,7 +3,8 @@
 import { useMemo, useState } from "react";
 import { useCart, formatMoney, formatEUR } from "@/lib/cart";
 import { isBuiltToOrder, type Product } from "@/lib/product-page";
-import { LEAD_TIME_PC, LEAD_TIME_STOCK, SITE } from "@/lib/site-config";
+import { LEAD_TIME_PC, LEAD_TIME_STOCK } from "@/lib/site-config";
+import { FREE_SHIPPING_FROM } from "@/lib/pricing";
 
 // callers are expected to have already handled the missing/mismatched-category
 // case via notFound() (see the segment-scoped not-found.tsx next to each page.tsx)
@@ -70,9 +71,9 @@ export default function ProductClient({ product }: { product: Product }) {
             <div className="rs-pdp-price">{formatMoney(selected?.price)}</div>
             <div className="rs-pdp-delivery">
               <span>
-                {selected && Number(selected.price.amount) >= SITE.freeShippingFrom
+                {selected && Number(selected.price.amount) >= FREE_SHIPPING_FROM
                   ? "✓ Besplatna dostava"
-                  : `Besplatna dostava iznad ${formatEUR(SITE.freeShippingFrom)}`}
+                  : `Besplatna dostava iznad ${formatEUR(FREE_SHIPPING_FROM)}`}
               </span>
               <span className="rs-pdp-delivery-sep">·</span>
               {/* built to order, so the wait is stated in full and up front —

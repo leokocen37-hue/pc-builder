@@ -40,10 +40,10 @@ export default function JamstvoPage() {
 
             <h2>Operativni sustav</h2>
             <p>
-              Svako računalo isporučujemo s instaliranim i testiranim sustavom Windows. Ako pri narudžbi
-              odaberete opciju „bez operativnog sustava&#8221;, Windows i dalje instaliramo radi provjere i testiranja
-              rada računala, ali bez aktivirane licence — u tom slučaju licencu aktivirate vlastitim ključem.
-              Računalo nikad ne šaljemo neispravno ili neprovjereno, neovisno o odabranoj opciji.
+              Operativni sustav nije uključen u cijenu računala, osim ako uz njega kupite licencu. Ako ste je
+              kupili, sustav instaliramo i aktiviramo prije slanja. Ako niste, računalo stiže bez operativnog
+              sustava. U oba slučaja računalo prije slanja provjeravamo i testiramo — neispravno ili
+              neprovjereno ne šaljemo nikada.
             </p>
 
             <h2>Što jamstvo ne pokriva</h2>

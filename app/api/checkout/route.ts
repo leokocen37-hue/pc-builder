@@ -2,7 +2,7 @@
 import { NextResponse } from "next/server";
 import { shopifyFetch } from "@/lib/shopify";
 import { adminAccessToken, adminGraphql } from "@/lib/shopify-admin";
-import { ASSEMBLY_FEE } from "@/lib/pricing";
+import { ASSEMBLY_FEE, ASSEMBLY_FEE_LABEL, ASSEMBLY_FEE_NOTE } from "@/lib/pricing";
 
 type InItem =
   | { kind: "custom"; title?: string; summary?: string; quantity?: number; variantIds?: string[] }
@@ -26,9 +26,12 @@ type DraftOrderLineItem =
 
 const errorMessage = (e: unknown) => (e instanceof Error ? e.message : "Unknown error");
 
-// Re-derive the price of a custom build from real, current Shopify variant prices
-// + the fixed assembly fee — NEVER from client input. Without this, a POST with a
-// hand-picked price could buy a full build for whatever the caller chose to send.
+// Re-derive the price of a custom build from real, current Shopify variant
+// prices — NEVER from client input. Without this, a POST with a hand-picked
+// price could buy a full build for whatever the caller chose to send.
+//
+// Components only: the assembly fee rides on its own order line, so the buyer
+// can see what it is instead of finding it folded into one opaque number.
 async function priceCustomBuild(variantIds: string[]): Promise<number> {
   if (!variantIds.length) {
     throw new Error("Konfiguracija nema odabranih komponenti.");
@@ -50,7 +53,7 @@ async function priceCustomBuild(variantIds: string[]): Promise<number> {
     if (node) priceById.set(node.id, Number(node.price.amount));
   }
 
-  let total = ASSEMBLY_FEE;
+  let total = 0;
   for (const id of variantIds) {
     const price = priceById.get(id);
     if (price === undefined) {
@@ -93,10 +96,11 @@ export async function POST(request: Request) {
         } catch (e) {
           return NextResponse.json({ error: errorMessage(e) || "Neispravna konfiguracija" }, { status: 400 });
         }
+        const quantity = it.quantity || 1;
         lineItems.push({
           title: it.title || "Custom PC Konfiguracija",
           originalUnitPrice: price.toFixed(2),
-          quantity: it.quantity || 1,
+          quantity,
           customAttributes: [{ key: "Komponente", value: it.summary || "" }],
           // custom (non-variant) draft order lines inherit none of a real
           // product's defaults, so every flag has to be stated outright.
@@ -110,6 +114,18 @@ export async function POST(request: Request) {
           // is a single custom line: the whole order comes out at 0,00 EUR tax
           // however the store's tax settings are configured.
           requiresShipping: true,
+          taxable: true,
+        });
+        // One fee per build, on its own line and at the same quantity — an
+        // order for two machines is two assemblies. Non-shippable: it is
+        // labour on the machine already being shipped, and a second shippable
+        // line would offer to send it separately.
+        lineItems.push({
+          title: ASSEMBLY_FEE_LABEL,
+          originalUnitPrice: ASSEMBLY_FEE.toFixed(2),
+          quantity,
+          customAttributes: [{ key: "Uključuje", value: ASSEMBLY_FEE_NOTE }],
+          requiresShipping: false,
           taxable: true,
         });
       } else {
