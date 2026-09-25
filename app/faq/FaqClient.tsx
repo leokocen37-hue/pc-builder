@@ -40,16 +40,6 @@ export const FAQ_ITEMS: { q: string; a: React.ReactNode }[] = [
     ),
   },
   {
-    q: "Mogu li vratiti računalo ako se predomislim?",
-    a: (
-      <>
-        Ovisi o vrsti kupnje — za gotove konfiguracije vrijedi opće pravo na jednostrani raskid u zakonskom roku,
-        dok za računala sastavljena po vašoj specifikaciji u konfiguratoru postoji zakonska iznimka. Sve detalje
-        pročitajte na stranici <Link href="/raskid">Pravo na jednostrani raskid</Link>.
-      </>
-    ),
-  },
-  {
     q: "Dostavljate li diljem Hrvatske?",
     a: "Da, dostavljamo na cijelom području Hrvatske. Rok isporuke ovisi o odabranoj konfiguraciji — više na stranici Dostava i plaćanje.",
   },

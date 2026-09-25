@@ -29,10 +29,6 @@ export const FAQ_SCHEMA_ITEMS: { q: string; a: string }[] = [
     a: "Svako računalo dolazi s 24 mjeseca jamstva. Detalje o tome što jamstvo pokriva pronađite na stranici Jamstvo.",
   },
   {
-    q: "Mogu li vratiti računalo ako se predomislim?",
-    a: "Ovisi o vrsti kupnje — za gotove konfiguracije vrijedi opće pravo na jednostrani raskid u zakonskom roku, dok za računala sastavljena po vašoj specifikaciji u konfiguratoru postoji zakonska iznimka. Sve detalje pročitajte na stranici Pravo na jednostrani raskid.",
-  },
-  {
     q: "Dostavljate li diljem Hrvatske?",
     a: `Da, dostavljamo na cijelom području Hrvatske. Za narudžbe od ${formatEUR(FREE_SHIPPING_FROM)} dostava je besplatna, ispod toga iznosi ${formatEUR(SHIPPING_FEE)}.`,
   },
