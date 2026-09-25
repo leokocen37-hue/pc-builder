@@ -1,8 +1,8 @@
-// The separator that joins a custom build's component list and splits it again
-// in the cart. It lives in its own module because both a client component
-// (lib/cart.tsx) and a server route (app/api/checkout) need it, and lib/cart.tsx
-// is "use client" — importing from there on the server fails at render time.
+// Joins a build's component list into the single-line "Komponente" attribute
+// Shopify stores on the order. Nothing splits it again — the cart keeps its own
+// list — so this only has to read cleanly to whoever opens the order.
 //
-// Not a comma: a Croatian price carries one ("200,00 €"), so a comma-split list
-// tore every amount in half.
-export const SUMMARY_SEP = " · ";
+// Neither a comma nor " · ": a Croatian price carries a comma ("200,00 €") and
+// variant titles carry the middle dot ("Crni · 3200 MHz CL22"), so both made
+// the line ambiguous about where one component ended and the next began.
+export const SUMMARY_SEP = " | ";

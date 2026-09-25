@@ -13,7 +13,20 @@ import { TERMS_VERSION } from "@/lib/terms";
 // the cart, for the whole order, and travels to Shopify as order-level cart
 // attributes (see checkout() below and /api/checkout).
 type CustomItem = {
-  kind: "custom"; lineId: string; title: string; price: number; summary: string; quantity: number; variantIds: string[];
+  kind: "custom";
+  lineId: string;
+  title: string;
+  price: number;
+  /** One entry per component, already labelled. A list, not a joined string:
+   *  every separator we tried turned up inside the data itself — first the
+   *  comma (Croatian prices carry one), then " · " (variant titles carry one,
+   *  e.g. "Crni · 3200 MHz CL22"). There is nothing to split, so nothing to
+   *  split wrongly. */
+  components: string[];
+  /** Carts saved before components existed. Read through componentsOf(). */
+  summary?: string;
+  quantity: number;
+  variantIds: string[];
 };
 type ProductItem = {
   kind: "product"; lineId: string; variantId: string; title: string; price: number; image?: string; variantTitle?: string; quantity: number;
@@ -21,14 +34,18 @@ type ProductItem = {
 export type CartItem = CustomItem | ProductItem;
 
 const LS = "rs_cart_v2";
-/** Joins the component list on a custom build, and splits it again in the
- *  cart. Not a comma: a Croatian price carries one ("200,00 €"), so a
- *  comma-split list tore every amount in half. */
-export const SUMMARY_SEP = " · ";
-/** Legacy carts in localStorage were joined on ", " — fall back so a basket
- *  filled before this deploy still reads as a list. */
-export const splitSummary = (summary: string) =>
-  summary.includes(SUMMARY_SEP) ? summary.split(SUMMARY_SEP) : summary.split(",");
+/** The component rows of a custom build.
+ *
+ *  Carts saved before the list existed hold a joined string instead, so those
+ *  are split on whichever separator that version used. New carts never take
+ *  this path — that is the point of storing a list. */
+export function componentsOf(item: { components?: string[]; summary?: string }): string[] {
+  if (item.components?.length) return item.components;
+  const legacy = item.summary ?? "";
+  if (!legacy) return [];
+  if (legacy.includes(" · ")) return legacy.split(" · ");
+  return legacy.split(",").map((part) => part.trim());
+}
 // The draft order the buyer was last sent to pay for. Leaving for Shopify's
 // invoice page is a plain redirect and nothing on the way back says an order
 // went through, so the cart remembers what it is waiting on and asks the
@@ -58,7 +75,7 @@ type Ctx = {
   subtotal: number;
   checkoutBusy: boolean;
   setOpen: (o: boolean) => void;
-  addCustomBuild: (b: { title?: string; price: number; summary: string; variantIds: string[] }) => void;
+  addCustomBuild: (b: { title?: string; price: number; components: string[]; variantIds: string[] }) => void;
   addProduct: (p: { variantId: string; title: string; price: number; image?: string; variantTitle?: string; quantity?: number }) => void;
   updateQty: (lineId: string, quantity: number) => void;
   removeItem: (lineId: string) => void;
@@ -141,8 +158,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     return () => ctrl.abort();
   }, [hydrated]);
 
-  const addCustomBuild = useCallback((b: { title?: string; price: number; summary: string; variantIds: string[] }) => {
-    setItems((p) => [...p, { kind: "custom", lineId: uid(), title: b.title || "Custom PC Konfiguracija", price: b.price, summary: b.summary, quantity: 1, variantIds: b.variantIds }]);
+  const addCustomBuild = useCallback((b: { title?: string; price: number; components: string[]; variantIds: string[] }) => {
+    setItems((p) => [...p, { kind: "custom", lineId: uid(), title: b.title || "Custom PC Konfiguracija", price: b.price, components: b.components, quantity: 1, variantIds: b.variantIds }]);
     openAfterAdd();
   }, [openAfterAdd]);
 
@@ -180,7 +197,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         kosaricaToken: token,
         items: items.map((i) =>
           i.kind === "custom"
-            ? { kind: "custom", title: i.title, summary: i.summary, quantity: i.quantity, variantIds: i.variantIds }
+            ? { kind: "custom", title: i.title, quantity: i.quantity, variantIds: i.variantIds }
             : { kind: "product", variantId: i.variantId, quantity: i.quantity }
         ),
         uvjeti: {

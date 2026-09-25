@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCart, formatEUR, splitSummary } from "@/lib/cart";
+import { useCart, formatEUR, componentsOf } from "@/lib/cart";
 import CrossSell from "@/components/CrossSell";
 
 export default function CartDrawer() {
@@ -41,7 +41,7 @@ export default function CartDrawer() {
                       <details className="rs-line-specs">
                         <summary>Prikaži komponente</summary>
                         <ul>
-                          {splitSummary(l.summary).map((part, i) => (
+                          {componentsOf(l).map((part, i) => (
                             <li key={i}>{part.trim()}</li>
                           ))}
                         </ul>

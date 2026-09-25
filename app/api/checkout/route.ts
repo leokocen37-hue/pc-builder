@@ -7,7 +7,9 @@ import { adminAccessToken, adminGraphql } from "@/lib/shopify-admin";
 import { ASSEMBLY_FEE, ASSEMBLY_FEE_LABEL, ASSEMBLY_FEE_NOTE } from "@/lib/pricing";
 
 type InItem =
-  | { kind: "custom"; title?: string; summary?: string; quantity?: number; variantIds?: string[] }
+  // no summary: the component list on the order is rebuilt here from the
+  // variant ids, so the browser has nothing to say about it
+  | { kind: "custom"; title?: string; quantity?: number; variantIds?: string[] }
   | { kind: "product"; variantId: string; quantity?: number };
 
 // What the cart reports about the acceptance the buyer gave before checkout

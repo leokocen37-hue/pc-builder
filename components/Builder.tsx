@@ -1,6 +1,6 @@
 "use client";
 import { CSSProperties, useEffect, useState, useMemo, Suspense, useRef } from "react";
-import { formatEUR, SUMMARY_SEP, useCart } from "@/lib/cart";
+import { formatEUR, useCart } from "@/lib/cart";
 import { KOMPATIBILNI_MODEL, plural } from "@/lib/plural";
 import { ASSEMBLY_FEE, ASSEMBLY_FEE_NOTE, ASSEMBLY_FEE_SHORT } from "@/lib/pricing";
 import { addWorkingDays } from "@/lib/site-config";
@@ -1168,21 +1168,19 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
     const chosenParts = [cpu, mb, ram, gpu, gpu2, ssd, ssd2, hdd, hdd2, pcCase, psu, cooler, os].filter(
       (p): p is ProductNode => !!p
     );
-    const summary = chosenParts
-      .map((p) => {
-        const varTitle =
-          p.selectedVariant && p.selectedVariant.title !== "Default Title" ? ` (${p.selectedVariant.title})` : "";
-        return `${p.title}${varTitle}`;
-      })
-      .join(SUMMARY_SEP);
+    const components = chosenParts.map((p) => {
+      const varTitle =
+        p.selectedVariant && p.selectedVariant.title !== "Default Title" ? ` (${p.selectedVariant.title})` : "";
+      return `${p.title}${varTitle}`;
+    });
     const variantIds = chosenParts.map((p) => p.selectedVariant?.id || p.variants.edges[0].node.id);
 
     addCustomBuild({
       title: "Custom PC Konfiguracija",
       price: currentTotal(),
-      // the fee is a line of its own on the order; in the cart it rides in the
-      // component list, so the basket explains the price the same way
-      summary: `${summary}${SUMMARY_SEP}${ASSEMBLY_FEE_SHORT} (${formatEUR(ASSEMBLY_FEE)})`,
+      // the fee is a line of its own on the order; in the cart it is the last
+      // row of the component list, so the basket explains the price the same way
+      components: [...components, `${ASSEMBLY_FEE_SHORT} (${formatEUR(ASSEMBLY_FEE)})`],
       variantIds,
     });
   };

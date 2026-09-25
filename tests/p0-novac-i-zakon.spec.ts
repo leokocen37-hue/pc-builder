@@ -66,8 +66,19 @@ test("the configured build carries the fee into the cart, as its own line", asyn
   await page.locator(".kos-line details summary").first().click();
   const rows = await page.locator(".kos-items li").allInnerTexts();
   expect(rows.at(-1)).toBe(`Sklapanje i testiranje (${eur(ASSEMBLY_FEE)})`);
-  // a comma-split list used to tear "200,00 €" in half
-  for (const row of rows) expect(row.trim()).not.toMatch(/^\d{2}\s?€\)?$/);
+  // Every row has to be a whole component. The list used to be one joined
+  // string the cart split again, and every separator tried turned up inside
+  // the data itself: the comma in "200,00 €", then " · " in variant titles
+  // like "Crni · 3200 MHz CL22". Balanced brackets catch a torn row whatever
+  // the separator happened to be.
+  for (const row of rows) {
+    const open = (row.match(/\(/g) || []).length;
+    const close = (row.match(/\)/g) || []).length;
+    expect(open, `torn component row: ${row}`).toBe(close);
+  }
+  // and a name carrying a middle dot comes through in one piece
+  const withDot = rows.find((r) => r.includes(" · "));
+  if (withDot) expect(withDot).toMatch(/\)$/);
 });
 
 // --- 2. nothing costly may look chosen before it is chosen -----------------

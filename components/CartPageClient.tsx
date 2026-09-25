@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useCart, formatEUR, splitSummary } from "@/lib/cart";
+import { useCart, formatEUR, componentsOf } from "@/lib/cart";
 import CrossSell from "@/components/CrossSell";
 import TermsAcceptance from "@/components/TermsAcceptance";
 import { FREE_SHIPPING_FROM, shippingFor } from "@/lib/pricing";
@@ -47,7 +47,7 @@ export default function CartPageClient() {
                 <details className="rs-line-specs kos-line-specs">
                   <summary>Prikaži komponente</summary>
                   <ul>
-                    {splitSummary(l.summary).map((part, i) => (
+                    {componentsOf(l).map((part, i) => (
                       <li key={i}>{part.trim()}</li>
                     ))}
                   </ul>
