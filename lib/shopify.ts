@@ -7,8 +7,30 @@ import { SHOPIFY_API_VERSION } from "./shopify-version";
 // API on every single request. Pass `{ cache: "no-store" }` only where the data
 // must be live (checkout price re-validation, stock/cart checks) — everything
 // else should keep the default.
-type CachePolicy = { cache: "no-store" } | { next: { revalidate: number } };
+type CachePolicy = { cache: "no-store" } | { next: { revalidate: number; tags?: string[] } };
 const DEFAULT_CACHE: CachePolicy = { next: { revalidate: 300 } };
+
+/**
+ * Cache tag on every cached Shopify read.
+ *
+ * revalidatePath() drops the rendered page, but re-rendering it runs this
+ * fetch again — and the fetch's own cache entry is still inside its window, so
+ * the page comes back with exactly the data it had. That is why a product
+ * edited in Shopify updated on its own page but left /racunala and the
+ * homepage quoting the old price until a redeploy.
+ *
+ * The tag is attached here rather than at the call sites so a new query can't
+ * be written without one.
+ */
+export const PRODUCTS_TAG = "products";
+
+/** Adds PRODUCTS_TAG to any cached policy, keeping whatever the caller asked
+ *  for. An uncached read has nothing to invalidate, so it is left alone. */
+function withProductsTag(policy: CachePolicy): CachePolicy {
+  if ("cache" in policy) return policy;
+  const tags = policy.next.tags ?? [];
+  return { next: { ...policy.next, tags: tags.includes(PRODUCTS_TAG) ? tags : [...tags, PRODUCTS_TAG] } };
+}
 
 export async function shopifyFetch<T>(
   query: string,
@@ -39,7 +61,7 @@ export async function shopifyFetch<T>(
         "Accept-Language": "en-US, en;q=0.9",
       },
       body: JSON.stringify({ query, variables }),
-      ...cachePolicy,
+      ...withProductsTag(cachePolicy),
     });
 
     const responseBody = await res.json();

@@ -60,5 +60,14 @@ i bez ispravnog secreta odgovara `503` — namjerno, jer nepotpisani endpoint ko
 na zahtjev briše cache je besplatan način da se stranica natjera na neprekidno
 ponovno dohvaćanje.
 
-Provjera da radi: izmijenite cijenu u Shopifyju i osvježite stranicu proizvoda.
+Ruta poziva `revalidateTag("products")` **i** `revalidatePath` za sve stranice
+koje prikazuju proizvode. Tag je bitniji dio: stranice s popisima su dinamičke i
+ionako se iscrtavaju na svaki zahtjev, pa nije zastarjela stranica nego Shopify
+odgovor ispod nje, koji ima vlastiti cache od 300 s. Svaki dohvat iz
+`lib/shopify.ts` zato nosi oznaku `products` — dodaje se u samom wrapperu, da se
+nova upita ne može napisati bez nje.
+
+Provjera da radi: izmijenite cijenu u Shopifyju i osvježite **stranicu popisa**
+(/racunala), ne samo stranicu proizvoda — upravo je popis bio taj koji je
+zadržavao staru cijenu.
 U Shopifyju se pod webhookom vidi i zadnji odgovor (200 = prošlo).
