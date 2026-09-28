@@ -142,10 +142,12 @@ export default function RaskidPage() {
             <h2>6. Obrazac za jednostrani raskid ugovora</h2>
             <p>
               Ukoliko se pravo na raskid primjenjuje na vašu narudžbu, izjavu o raskidu možete poslati koristeći{" "}
-              <Link href="/uvjeti/obrazac-za-jednostrani-raskid">obrazac za jednostrani raskid ugovora</Link>{" "}
-              (dostupan i kao <a href="/obrazac-za-jednostrani-raskid.pdf" download>PDF za preuzimanje</a>).
-              Popunjen obrazac pošaljite na <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a> ili putem
-              stranice <Link href="/kontakt">Kontakt</Link>.
+              <Link href="/uvjeti/obrazac-za-jednostrani-raskid">obrazac za jednostrani raskid ugovora</Link>,
+              koji ispunjavate i šaljete izravno na stranici — ništa ne treba ispisivati, potpisivati ni
+              skenirati. Čim ga pošaljete, potvrdu o primitku s danom i satom prijave šaljemo vam e-poštom.
+              Obrazac nije obavezan: obavijest možete poslati i vlastitim riječima na{" "}
+              <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a> ili putem stranice{" "}
+              <Link href="/kontakt">Kontakt</Link>.
             </p>
 
             <h2>7. Poveznice</h2>

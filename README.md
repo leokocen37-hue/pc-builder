@@ -71,3 +71,33 @@ Provjera da radi: izmijenite cijenu u Shopifyju i osvježite **stranicu popisa**
 (/racunala), ne samo stranicu proizvoda — upravo je popis bio taj koji je
 zadržavao staru cijenu.
 U Shopifyju se pod webhookom vidi i zadnji odgovor (200 = prošlo).
+
+## Čišćenje skica narudžbi
+
+Svaki odlazak na blagajnu stvara Shopify *draft order*. One koje nitko ne plati
+ostaju otvorene zauvijek, pa ih se u administraciji nakupi. `GET
+/api/draft-orders/cleanup` briše **otvorene** skice starije od 7 dana.
+
+Plaćene se ne diraju: plaćanjem skica postaje `completed` i nosi narudžbu, pa
+nikad nije kandidat. To ujedno čuva provjeru „je li narudžba plaćena" kojom
+košarica sama sebe prazni.
+
+**Postavljanje**
+
+1. U Vercel dodajte varijablu `CRON_SECRET` (bilo koji dug nasumičan niz —
+   `openssl rand -hex 32`). Ovaj ključ izmišljate vi, za razliku od
+   `SHOPIFY_WEBHOOK_SECRET` koji mora biti Shopifyjev.
+2. Redeploy. Vercel sam poziva rutu prema rasporedu iz `vercel.json`
+   (svaki dan u 03:00 UTC) i pritom šalje `Authorization: Bearer $CRON_SECRET`.
+
+Bez tog ključa ruta odgovara `401` i ne briše ništa — namjerno, jer endpoint
+koji briše narudžbe ne smije biti otvoren.
+
+**Ručna provjera prije prvog brisanja**
+
+```
+curl -H "Authorization: Bearer $CRON_SECRET" \
+  "https://www.racunalo.hr/api/draft-orders/cleanup?dry=1"
+```
+
+`?dry=1` samo ispiše koje bi skice obrisao, bez diranja ičega.
