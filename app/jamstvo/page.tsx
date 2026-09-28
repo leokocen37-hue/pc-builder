@@ -34,7 +34,7 @@ export default function JamstvoPage() {
             <h2>Zašto smo sigurni u ono što šaljemo</h2>
             <p>
               Prije nego što računalo napusti našu radionicu, prolazi kroz sklapanje, provjeru kompatibilnosti
-              svih komponenti i stres-test pod opterećenjem. Cilj nam je uhvatiti svaki potencijalni problem prije
+              svih komponenti i stres-test. Cilj nam je uhvatiti svaki potencijalni problem prije
               slanja — ne nakon što stigne do vas.
             </p>
 
@@ -43,7 +43,7 @@ export default function JamstvoPage() {
               Operativni sustav nije uključen u cijenu računala, osim ako uz njega kupite licencu. Ako ste je
               kupili, sustav instaliramo i aktiviramo prije slanja. Ako niste, računalo stiže bez operativnog
               sustava — Windows i upravljačke programe tada instalirate sami, na vlastitu odgovornost. To
-              ne preporučujemo. U oba slučaja računalo prije slanja sastavimo i testiramo pod opterećenjem;
+              ne preporučujemo. U oba slučaja računalo prije slanja sastavimo i testiramo;
               neispravno ili neprovjereno ne šaljemo nikada. Zato kvar koji se pojavi nakon vaše instalacije
               sustava nije kvar hardvera, pa jamstvo ne pokriva podršku oko instalacije.
             </p>

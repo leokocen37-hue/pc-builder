@@ -18,7 +18,7 @@ export const ASSEMBLY_FEE_LABEL = "Sklapanje, instalacija i testiranje";
  *  list — the full label would be split across two rows there. */
 export const ASSEMBLY_FEE_SHORT = "Sklapanje i testiranje";
 export const ASSEMBLY_FEE_NOTE =
-  "Sklapanje, ugradnja komponenti, upravljanje kabelima, BIOS i ažuriranja, testiranje pod opterećenjem i pakiranje.";
+  "Sklapanje, ugradnja komponenti, upravljanje kabelima, BIOS i ažuriranja, testiranje i pakiranje.";
 
 /** Orders from this up ship free; below it the flat fee applies. */
 export const FREE_SHIPPING_FROM = 500;

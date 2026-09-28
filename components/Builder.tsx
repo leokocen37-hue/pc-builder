@@ -141,7 +141,7 @@ const STEP_HELP: Record<string, string> = {
   psu: "Napajanje opskrbljuje cijelo računalo strujom. Veći broj W (vati) znači više snage u rezervi; konfigurator već pazi da bude dovoljno za vaše komponente. Kvalitetnije napajanje (80+ Gold i više) radi tiše i pouzdanije." + REC_LINE,
   cooler: "Hladnjak drži procesor na sigurnoj temperaturi da radi mirno i tiho. Sve ponuđene opcije pristaju na vaš procesor i kućište. Zračni hladnjaci su jednostavni i pouzdani, a vodeni (AIO) tiši uz jače procesore." + REC_LINE,
   case: "Kućište je najviše stvar osobnog ukusa — sva su kvalitetna i vaše odabrane komponente stanu u svako od njih. Razlikuju se po izgledu, protoku zraka i staklenim stranicama. Odaberite ono koje vam se najviše sviđa." + REC_LINE,
-  os: "Operativni sustav nije uključen u cijenu računala. Odaberete li ovdje Windows 11 Home ili Pro, licencu kupujete zajedno s računalom, a sustav instaliramo i aktiviramo prije slanja, sa svim upravljačkim programima. Odaberete li „Bez operativnog sustava”, računalo stiže bez operativnog sustava — Windows i upravljačke programe instalirate sami, na vlastitu odgovornost, i to ne preporučujemo. Računalo u svakom slučaju prije slanja sastavimo i testiramo pod opterećenjem, pa znamo da hardver radi ispravno.",
+  os: "Operativni sustav nije uključen u cijenu računala. Odaberete li ovdje Windows 11 Home ili Pro, licencu kupujete zajedno s računalom, a sustav instaliramo i aktiviramo prije slanja, sa svim upravljačkim programima. Odaberete li „Bez operativnog sustava”, računalo stiže bez operativnog sustava — Windows i upravljačke programe instalirate sami, na vlastitu odgovornost, i to ne preporučujemo. Računalo u svakom slučaju prije slanja sastavimo i testiramo, pa znamo da hardver radi ispravno.",
 };
 
 // --- FONTS ---
@@ -1738,8 +1738,8 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                       Odaberete li <strong style={{ color: COLORS.textMain }}>„Bez operativnog sustava&#8221;</strong>,
                       računalo stiže <strong style={{ color: COLORS.textMain }}>bez operativnog sustava</strong> —
                       Windows i upravljačke programe instalirate sami, na vlastitu odgovornost. To ne
-                      preporučujemo. Računalo u svakom slučaju prije slanja sastavimo i testiramo pod
-                      opterećenjem, pa znamo da hardver radi ispravno; ako nakon vaše instalacije nešto ne
+                      preporučujemo. Računalo u svakom slučaju prije slanja sastavimo i testiramo,
+                      pa znamo da hardver radi ispravno; ako nakon vaše instalacije nešto ne
                       radi, uzrok nije u računalu.
                     </div>
                   )}

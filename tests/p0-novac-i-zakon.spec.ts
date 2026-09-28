@@ -41,7 +41,7 @@ test("the assembly fee is in the total, and named, from the first step", async (
   expect(sidebar).toContain("Sklapanje i testiranje");
   expect(sidebar).toContain(eur(ASSEMBLY_FEE));
   // and it says what it buys
-  expect(sidebar).toMatch(/testiranje pod opterećenjem/i);
+  expect(sidebar).toMatch(/testiranje i pakiranje/i);
 });
 
 test("the configured build carries the fee into the cart, as its own line", async ({ page }) => {
@@ -178,5 +178,5 @@ test("the no-OS choice says the machine ships without one", async ({ page }) => 
   expect(note).toMatch(/na vlastitu odgovornost/);
   expect(note).toMatch(/ne preporučujemo/i);
   // and the reason the hardware is not in question
-  expect(note).toMatch(/testiramo pod opterećenjem/);
+  expect(note).toMatch(/sastavimo i testiramo/);
 });
