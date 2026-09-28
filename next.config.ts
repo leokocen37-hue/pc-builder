@@ -23,8 +23,10 @@ const nextConfig: NextConfig = {
   // no reason to advertise the framework version to anyone scanning
   poweredByHeader: false,
   images: {
-    // product photography all comes from the Shopify CDN; without this
-    // next/image refuses to optimise it
+    // Nothing uses next/image today — product photography is plain <img> with
+    // the Shopify CDN asked for a size (lib/shopify-image.ts). This is here so
+    // that the day someone does reach for next/image, it works instead of
+    // failing on an unconfigured host.
     remotePatterns: [{ protocol: "https", hostname: "cdn.shopify.com" }],
   },
   async headers() {
