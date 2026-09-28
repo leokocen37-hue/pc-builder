@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { Geist, Geist_Mono, IBM_Plex_Mono, Space_Grotesk } from "next/font/google";
+import { IBM_Plex_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import "./storefront.css";
 import { CartProvider } from "@/lib/cart";
@@ -10,14 +10,10 @@ import Footer from "@/components/Footer";
 import CookieConsent from "@/components/CookieConsent";
 import JsonLd from "@/components/JsonLd";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+// Geist and Geist Mono used to be loaded here. They came with the Next
+// starter and were referenced by exactly one file — app/page.module.css,
+// which nothing imported. Two font families were downloaded on every page
+// view and drawn by nothing.
 // The two fonts the storefront actually renders in. They used to come from a
 // <link> to fonts.googleapis.com, which means every visitor's IP reaches
 // Google before they have consented to anything. next/font downloads them at
@@ -116,7 +112,7 @@ export default async function RootLayout({
         <JsonLd data={ORG_JSON_LD} />
         <JsonLd data={WEBSITE_JSON_LD} />
       </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} ${spaceGrotesk.variable} ${plexMono.variable}`}>
+      <body className={`${spaceGrotesk.variable} ${plexMono.variable}`}>
         {locked ? (
           // lock screen only — no header, cart or announcement bar
           children

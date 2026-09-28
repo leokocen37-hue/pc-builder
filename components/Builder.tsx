@@ -286,24 +286,25 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
   } else {
     powerPercentage = Math.min((estimatedDraw / 1000) * 100, 100);
   }
-  // Headroom matters as a proportion, not as a number of watts: 80 W spare is
-  // comfortable on a 400 W supply and nearly nothing on a 1000 W one. Below
-  // 10% the build is refused; below 20% it is allowed with a warning, since a
-  // supply run near its ceiling is loud, hot and short-lived.
-  const PSU_HEADROOM_MIN = 0.2;
-  const PSU_HEADROOM_BLOCK = 0.1;
-  const headroomRatio = psuCapacity > 0 ? (psuCapacity - estimatedDraw) / psuCapacity : 0;
-  const headroomPct = Math.max(0, Math.round(headroomRatio * 100));
-  const psuOver = psuCapacity > 0 && headroomRatio < PSU_HEADROOM_BLOCK;
-  const psuTight = psuCapacity > 0 && !psuOver && headroomRatio < PSU_HEADROOM_MIN;
+  // Stated as load, not as headroom. A supply is sized by how hard it is
+  // driven — that is the number on every efficiency curve and in every
+  // manufacturer's recommendation — and "43% rezerve" makes a reader do the
+  // subtraction before it means anything. The thresholds are the same either
+  // way: over 80% load is tight, over 90% is refused.
+  const PSU_LOAD_WARN = 0.8;
+  const PSU_LOAD_BLOCK = 0.9;
+  const loadRatio = psuCapacity > 0 ? estimatedDraw / psuCapacity : 0;
+  const loadPct = Math.min(100, Math.round(loadRatio * 100));
+  const psuOver = psuCapacity > 0 && loadRatio > PSU_LOAD_BLOCK;
+  const psuTight = psuCapacity > 0 && !psuOver && loadRatio > PSU_LOAD_WARN;
   const powerNote =
     psuCapacity > 0
       ? psuOver
-        ? `Napajanje je preslabo — ${headroomPct}% rezerve, potrebno je najmanje ${Math.round(PSU_HEADROOM_BLOCK * 100)}%`
+        ? `Napajanje je preslabo — ${estimatedDraw} W od ${psuCapacity} W (${loadPct}%). Odaberite jače.`
         : psuTight
-        ? `Tijesno — samo ${headroomPct}% rezerve. Preporučujemo najmanje ${Math.round(PSU_HEADROOM_MIN * 100)}%.`
-        : `Dovoljno snage · ${headroomPct}% rezerve (${psuCapacity - estimatedDraw} W)`
-      : "Odaberite napajanje za izračun rezerve";
+        ? `Tijesno — ${estimatedDraw} W od ${psuCapacity} W (${loadPct}%). Preporučujemo napajanje s više zalihe.`
+        : `Dovoljno snage · ${estimatedDraw} W od ${psuCapacity} W (${loadPct}%)`
+      : "Odaberite napajanje za izračun potrošnje";
 
   const getQualityScore = (quality?: string) => {
     const q = (quality || "").toLowerCase();
@@ -1266,7 +1267,11 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
     // safety margin so the confirm-bar/summary panel's own bottom edge
     // never sits flush against it
     padding: isMobile ? "22px 14px 120px" : "26px 22px 64px",
-    overflowX: "hidden",
+    // "clip" rather than "hidden": hidden makes this a scroll container, and a
+    // scroll container is what position:sticky then sticks to — so the step
+    // rail stuck to a box that scrolls with the page, which is no stickiness
+    // at all. clip stops the horizontal spill without creating one.
+    overflowX: "clip",
     fontFamily: FONT,
     // D (round 2) follow-up: compare mode swaps the ambient glow from
     // magenta to green — a whole-page cue (not just the per-card rings) so

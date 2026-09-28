@@ -64,6 +64,16 @@ export default function ProductClient({ product }: { product: Product }) {
                 ))}
               </div>
             )}
+            {/* Every machine is assembled to order, so the photograph is of a
+                build like it, not of the one that ships. Said beside the
+                picture rather than buried in the description, because that is
+                where someone forms the expectation. */}
+            {isBuiltToOrder(product) && (
+              <p className="rs-gallery-note">
+                Slike su ilustrativne. Računalo sastavljamo po narudžbi, pa se izgled kućišta, rasvjete i
+                rasporeda komponenti može razlikovati od prikazanog. Specifikacija je ona navedena uz proizvod.
+              </p>
+            )}
           </div>
 
           {/* info */}

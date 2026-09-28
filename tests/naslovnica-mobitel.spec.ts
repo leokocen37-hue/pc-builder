@@ -110,11 +110,12 @@ test("the phone gets the portrait photo and the tablet the landscape one", async
     await page.goto("/");
     await dismissCookies(page);
     shots[width] = await page.evaluate(
-      () => (getComputedStyle(document.querySelector(".rs-hero")!).backgroundImage.match(/hero-[a-z-]+\.jpg/) || ["?"])[0]
+      () =>
+        (getComputedStyle(document.querySelector(".rs-hero")!).backgroundImage.match(/hero-[a-z-]+\.\w+/) || ["?"])[0]
     );
     await page.close();
   }
-  expect(shots[390]).toBe("hero-banner-mobile.jpg");
-  expect(shots[600]).toBe("hero-banner-mobile.jpg");
-  expect(shots[768]).toBe("hero-banner.jpg");
+  expect(shots[390]).toBe("hero-banner-mobile.webp");
+  expect(shots[600]).toBe("hero-banner-mobile.webp");
+  expect(shots[768]).toBe("hero-banner.webp");
 });

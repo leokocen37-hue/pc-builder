@@ -86,7 +86,7 @@
 .rs-btn.ghost:hover{border-color:var(--accent);background:rgba(216,31,216,.15)}
 
 /* hero */
-.rs-hero{position:relative;min-height:92vh;min-height:92svh;display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden;background:#0a0816 center/cover no-repeat;background-image:url('/hero-banner.jpg')}
+.rs-hero{position:relative;min-height:92vh;min-height:92svh;display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden;background:#0a0816 center/cover no-repeat;background-image:url('/hero-banner.webp')}
 .rs-hero::before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(56% 62% at 50% 50%,rgba(7,8,12,.8),rgba(7,8,12,.4) 55%,transparent 80%),linear-gradient(180deg,rgba(7,8,12,.5) 0%,transparent 20%,transparent 64%,rgba(7,8,12,.95) 100%)}
 .rs-hero-inner{position:relative;z-index:2;max-width:780px;padding:0 24px}
 .rs-hero-inner .rs-kicker{display:inline-block}
@@ -136,7 +136,7 @@
    landscape banner to work as it does on desktop, and the 125% zoom below
    would blow the cases up to a few magnified corners at that width. */
 @media(max-width:600px){
-  .rs-hero{background-image:url('/hero-banner-mobile.jpg');background-size:125% auto;background-position:center bottom}
+  .rs-hero{background-image:url('/hero-banner-mobile.webp');background-size:125% auto;background-position:center bottom}
   .rs-hero::before{background:radial-gradient(64% 46% at 50% 44%,rgba(7,8,12,.88),rgba(7,8,12,.55) 62%,rgba(7,8,12,.15) 100%),linear-gradient(180deg,rgba(7,8,12,.62) 0%,rgba(7,8,12,.3) 18%,rgba(7,8,12,.2) 50%,rgba(7,8,12,.55) 78%,#07080c 100%)}
 }
 /* Side by side the two buttons want ~400px of the 342px a phone actually
@@ -415,6 +415,8 @@
 .rs-thumb{width:72px;height:72px;border-radius:10px;overflow:hidden;border:1px solid var(--line);cursor:pointer;opacity:.6;transition:.2s}
 .rs-thumb.active,.rs-thumb:hover{opacity:1;border-color:var(--accent)}
 .rs-thumb img{width:100%;height:100%;object-fit:cover}
+/* the "photos are illustrative" line under the gallery */
+.rs-gallery-note{margin-top:14px;font-size:11.5px;line-height:1.55;color:var(--faint)}
 .rs-pdp-info h1{font-size:clamp(26px,4vw,38px);font-weight:700;letter-spacing:-.5px;line-height:1.1;margin-bottom:14px}
 .rs-pdp-price{font-size:28px;font-weight:700;margin-bottom:10px}
 .rs-pdp-delivery{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);margin-bottom:22px}
@@ -768,7 +770,12 @@
 
 /* configurator step rail — hide the native scrollbar (still scrollable),
    fade the edges so it still reads as scrollable without one */
-.rs-rail-wrap{position:relative;scroll-margin-top:88px}
+/* The rail used to scroll away under the sticky header — scroll-margin-top
+   only helps when something is scrolled into view programmatically, not when
+   a person scrolls past it. It sticks under the header instead, which also
+   keeps the step you are on in sight for the whole walk. Below the header's
+   z-index, above the cards. */
+.rs-rail-wrap{position:sticky;top:68px;z-index:40;background:var(--bg);padding-top:12px;margin-top:-12px}
 .rs-rail-wrap::before,.rs-rail-wrap::after{content:"";position:absolute;top:0;bottom:10px;width:28px;z-index:2;pointer-events:none;transition:opacity .15s}
 .rs-rail-wrap::before{left:0;background:linear-gradient(90deg,#07080c,transparent)}
 .rs-rail-wrap::after{right:0;background:linear-gradient(270deg,#07080c,transparent)}

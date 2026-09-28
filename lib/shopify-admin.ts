@@ -12,6 +12,8 @@ const shopifyDomain = () =>
 
 /** A short-lived Admin token, or null when the credentials are missing/rejected. */
 export async function adminAccessToken(): Promise<string | null> {
+  if (!process.env.SHOPIFY_CLIENT_ID || !process.env.SHOPIFY_CLIENT_SECRET) return null;
+
   const res = await fetch(`https://${shopifyDomain()}/admin/oauth/access_token`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -21,8 +23,18 @@ export async function adminAccessToken(): Promise<string | null> {
       grant_type: "client_credentials",
     }),
   });
-  const data = await res.json();
-  return data.access_token || null;
+
+  // Shopify answers a bad or missing credential with an HTML page, not JSON.
+  // Parsing that threw, and the parser's own message ("Unexpected token '<'")
+  // came back to the buyer as a 500 — no use to them, and a small window into
+  // how the server is wired. A null here is turned into a clean 401 by the
+  // caller instead.
+  try {
+    const data = await res.json();
+    return data.access_token || null;
+  } catch {
+    return null;
+  }
 }
 
 /** One Admin GraphQL call. Never cached: everything it is used for is live state. */
