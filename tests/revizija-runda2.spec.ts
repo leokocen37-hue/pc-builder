@@ -185,3 +185,49 @@ test("no font is downloaded that nothing draws with", async ({ page }) => {
   expect(fonts.filter((f) => /geist/i.test(f))).toEqual([]);
   expect(fonts.length).toBeGreaterThan(0);
 });
+
+// --- CSP, enforced ---------------------------------------------------------
+
+// It ran report-only with 'unsafe-inline' in script-src: nothing was blocked,
+// nothing read the reports, and the policy would have permitted an injected
+// script even if enforced. Enforcing it takes a nonce, and a nonce has to be
+// minted per response — which is why the policy moved to proxy.ts.
+test("every response carries an enforced CSP with a fresh nonce", async ({ request }) => {
+  const first = (await request.get("/")).headers()["content-security-policy"];
+  const second = (await request.get("/racunala")).headers()["content-security-policy"];
+
+  expect(first).toBeTruthy();
+  const nonceOf = (csp: string) => csp.match(/'nonce-([a-f0-9]+)'/)?.[1];
+  expect(nonceOf(first)).toBeTruthy();
+  // a nonce reused across responses is no better than 'unsafe-inline'
+  expect(nonceOf(first)).not.toBe(nonceOf(second));
+});
+
+test("no page trips the policy it now enforces", async ({ page }) => {
+  const violations: string[] = [];
+  page.on("console", (m) => {
+    if (/Content Security Policy|Refused to/i.test(m.text())) violations.push(m.text());
+  });
+  page.on("pageerror", (e) => violations.push(`pageerror: ${e.message}`));
+
+  for (const path of ["/", "/racunala", "/kosarica", "/konfigurator", "/pretraga?q=starter"]) {
+    await page.goto(path, { waitUntil: "networkidle" });
+    await dismissCookies(page);
+    await page.waitForTimeout(600);
+  }
+  expect(violations).toEqual([]);
+});
+
+// The configurator appended its own <link> to fonts.googleapis.com at
+// runtime — left over from before the fonts were self-hosted. It sent every
+// visitor's IP to Google from the one page the privacy policy says it doesn't.
+test("the configurator loads no font from a third party", async ({ page }) => {
+  const external: string[] = [];
+  page.on("request", (r) => {
+    if (/fonts\.(googleapis|gstatic)\.com/.test(r.url())) external.push(r.url());
+  });
+  await page.goto("/konfigurator", { waitUntil: "networkidle" });
+  await dismissCookies(page);
+  await page.waitForTimeout(1000);
+  expect(external).toEqual([]);
+});

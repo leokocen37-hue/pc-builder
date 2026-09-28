@@ -145,8 +145,11 @@ const STEP_HELP: Record<string, string> = {
 };
 
 // --- FONTS ---
-const FONT = "'Space Grotesk', sans-serif";
-const MONO = "'IBM Plex Mono', monospace";
+// Resolve through the CSS variables next/font sets on <body>, so the
+// configurator draws with the self-hosted copies the rest of the site uses
+// instead of waiting on a family name that may never have loaded.
+const FONT = "var(--font-space-grotesk), 'Space Grotesk', sans-serif";
+const MONO = "var(--font-plex-mono), 'IBM Plex Mono', monospace";
 
 // --- COLOR PALETTE (from the new design) ---
 const COLORS = {
@@ -328,17 +331,13 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
   };
   const bottleneckWarning = checkBottleneck();
 
-  // --- FONT INJECTION ---
-  useEffect(() => {
-    const id = "pcf-fonts";
-    if (document.getElementById(id)) return;
-    const l = document.createElement("link");
-    l.id = id;
-    l.rel = "stylesheet";
-    l.href =
-      "https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap";
-    document.head.appendChild(l);
-  }, []);
+  // The configurator used to append its own <link> to fonts.googleapis.com
+  // here, at runtime. It outlived the move to next/font: both families are
+  // self-hosted and already loaded by the root layout, so this fetched them a
+  // second time from a third party — sending every visitor's IP to Google from
+  // the one page the privacy policy promises it doesn't, and tripping the CSP
+  // once that was enforced. The FONT/MONO constants below resolve through the
+  // same CSS variables as the rest of the site.
 
   // --- DATA FETCHING & EFFECTS ---
   useEffect(() => {

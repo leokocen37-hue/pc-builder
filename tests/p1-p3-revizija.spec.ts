@@ -16,7 +16,16 @@ test("every response carries the security headers", async ({ request }) => {
   expect(h["referrer-policy"]).toBe("strict-origin-when-cross-origin");
   expect(h["permissions-policy"]).toContain("camera=()");
   expect(h["strict-transport-security"]).toContain("includeSubDomains");
-  expect(h["content-security-policy-report-only"]).toContain("frame-ancestors 'none'");
+  // enforced, not report-only, and carrying a per-request nonce — without one
+  // script-src needs 'unsafe-inline', which would allow the very thing a CSP
+  // is for
+  const csp = h["content-security-policy"];
+  expect(h["content-security-policy-report-only"]).toBeUndefined();
+  expect(csp).toContain("frame-ancestors 'none'");
+  expect(csp).toMatch(/script-src[^;]*'nonce-[a-f0-9]{16,}'/);
+  expect(csp).toContain("'strict-dynamic'");
+  expect(csp).toContain("object-src 'none'");
+  expect(csp).toContain("base-uri 'self'");
   // the framework version is nobody's business
   expect(h["x-powered-by"]).toBeUndefined();
 });

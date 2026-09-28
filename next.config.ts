@@ -15,26 +15,8 @@ const SECURITY_HEADERS = [
     value: "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()",
   },
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
-  // Report-only to begin with: the storefront inlines a lot of styles and the
-  // Shopify/Vercel origins still have to be confirmed against real traffic.
-  // Promote to Content-Security-Policy once the reports come back clean.
-  {
-    key: "Content-Security-Policy-Report-Only",
-    value: [
-      "default-src 'self'",
-      // Next injects inline bootstrap scripts; 'unsafe-inline' is what makes
-      // this report-only rather than enforced for now
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-      "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob: https://cdn.shopify.com",
-      "font-src 'self' data:",
-      "connect-src 'self' https://*.myshopify.com",
-      "frame-ancestors 'none'",
-      "form-action 'self' https://*.myshopify.com",
-      "base-uri 'self'",
-      "object-src 'none'",
-    ].join("; "),
-  },
+  // Content-Security-Policy is set per request in proxy.ts, not here: it
+  // carries a nonce, and a nonce has to be minted per response.
 ];
 
 const nextConfig: NextConfig = {
