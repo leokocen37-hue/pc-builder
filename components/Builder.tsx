@@ -141,7 +141,7 @@ const STEP_HELP: Record<string, string> = {
   psu: "Napajanje opskrbljuje cijelo računalo strujom. Veći broj W (vati) znači više snage u rezervi; konfigurator već pazi da bude dovoljno za vaše komponente. Kvalitetnije napajanje (80+ Gold i više) radi tiše i pouzdanije." + REC_LINE,
   cooler: "Hladnjak drži procesor na sigurnoj temperaturi da radi mirno i tiho. Sve ponuđene opcije pristaju na vaš procesor i kućište. Zračni hladnjaci su jednostavni i pouzdani, a vodeni (AIO) tiši uz jače procesore." + REC_LINE,
   case: "Kućište je najviše stvar osobnog ukusa — sva su kvalitetna i vaše odabrane komponente stanu u svako od njih. Razlikuju se po izgledu, protoku zraka i staklenim stranicama. Odaberite ono koje vam se najviše sviđa." + REC_LINE,
-  os: "Operativni sustav nije uključen u cijenu računala. Odaberete li ovdje Windows 11 Home ili Pro, licencu kupujete zajedno s računalom, a sustav instaliramo i aktiviramo prije slanja. Odaberete li „Bez operativnog sustava”, računalo stiže bez njega — instalirate ga sami. Računalo u oba slučaja prije slanja provjeravamo i testiramo; neispravno ili neprovjereno ne šaljemo nikada.",
+  os: "Operativni sustav nije uključen u cijenu računala. Odaberete li ovdje Windows 11 Home ili Pro, licencu kupujete zajedno s računalom, a sustav instaliramo i aktiviramo prije slanja, sa svim upravljačkim programima. Odaberete li „Bez operativnog sustava”, računalo stiže bez operativnog sustava — Windows i upravljačke programe instalirate sami, na vlastitu odgovornost, i to ne preporučujemo. Računalo u svakom slučaju prije slanja sastavimo i testiramo pod opterećenjem, pa znamo da hardver radi ispravno.",
 };
 
 // --- FONTS ---
@@ -1730,11 +1730,17 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                         color: COLORS.textMuted,
                       }}
                     >
-                      <strong style={{ color: COLORS.textMain }}>Napomena:</strong> operativni sustav nije uključen
-                      u cijenu računala. Odaberete li licencu ovdje, sustav{" "}
-                      <strong style={{ color: COLORS.textMain }}>instaliramo i aktiviramo</strong> prije slanja.
-                      Odaberete li „Bez operativnog sustava&#8221;, računalo stiže bez njega. Testiramo ga u oba
-                      slučaja — neprovjereno ne šaljemo nikada.
+                      <strong style={{ color: COLORS.textMain }}>Napomena:</strong> odaberete li licencu ovdje,
+                      Windows{" "}
+                      <strong style={{ color: COLORS.textMain }}>instaliramo i aktiviramo</strong> prije slanja, sa
+                      svim upravljačkim programima.
+                      <br />
+                      Odaberete li <strong style={{ color: COLORS.textMain }}>„Bez operativnog sustava&#8221;</strong>,
+                      računalo stiže <strong style={{ color: COLORS.textMain }}>bez operativnog sustava</strong> —
+                      Windows i upravljačke programe instalirate sami, na vlastitu odgovornost. To ne
+                      preporučujemo. Računalo u svakom slučaju prije slanja sastavimo i testiramo pod
+                      opterećenjem, pa znamo da hardver radi ispravno; ako nakon vaše instalacije nešto ne
+                      radi, uzrok nije u računalu.
                     </div>
                   )}
 
@@ -2580,7 +2586,28 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
               <div style={{ height: "1px", background: COLORS.border, margin: "22px 0" }} />
 
               <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-                <div style={{ display: "flex", alignItems: "flex-start", gap: "13px" }} title={ASSEMBLY_FEE_NOTE}>
+                {selectedPartsList.map((part) => (
+                  <MiniSidebarRow key={part.key} label={part.label} keyName={part.key} item={part.item} />
+                ))}
+                {selectedPartsList.length === 0 && (
+                  <div style={{ fontSize: "13px", color: COLORS.textFaint }}>
+                    Još nema odabranih komponenti.
+                  </div>
+                )}
+                {/* Last row, under the parts: it is not a component, it is what
+                    we do to them. It stays visible on every step even so —
+                    the total has carried it since the first one, and a total
+                    with nothing to explain it is how this started. */}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: "13px",
+                    paddingTop: "14px",
+                    borderTop: `1px solid ${COLORS.border}`,
+                  }}
+                  title={ASSEMBLY_FEE_NOTE}
+                >
                   <div
                     style={{
                       width: "38px", height: "38px", borderRadius: "10px", flexShrink: 0,
@@ -2602,14 +2629,6 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                   </div>
                   <div style={{ fontFamily: MONO, fontSize: "12px", color: COLORS.textMuted }}>{formatEUR(ASSEMBLY_FEE)}</div>
                 </div>
-                {selectedPartsList.map((part) => (
-                  <MiniSidebarRow key={part.key} label={part.label} keyName={part.key} item={part.item} />
-                ))}
-                {selectedPartsList.length === 0 && (
-                  <div style={{ fontSize: "13px", color: COLORS.textFaint }}>
-                    Još nema odabranih komponenti.
-                  </div>
-                )}
               </div>
 
               {bottleneckWarning && <div style={warningStyle}>{bottleneckWarning}</div>}

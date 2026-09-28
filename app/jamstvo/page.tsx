@@ -42,8 +42,10 @@ export default function JamstvoPage() {
             <p>
               Operativni sustav nije uključen u cijenu računala, osim ako uz njega kupite licencu. Ako ste je
               kupili, sustav instaliramo i aktiviramo prije slanja. Ako niste, računalo stiže bez operativnog
-              sustava. U oba slučaja računalo prije slanja provjeravamo i testiramo — neispravno ili
-              neprovjereno ne šaljemo nikada.
+              sustava — Windows i upravljačke programe tada instalirate sami, na vlastitu odgovornost. To
+              ne preporučujemo. U oba slučaja računalo prije slanja sastavimo i testiramo pod opterećenjem;
+              neispravno ili neprovjereno ne šaljemo nikada. Zato kvar koji se pojavi nakon vaše instalacije
+              sustava nije kvar hardvera, pa jamstvo ne pokriva podršku oko instalacije.
             </p>
 
             <h2>Što jamstvo ne pokriva</h2>

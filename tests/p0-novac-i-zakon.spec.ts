@@ -146,3 +146,37 @@ test("the delivery page quotes the same two figures", async ({ page }) => {
   // personal pickup is switched off in Shopify, so the page must not offer it
   await expect(body).not.toContainText("Osobno preuzimanje");
 });
+
+// The fee is not a component, it is what we do to them, so it reads as the
+// closing line of the summary rather than the opening one. It stays on every
+// step even so: the total has carried it since the first, and a total with
+// nothing to explain it is how this started.
+test("the assembly fee is the last row of the summary, not the first", async ({ page }) => {
+  test.setTimeout(90_000);
+  await buildThroughToOs(page);
+  await page.getByRole("button", { name: /Bez operativnog sustava/ }).first().click();
+
+  const body = await page.locator("body").innerText();
+  const fee = body.indexOf("UVIJEK UKLJUČENO");
+  const firstPart = body.indexOf("PROCESOR");
+  const lastPart = body.lastIndexOf("HLAĐENJE");
+
+  expect(firstPart).toBeGreaterThan(-1);
+  expect(fee).toBeGreaterThan(lastPart);
+  expect(fee).toBeGreaterThan(firstPart);
+});
+
+// "Windows installed but not activated" was never what a buyer gets, and the
+// step now says what they do get, and whose problem it is afterwards.
+test("the no-OS choice says the machine ships without one", async ({ page }) => {
+  test.setTimeout(90_000);
+  await buildThroughToOs(page);
+
+  const note = await page.locator("body").innerText();
+  expect(note).not.toContain("bez aktivirane licence");
+  expect(note).toContain("bez operativnog sustava");
+  expect(note).toMatch(/na vlastitu odgovornost/);
+  expect(note).toMatch(/ne preporučujemo/i);
+  // and the reason the hardware is not in question
+  expect(note).toMatch(/testiramo pod opterećenjem/);
+});
