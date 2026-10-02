@@ -7,8 +7,12 @@ const dismissCookies = async (page: Page) => {
 };
 
 const eur = (n: number) => new Intl.NumberFormat("hr-HR", { style: "currency", currency: "EUR" }).format(n);
+// The sidebar figure, under whichever of its two headings is showing: the
+// parts while the build is being put together, the order's price at review.
 const readTotal = async (page: Page) => {
-  const m = (await page.locator("body").innerText()).match(/UKUPNA CIJENA\s*\n?\s*([\d.,]+)\s*€/);
+  const m = (await page.locator("body").innerText()).match(
+    /(?:UKUPNA CIJENA|CIJENA KOMPONENTI)\s*\n?\s*([\d.,]+)\s*€/
+  );
   return m ? Number(m[1].replace(/\./g, "").replace(",", ".")) : NaN;
 };
 
@@ -29,19 +33,45 @@ const buildThroughToOs = async (page: Page) => {
 
 // --- 1. the assembly fee ---------------------------------------------------
 
-// It used to appear only at the review step: the total jumped by 200 EUR at
-// the end with nothing on screen to account for it.
-test("the assembly fee is in the total, and named, from the first step", async ({ page }) => {
+// The fee is shown at the review step, so that is where it enters the figure.
+// The two must not be separable: a total carrying 200 EUR that nothing on
+// screen accounts for is one failure, and a figure that grows at the end for
+// no stated reason is the other. The label is what keeps them honest — the
+// running number is CIJENA KOMPONENTI and is exactly that, and only the review
+// step says UKUPNA CIJENA.
+test("the running figure is the parts, and says so", async ({ page }) => {
   test.setTimeout(60_000);
   await page.goto("/konfigurator");
   await dismissCookies(page);
 
-  expect(await readTotal(page)).toBeCloseTo(ASSEMBLY_FEE, 2);
   const sidebar = await page.locator("body").innerText();
-  expect(sidebar).toContain("Sklapanje i testiranje");
-  expect(sidebar).toContain(eur(ASSEMBLY_FEE));
+  expect(sidebar).toContain("CIJENA KOMPONENTI");
+  expect(sidebar).not.toContain("UKUPNA CIJENA");
+  // nothing is charged for yet, so nothing is counted
+  expect(await readTotal(page)).toBeCloseTo(0, 2);
+  expect(sidebar).not.toContain("Sklapanje i testiranje");
+});
+
+test("the fee appears with the total it belongs to, and explains itself", async ({ page }) => {
+  test.setTimeout(90_000);
+  await buildThroughToOs(page);
+
+  // still mid-build: parts only, and the fee is nowhere
+  const duringBuild = await page.locator("body").innerText();
+  expect(duringBuild).toContain("CIJENA KOMPONENTI");
+  expect(duringBuild).not.toContain("Sklapanje i testiranje");
+  const parts = await readTotal(page);
+
+  await page.getByRole("button", { name: /Bez operativnog sustava/ }).first().click();
+
+  const atReview = await page.locator("body").innerText();
+  expect(atReview).toContain("UKUPNA CIJENA");
+  expect(atReview).toContain("Sklapanje i testiranje");
+  expect(atReview).toContain(eur(ASSEMBLY_FEE));
   // and it says what it buys
-  expect(sidebar).toMatch(/testiranje i pakiranje/i);
+  expect(atReview).toMatch(/testiranje i pakiranje/i);
+  // the figure grew by exactly the fee, and the fee is on screen to say why
+  expect(await readTotal(page)).toBeCloseTo(parts + ASSEMBLY_FEE, 2);
 });
 
 test("the configured build carries the fee into the cart, as its own line", async ({ page }) => {
@@ -94,10 +124,13 @@ test("no paid option is presented as chosen before it is clicked", async ({ page
   expect(body).not.toMatch(/\bODABRANO\b/);
   expect(body).toContain("Bez operativnog sustava — 0,00 €");
 
-  // the licence is on screen but not in the price
-  const before = await readTotal(page);
+  // The licence is on screen but not in the price. Declining it moves on to
+  // the review step, where the assembly fee joins the figure — so what proves
+  // the licence was never counted is that the figure grows by the fee and by
+  // nothing else.
+  const parts = await readTotal(page);
   await page.getByRole("button", { name: /Bez operativnog sustava/ }).first().click();
-  expect(await readTotal(page)).toBeCloseTo(before, 2);
+  expect(await readTotal(page)).toBeCloseTo(parts + ASSEMBLY_FEE, 2);
 });
 
 // --- 3. one story about the operating system ------------------------------
@@ -147,10 +180,8 @@ test("the delivery page quotes the same two figures", async ({ page }) => {
   await expect(body).not.toContainText("Osobno preuzimanje");
 });
 
-// The fee is not a component, it is what we do to them, so it reads as the
-// closing line of the summary rather than the opening one. It stays on every
-// step even so: the total has carried it since the first, and a total with
-// nothing to explain it is how this started.
+// It is not a component, it is what we do to them, so it closes the summary
+// rather than opening it.
 test("the assembly fee is the last row of the summary, not the first", async ({ page }) => {
   test.setTimeout(90_000);
   await buildThroughToOs(page);

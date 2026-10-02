@@ -1093,11 +1093,17 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
       return sum + Number(p?.selectedVariant?.price?.amount || p?.variants?.edges[0]?.node.price.amount || 0);
     }, 0);
 
-    // The fee is charged on every configured build, so it is in the number
-    // from the first step. It used to appear only at the review step, which
-    // meant the total jumped by 200 EUR at the end with nothing to explain it.
-    return compPrice + ASSEMBLY_FEE;
+    // The fee is shown on the review step, so that is where it enters the
+    // number — the two must not be separable. A total carrying 200 EUR that
+    // nothing on screen accounts for is how this started; so is a figure that
+    // grows at the end for no stated reason. While the build is being put
+    // together the sidebar is labelled CIJENA KOMPONENTI and is exactly that,
+    // and at review it becomes UKUPNA CIJENA with the fee listed beneath it.
+    return isReviewStep ? compPrice + ASSEMBLY_FEE : compPrice;
   };
+
+  /** What the running figure is: the parts so far, or the price of the order. */
+  const totalLabel = isReviewStep ? "UKUPNA CIJENA" : "CIJENA KOMPONENTI";
 
   // Rough delivery window from today, for the mobile sticky bar. The bar is
   // labelled ISPORUKA, so it has to span the build *and* the courier, and it
@@ -2581,7 +2587,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
           >
             <div style={{ background: COLORS.bgCard, border: `1px solid ${COLORS.border}`, borderRadius: "18px", padding: "26px" }}>
               <div style={{ fontFamily: MONO, fontSize: "11px", color: COLORS.textMuted, letterSpacing: "2px" }}>
-                UKUPNA CIJENA
+                {totalLabel}
               </div>
               <div style={{ fontSize: "42px", fontWeight: 700, letterSpacing: "-1.5px", marginTop: "6px" }}>
                 {formatEUR(currentTotal())}
@@ -2598,10 +2604,11 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                     Još nema odabranih komponenti.
                   </div>
                 )}
-                {/* Last row, under the parts: it is not a component, it is what
-                    we do to them. It stays visible on every step even so —
-                    the total has carried it since the first one, and a total
-                    with nothing to explain it is how this started. */}
+                {/* Last row, under the parts, and only once the build is done:
+                    arriving at an empty configurator to be told about a 200 EUR
+                    charge says the wrong thing first. It appears on the review
+                    step, in the same breath as the total it is part of. */}
+                {isReviewStep && (
                 <div
                   style={{
                     display: "flex",
@@ -2633,6 +2640,7 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
                   </div>
                   <div style={{ fontFamily: MONO, fontSize: "12px", color: COLORS.textMuted }}>{formatEUR(ASSEMBLY_FEE)}</div>
                 </div>
+                )}
               </div>
 
               {bottleneckWarning && <div style={warningStyle}>{bottleneckWarning}</div>}
@@ -2966,6 +2974,9 @@ function BuilderContent({ products }: { products: ProductNode[] }) {
         >
           <div style={{ minWidth: 0 }}>
             <div style={{ fontFamily: MONO, fontSize: "10px", color: COLORS.textMuted, letterSpacing: "1px" }}>
+              {/* the bar never claimed the number was a total, so it keeps the
+                  delivery estimate; the sidebar below carries the label and
+                  the fee row that say what the figure is */}
               {selectedPartsList.length === 0 ? "ODABERI KOMPONENTE" : `ISPORUKA ${estimatedDispatch()}`}
             </div>
             <div style={{ fontSize: "19px", fontWeight: 700 }}>{formatEUR(currentTotal())}</div>

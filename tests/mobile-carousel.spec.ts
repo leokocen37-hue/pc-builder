@@ -161,7 +161,13 @@ test.describe("brand step doesn't leave a big blank gap before the sidebar", () 
 
     const amdBox = await page.getByAltText("AMD").first().locator("xpath=ancestor::button[1]").boundingBox();
     expect(amdBox).not.toBeNull();
-    const sidebarBox = await page.getByText("UKUPNA CIJENA", { exact: true }).locator("xpath=ancestor::div[2]").boundingBox();
+    // the sidebar heading is CIJENA KOMPONENTI while the build is being put
+    // together and UKUPNA CIJENA at review — find it by either
+    const sidebarBox = await page
+      .getByText(/^(UKUPNA CIJENA|CIJENA KOMPONENTI)$/)
+      .first()
+      .locator("xpath=ancestor::div[2]")
+      .boundingBox();
     expect(sidebarBox).not.toBeNull();
 
     const gap = sidebarBox!.y - (amdBox!.y + amdBox!.height);
